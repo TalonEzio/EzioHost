@@ -3,6 +3,13 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+#Video files
+*.m3u8
+*.ts
+*.mp4
+*.mkv
+*.keyinfo
+
 # User-specific files
 *.rsuser
 *.suo
