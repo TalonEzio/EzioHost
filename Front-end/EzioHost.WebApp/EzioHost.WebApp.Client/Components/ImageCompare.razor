@@ -1,0 +1,31 @@
+﻿@inject IJSRuntime Js
+@rendermode InteractiveServer
+
+<HeadContent>
+    <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
+</HeadContent>
+
+<div id="@Id"></div>
+
+@code {
+    [Parameter] public string BeforeImage { get; set; } = "";
+    [Parameter] public string AfterImage { get; set; } = "";
+    [Parameter] public string Id { get; set; } = $"image-compare-{Guid.NewGuid()}";
+
+    private IJSObjectReference? _jsObjectReference;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Js.InvokeAsync<IJSObjectReference>("import", "https://unpkg.com/slick-image-compare");
+
+            _jsObjectReference = await Js.InvokeAsync<IJSObjectReference>("import", "/Components/ImageCompare.razor.js");
+            if (_jsObjectReference is null)
+            {
+                throw new InvalidOperationException("Failed to load ImageCompare.razor.js");
+            }
+
+            StateHasChanged();
+        }
+    }
+}

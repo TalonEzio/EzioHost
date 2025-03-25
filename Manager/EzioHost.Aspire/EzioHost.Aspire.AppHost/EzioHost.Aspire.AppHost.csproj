@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>7d26dd6e-b65f-45e8-8968-a6a287192312</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Back-end\EzioHost.WebAPI\EzioHost.WebAPI.csproj" />
+    <ProjectReference Include="..\..\..\Front-end\EzioHost.WebApp\EzioHost.WebApp\EzioHost.WebApp.csproj" />
+    <ProjectReference Include="..\..\..\ReverseProxy\EzioHost.ReverseProxy\EzioHost.ReverseProxy.csproj" />
+  </ItemGroup>
+
+</Project>

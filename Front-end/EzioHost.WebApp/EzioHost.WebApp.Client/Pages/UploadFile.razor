@@ -1,0 +1,79 @@
+﻿@page "/upload-file"
+@inject HttpClient Http
+@rendermode InteractiveAuto
+
+<h3>File Upload with Speed Limit</h3>
+<InputFile OnChange="HandleUploadFile" />
+<progress max="100" value="@_uploadProgress"></progress>
+<br />
+<p>@_uploadProgress% uploaded</p>
+<p>Speed: @_uploadSpeed KB/s</p>
+
+@code {
+    private int _uploadProgress;
+    private double _uploadSpeed;
+    private const int ChunkSize = 5 * 1024 * 1024; // 5MB
+    private const int BufferSize = 64 * 1024;
+    private const double MaxUploadSpeed = 7 * 1024 * 1024; // 5 MB/s (giới hạn)
+
+    private async Task HandleUploadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var fileStream = file.OpenReadStream(long.MaxValue);
+        var buffer = new byte[ChunkSize];
+
+        long totalBytesRead = 0, totalBytes = file.Size;
+
+        while (totalBytesRead < totalBytes)
+        {
+            var startChunkTime = DateTime.UtcNow;
+            var chunkBytesRead = 0;
+
+            // Đọc dữ liệu từ file
+            while (chunkBytesRead < ChunkSize)
+            {
+                var bytesRead = await fileStream.ReadAsync(buffer, chunkBytesRead, Math.Min(BufferSize, ChunkSize - chunkBytesRead));
+                if (bytesRead == 0) break;
+                chunkBytesRead += bytesRead;
+            }
+
+            totalBytesRead += chunkBytesRead;
+
+            // Gửi chunk lên server
+            var content = new MultipartFormDataContent
+            {
+                { new ByteArrayContent(buffer, 0, chunkBytesRead), "file", file.Name },
+                { new StringContent(totalBytes.ToString()), "fileSize" }
+            };
+
+            await Http.PostAsync("api/video", content);
+
+            // ⏳ Đo thời gian upload chunk
+            var elapsedSeconds = (DateTime.UtcNow - startChunkTime).TotalSeconds;
+
+            // 🎯 Tính thời gian tối thiểu cần để upload theo giới hạn tốc độ
+            var minTimeForChunk = ChunkSize / MaxUploadSpeed;
+            var remainingTime = minTimeForChunk - elapsedSeconds;
+
+            // ⏳ Delay nếu cần để đảm bảo tốc độ tối đa
+            if (remainingTime > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(remainingTime));
+            }
+
+            // 📊 Tính tốc độ thực tế
+            var totalChunkTime = (DateTime.UtcNow - startChunkTime).TotalSeconds;
+            if (totalChunkTime > 0)
+            {
+                _uploadSpeed = Math.Round((chunkBytesRead / 1024.0) / totalChunkTime, 2);
+            }
+
+            _uploadProgress = (int)(totalBytesRead * 100.0 / totalBytes);
+            StateHasChanged();
+        }
+
+        await fileStream.DisposeAsync();
+        _uploadProgress = 100;
+        StateHasChanged();
+    }
+}

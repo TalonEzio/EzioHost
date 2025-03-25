@@ -1,0 +1,21 @@
+﻿@using EzioHost.Shared.Common
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = RoleConstants.VipUser)]
+@page "/auth"
+
+@rendermode InteractiveServer
+
+<PageTitle>Auth</PageTitle>
+
+<h1>Auth</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <ul>
+            @foreach (var claim in context.User.Claims)
+            {
+                <li>@claim.Type: @claim.Value</li>
+            }
+        </ul>
+    </Authorized>
+</AuthorizeView>
