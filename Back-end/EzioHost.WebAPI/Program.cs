@@ -1,14 +1,21 @@
-
-using Microsoft.AspNetCore.Authentication.BearerToken;
+using EzioHost.Core.Providers;
+using EzioHost.Core.Repositories;
+using EzioHost.Core.Services.Implement;
+using EzioHost.Core.Services.Interface;
+using EzioHost.Core.UnitOfWorks;
+using EzioHost.Infrastructure.SqlServer.DataContext;
+using EzioHost.Infrastructure.SqlServer.Repositories;
+using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
+using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.FileProviders;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace EzioHost.WebAPI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var appSettings = new AppSettings();
 
@@ -46,8 +53,26 @@ namespace EzioHost.WebAPI
                     };
                 });
 
-            var app = builder.Build();
+            builder.Services.AddDbContext<EzioHostDbContext>(cfg =>
+            {
+                cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));
+                cfg.EnableServiceProviderCaching();
+            });
+            
+            builder.Services.AddScoped<IVideoRepository, VideoSqlServerRepository>();
+            builder.Services.AddScoped<IVideoStreamRepository, VideoStreamSqlServerRepository>();
 
+            builder.Services.AddScoped<IBaseUnitOfWork, BaseUnitOfWork>();
+            builder.Services.AddScoped<IVideoUnitOfWork, VideoUnitOfWork>();
+
+            builder.Services.AddScoped<IDirectoryProvider, DirectoryProvider>();
+
+            builder.Services.AddScoped<IVideoService, VideoService>();
+
+            builder.Services.AddScoped<IUserRepository, UserSqlServerRepository>();
+            builder.Services.AddScoped<IUserService, UserService>();
+
+            var app = builder.Build();
 
             app.MapDefaultEndpoints();
 
@@ -61,19 +86,15 @@ namespace EzioHost.WebAPI
 
             app.UseAuthorization();
 
-            //var wwwrootPath = Path.Combine(Environment.CurrentDirectory, "wwwroot");
-            //app.UseStaticFiles(new StaticFileOptions
-            //{
-            //    FileProvider = new PhysicalFileProvider(wwwrootPath),
-            //    RequestPath = "/static"
-            //});
             app.MapStaticAssets();
 
             app.MapControllers();
 
+            await using var scope = app.Services.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
+            await dbContext.SeedData();
 
-
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

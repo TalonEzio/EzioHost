@@ -33,7 +33,11 @@ namespace EzioHost.WebApp.Handler
         {
             var isBlazorComponent = Context.GetEndpoint()?.Metadata.GetMetadata<ComponentTypeMetadata>() != null;
             var isBlazorJs = Request.Path.Equals("/_blazor", StringComparison.OrdinalIgnoreCase);
-
+            var isLogout = !Request.Cookies.Any(x => x.Key.StartsWith(".AspNetCore.Cookies"));
+            if (isLogout)
+            {
+                return AuthenticateResult.Fail($"Not authenticated - {DateTime.Now}");
+            }
             if (!(isBlazorComponent || isBlazorJs))
                 return AuthenticateResult.NoResult();
             try
@@ -72,7 +76,7 @@ namespace EzioHost.WebApp.Handler
                 return Task.CompletedTask;
 
             }
-            var challengeUrl = $"{Path.Combine(Options.ReverseProxyBaseUrl, "login")}?returnUrl={Uri.EscapeDataString(Request.Path)}";
+            var challengeUrl = $"{Path.Combine(Options.ReverseProxyBaseUrl, "login")}?returnUrl={properties.RedirectUri}";
             innerLogger.LogWarning($"Challenge to {challengeUrl}");
             Response.Redirect(challengeUrl);
             return Task.CompletedTask;

@@ -9,11 +9,21 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Quartz" Version="3.14.0" />
+    <PackageReference Include="Quartz.AspNetCore" Version="3.14.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Manager\EzioHost.Aspire\EzioHost.Aspire.ServiceDefaults\EzioHost.Aspire.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\EzioHost.Core\EzioHost.Core.csproj" />
+    <ProjectReference Include="..\EzioHost.Infrastructure.SqlServer\EzioHost.Infrastructure.SqlServer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,7 +10,6 @@ namespace EzioHost.WebApp.Handler
         protected override Task<bool> ValidateAuthenticationStateAsync(AuthenticationState authenticationState, CancellationToken cancellationToken)
         {
             //implement later
-            navigation.Refresh();
             return Task.FromResult(true);
         }
 

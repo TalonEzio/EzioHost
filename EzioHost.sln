@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Domain", "Back-End
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Core", "Back-end\EzioHost.Core\EzioHost.Core.csproj", "{575E916E-3C55-499E-BECA-D0D8315894B9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Infrastructure.SqlServer", "Back-end\EzioHost.Infrastructure.SqlServer\EzioHost.Infrastructure.SqlServer.csproj", "{F23B9B20-3152-4F41-A240-C996D0CBD6C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{575E916E-3C55-499E-BECA-D0D8315894B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{575E916E-3C55-499E-BECA-D0D8315894B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{575E916E-3C55-499E-BECA-D0D8315894B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F23B9B20-3152-4F41-A240-C996D0CBD6C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F23B9B20-3152-4F41-A240-C996D0CBD6C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F23B9B20-3152-4F41-A240-C996D0CBD6C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F23B9B20-3152-4F41-A240-C996D0CBD6C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -89,6 +95,7 @@ Global
 		{2113C4F4-66B4-4BB7-96D0-58AC59157D0B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{14753E1F-4152-4FC2-B499-EC8E7D2F54FD} = {0A7495F9-FC2C-4BA8-BA2D-01B687A77904}
 		{575E916E-3C55-499E-BECA-D0D8315894B9} = {0A7495F9-FC2C-4BA8-BA2D-01B687A77904}
+		{F23B9B20-3152-4F41-A240-C996D0CBD6C2} = {0A7495F9-FC2C-4BA8-BA2D-01B687A77904}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0C5F85D0-1C30-4A9B-A26F-8FD430AE3601}

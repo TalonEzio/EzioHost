@@ -9,7 +9,7 @@ namespace EzioHost.ReverseProxy.Extensions
     {
         public static IServiceCollection ConfigureCookieOidcRefresh(this IServiceCollection services, string cookieScheme, string oidcScheme,TimeSpan refreshTimeSpan)
         {
-            services.AddSingleton<CookieOidcRefresher>();
+            services.AddTransient<CookieOidcRefresher>();
             services.AddOptions<CookieAuthenticationOptions>(cookieScheme).Configure<CookieOidcRefresher>((cookieOptions, refresher) =>
             {
                 cookieOptions.Events.OnValidatePrincipal = context => refresher.ValidateOrRefreshCookieAsync(context, oidcScheme, refreshTimeSpan);

@@ -15,7 +15,9 @@ namespace EzioHost.ReverseProxy
         public string WebApiScope { get; set; } = string.Empty;
         public string AdminUserName { get; set; } = string.Empty;
         public string AdminPassword { get; set; } = string.Empty;
+        public string UserNameClaimType { get; set; } = "preferred_username";
         public string NameClaimType { get; set; } = ClaimTypes.Name;
         public string RoleClaimType { get; set; } = ClaimTypes.Role;
+
     }
 }

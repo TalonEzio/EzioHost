@@ -21,8 +21,16 @@ internal sealed class CookieOidcRefresher(IOptionsMonitor<OpenIdConnectOptions> 
         RequireNonce = false,
     };
 
-    public async Task ValidateOrRefreshCookieAsync(CookieValidatePrincipalContext validateContext, string oidcScheme,TimeSpan refreshTimeSpan)
+    public async Task ValidateOrRefreshCookieAsync(CookieValidatePrincipalContext validateContext, string oidcScheme, TimeSpan refreshTimeSpan)
     {
+        //var requestPath = validateContext.HttpContext.Request.Path.ToString();
+
+        //if (!requestPath.Contains("/user"))
+        //{
+        //    //validateContext.RejectPrincipal();
+        //    return;
+        //}
+
         var accessTokenExpirationText = validateContext.Properties.GetTokenValue("expires_at");
         if (!DateTimeOffset.TryParse(accessTokenExpirationText, out var accessTokenExpiration))
         {

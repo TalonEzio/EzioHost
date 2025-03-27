@@ -4,6 +4,7 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 #Video files
+[Vv]ideos/
 *.m3u8
 *.ts
 *.mp4
@@ -22,6 +23,9 @@
 
 # Mono auto generated files
 mono_crash.*
+
+#Ef Core
+[Mm]igrations/
 
 # Build results
 [Dd]ebug/

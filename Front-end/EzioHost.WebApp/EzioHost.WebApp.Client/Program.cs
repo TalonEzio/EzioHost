@@ -1,6 +1,3 @@
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
 using EzioHost.Shared.Common;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -21,15 +18,8 @@ class Program
         {
             cfg.BaseAddress = new Uri(BaseUrlConstants.ReverseProxyUrl);
         });
-        builder.Services.AddScoped(provider =>
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
+        builder.Services.AddScoped(provider => provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 
-        builder.Services.AddBlazorise(cfg =>
-            {
-                cfg.Immediate = true;
-            })
-            .AddBootstrap5Providers()
-            .AddFontAwesomeIcons();
 
         await builder.Build().RunAsync();
     }

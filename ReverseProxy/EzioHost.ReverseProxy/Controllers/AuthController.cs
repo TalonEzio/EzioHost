@@ -8,7 +8,6 @@ using Microsoft.Extensions.Options;
 
 namespace EzioHost.ReverseProxy.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
     public class AuthController(IOptionsMonitor<AppSettings> appSettings) : ControllerBase
     {
@@ -33,11 +32,14 @@ namespace EzioHost.ReverseProxy.Controllers
         }
 
         [HttpGet("/logout")]
-        public async Task Logout(string? returnUrl = null)
+        public async Task<IActionResult> Logout(string? returnUrl = null)
         {
             returnUrl ??= "~/";
+            
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            Response.Redirect(Url.Content(returnUrl));
+            await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+
+            return Redirect(returnUrl);
         }
 
         [HttpGet("/user")]
@@ -59,14 +61,12 @@ namespace EzioHost.ReverseProxy.Controllers
             {
                 claims.Remove(roleClaim);
                 var roles = roleClaim.Value.Split(',');
-                foreach (var role in roles)
-                {
-                    claims.Add(new Claim(ClaimTypes.Role, role.Trim()));
-                }
+                claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role.Trim())));
             }
 
             return Ok(claims.Select(ClaimDto.ConvertFromClaim));
         }
+
 
 
     }

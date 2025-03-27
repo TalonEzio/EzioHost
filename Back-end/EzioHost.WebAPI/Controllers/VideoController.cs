@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
+﻿using EzioHost.Core.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VideoController(ILogger<VideoController> logger) : ControllerBase
+    public class VideoController(IVideoService videoService) : ControllerBase
     {
         private static readonly string UploadFolder = Path.Combine(Environment.CurrentDirectory, "wwwroot", "videos");
 
@@ -34,6 +34,7 @@ namespace EzioHost.WebAPI.Controllers
             {
                 string finalPath = Path.Combine(UploadFolder, file.FileName);
                 System.IO.File.Move(tempFilePath, finalPath, true);
+
             }
 
             return Created();
