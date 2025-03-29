@@ -92,5 +92,22 @@ namespace EzioHost.Domain.Enums
             Public,
         }
 
+        public enum FileUploadStatus : byte
+        {
+            [Description("Chờ xử lý")]
+            Pending,
+
+            [Description("Đang tải lên")]
+            InProgress,
+
+            [Description("Hoàn tất")]
+            Completed,
+
+            [Description("Thất bại")]
+            Failed,
+
+            [Description("Đã hủy")]
+            Canceled
+        }
     }
 }

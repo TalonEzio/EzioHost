@@ -3,5 +3,8 @@
     public interface IDirectoryProvider
     {
         public string GetWebRootPath();
+        public string GetBaseUploadFolder();
+        public string GetBaseVideoFolder();
+        public string GetSubFolderFromWebRoot(string folderName);
     }
 }

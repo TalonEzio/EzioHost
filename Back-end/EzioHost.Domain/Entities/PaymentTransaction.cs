@@ -14,7 +14,7 @@ namespace EzioHost.Domain.Entities
 
         public SubscriptionPlan? SubscriptionPlan { get; set; }
 
-        public decimal AmountPaid { get; set; }
+        public double AmountPaid { get; set; }
 
         [Required]
         public string PaymentProvider { get; set; } = "PayPal";

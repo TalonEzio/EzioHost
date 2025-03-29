@@ -1,3 +1,4 @@
+using BlazorBlobStream;
 using EzioHost.Shared.Common;
 using EzioHost.WebApp.Components;
 using EzioHost.WebApp.Handler;
@@ -61,6 +62,10 @@ public class Program
 
         builder.Services.AddOptions<AppSettings>().Bind(builder.Configuration.GetSection(nameof(AppSettings)));
 
+        //builder.Services.AddSignalR(x =>
+        //{
+        //    x.MaximumReceiveMessageSize = 1 * 1024 * 1024; // 1MB per message
+        //});
 
         var app = builder.Build();
 

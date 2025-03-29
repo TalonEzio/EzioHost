@@ -24,11 +24,11 @@ namespace EzioHost.WebAPI
 
             builder.Configuration.Bind(nameof(AppSettings), appSettings);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
             builder.Services.AddOpenApi();
+
+            builder.Services.AddProblemDetails();
 
             builder.Services.AddAuthentication(cfg =>
                 {
@@ -58,7 +58,7 @@ namespace EzioHost.WebAPI
                 cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));
                 cfg.EnableServiceProviderCaching();
             });
-            
+
             builder.Services.AddScoped<IVideoRepository, VideoSqlServerRepository>();
             builder.Services.AddScoped<IVideoStreamRepository, VideoStreamSqlServerRepository>();
 
@@ -72,6 +72,9 @@ namespace EzioHost.WebAPI
             builder.Services.AddScoped<IUserRepository, UserSqlServerRepository>();
             builder.Services.AddScoped<IUserService, UserService>();
 
+            builder.Services.AddScoped<IFileUploadRepository, FileUploadSqlServerRepository>();
+            builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+
             var app = builder.Build();
 
             app.MapDefaultEndpoints();
@@ -80,6 +83,7 @@ namespace EzioHost.WebAPI
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
+                app.UseExceptionHandler();
             }
 
             app.UseHttpsRedirection();
@@ -90,9 +94,11 @@ namespace EzioHost.WebAPI
 
             app.MapControllers();
 
+#if SEED_DATA
             await using var scope = app.Services.CreateAsyncScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
             await dbContext.SeedData();
+#endif
 
             await app.RunAsync();
         }

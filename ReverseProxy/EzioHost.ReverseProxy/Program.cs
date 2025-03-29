@@ -58,7 +58,6 @@ namespace EzioHost.ReverseProxy
 
                     options.Events = new OpenIdConnectEvents
                     {
-                        //Sync OIDC <-> Database
                         OnTokenValidated = async context =>
                         {
                             var user = context.Principal;
@@ -71,34 +70,44 @@ namespace EzioHost.ReverseProxy
                                 var token = context.TokenEndpointResponse?.AccessToken;
                                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                                var claims = user.Claims.ToImmutableList();
-                                var body = new UserCreateUpdateRequestDto()
+                                var identity = (ClaimsIdentity)user.Identity!;
+                                var id = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+                                var email = identity.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+                                var firstName = identity.FindFirst(ClaimTypes.GivenName)?.Value ?? string.Empty;
+                                var lastName = identity.FindFirst(ClaimTypes.Surname)?.Value ?? string.Empty;
+                                var userName = identity.FindFirst(settings.OpenIdConnect.UserNameClaimType)?.Value ?? string.Empty;
+
+                                var body = new UserCreateUpdateRequestDto
                                 {
-                                    Email = claims.First(x => x.Type == ClaimTypes.Email).Value,
-                                    FirstName = claims.First(x => x.Type == ClaimTypes.GivenName).Value,
-                                    LastName = claims.First(x => x.Type == ClaimTypes.Surname).Value,
-                                    UserName = claims.First(x => x.Type == settings.OpenIdConnect.UserNameClaimType).Value,
+                                    Id = Guid.Parse(id),
+                                    Email = email,
+                                    FirstName = firstName,
+                                    LastName = lastName,
+                                    UserName = userName
                                 };
                                 try
                                 {
                                     var response = await httpClient.PostAsJsonAsync("api/User", body);
                                     response.EnsureSuccessStatusCode();
+
+                                    var userDto = await response.Content.ReadFromJsonAsync<UserCreateUpdateResponseDto>();
+
+                                    if (userDto?.Id != null)
+                                    {
+                                        identity.AddClaim(new Claim(ClaimTypes.Sid, userDto.Id.ToString()));
+                                    }
                                 }
                                 catch (Exception e)
                                 {
                                     Console.WriteLine(e);
                                 }
+
+                                context.Principal = new ClaimsPrincipal(identity);
                             }
-                        },
-
-                        OnUserInformationReceived = context =>
-                        {
-                            var claims = context.User.ToString();
-                            Console.WriteLine($"UserInfo received: {claims}");
-
-                            return Task.CompletedTask;
-                        },
+                        }
                     };
+
+
                 });
             builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
             {

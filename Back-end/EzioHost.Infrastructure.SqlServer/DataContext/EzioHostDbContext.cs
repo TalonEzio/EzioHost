@@ -6,6 +6,7 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
     public class EzioHostDbContext(DbContextOptions<EzioHostDbContext> options) : DbContext(options)
     {
         public DbSet<Video> Videos { get; set; }
+        public DbSet<FileUpload> FileUploads { get; set; }
         public DbSet<VideoStream> VideoStreams { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<PaymentTransaction> PaymentTransactions { get; set; }

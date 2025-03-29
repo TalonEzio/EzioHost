@@ -1,3 +1,4 @@
+using BlazorBlobStream;
 using EzioHost.Shared.Common;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

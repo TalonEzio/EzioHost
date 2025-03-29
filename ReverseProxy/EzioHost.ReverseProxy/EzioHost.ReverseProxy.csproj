@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Back-end\EzioHost.Infrastructure.SqlServer\EzioHost.Infrastructure.SqlServer.csproj" />
     <ProjectReference Include="..\..\Manager\EzioHost.Aspire\EzioHost.Aspire.ServiceDefaults\EzioHost.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Utility\EzioHost.Shared\EzioHost.Shared.csproj" />
   </ItemGroup>

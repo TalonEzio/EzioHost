@@ -8,5 +8,20 @@ namespace EzioHost.WebAPI.Providers
         {
             return webHostEnvironment.WebRootPath;
         }
+
+        public string GetBaseUploadFolder() => GetSubFolderFromWebRoot("Uploads");
+
+        public string GetBaseVideoFolder() => GetSubFolderFromWebRoot("Videos");
+
+        public string GetSubFolderFromWebRoot(string folderName)
+        {
+            var result = Path.Combine(GetWebRootPath(), folderName);
+            if (!Directory.Exists(result))
+            {
+                Directory.CreateDirectory(result);
+            }
+
+            return result;
+        }
     }
 }

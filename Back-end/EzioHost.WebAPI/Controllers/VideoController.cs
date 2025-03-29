@@ -1,4 +1,5 @@
-﻿using EzioHost.Core.Services.Interface;
+﻿using EzioHost.Core.Providers;
+using EzioHost.Core.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,17 +7,10 @@ namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VideoController(IVideoService videoService) : ControllerBase
+    public class VideoController(IVideoService videoService,IDirectoryProvider directoryProvider) : ControllerBase
     {
-        private static readonly string UploadFolder = Path.Combine(Environment.CurrentDirectory, "wwwroot", "videos");
+        private string UploadFolder => directoryProvider.GetBaseUploadFolder();
 
-        static VideoController()
-        {
-            if (!Directory.Exists(UploadFolder))
-            {
-                Directory.CreateDirectory(UploadFolder);
-            }
-        }
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> UploadVideoChunk([FromForm] IFormFile file, [FromForm] long fileSize)

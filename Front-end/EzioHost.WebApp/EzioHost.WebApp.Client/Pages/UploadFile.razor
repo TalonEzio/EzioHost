@@ -1,67 +1,96 @@
 ﻿@page "/upload-file"
-@inject HttpClient Http
-@rendermode InteractiveAuto
+@using System.Diagnostics
+@using EzioHost.WebApp.Client.Components
 
-<h3>File Upload with Speed Limit</h3>
-<InputFile OnChange="HandleUploadFile" />
-<progress max="100" value="@_uploadProgress"></progress>
-<br />
-<p>@_uploadProgress% uploaded</p>
-<p>Speed: @_uploadSpeed KB/s</p>
+@inject HttpClient Http
+@rendermode InteractiveWebAssembly
+
+@if (RendererInfo.IsInteractive)
+{
+    <h3>File Upload with Speed Limit</h3>
+    <InputFile OnChange="OnFileChange" multiple id="@InputFileId" />
+    <br />
+    <progress max="100" value="@_uploadProgress"></progress>
+    <br />
+    <button class="btn btn-primary my-3" disabled="@_disableButton" @onclick="HandleUploadFile">Upload</button>
+    <br />
+    <p>@_uploadProgress%</p>
+    <p>Speed: @_uploadSpeed KB/s</p>
+}
+else
+{
+    <p>Waiting...</p>
+}
 
 @code {
+    private const string InputFileId = "fileInput";
     private int _uploadProgress;
     private double _uploadSpeed;
-    private const int ChunkSize = 5 * 1024 * 1024; // 5MB
-    private const int BufferSize = 64 * 1024;
-    private const double MaxUploadSpeed = 7 * 1024 * 1024; // 5 MB/s (giới hạn)
+    private const int ChunkSize = 2 * 1024 * 1024;
+    private const int BufferSize = 1 * 1024 * 1024;
+    private const double MaxUploadSpeed = 5 * 1024 * 1024;
+    private SeekableFileStream _fileStream = null!;
+    [Inject] public ILogger<UploadFile> Logger { get; set; } = null!;
+    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
 
-    private async Task HandleUploadFile(InputFileChangeEventArgs e)
+    private bool _disableButton;
+    private IBrowserFile? _browserFile;
+    private Task OnFileChange(InputFileChangeEventArgs e)
     {
-        var file = e.File;
-        var fileStream = file.OpenReadStream(long.MaxValue);
+        _disableButton = false;
+        _browserFile = e.File;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleUploadFile()
+    {
+        if (_browserFile == null) return;
+
+        _fileStream = new SeekableFileStream(JsRuntime, InputFileId, 0,_browserFile.Size);
+        _disableButton = true;
+        StateHasChanged();
+
+        var fileInfo = await InitUploadAsync(_fileStream);
+
+        _fileStream.Seek(fileInfo.UploadedBytes, SeekOrigin.Begin);
+
         var buffer = new byte[ChunkSize];
 
-        long totalBytesRead = 0, totalBytes = file.Size;
+        long totalBytesRead = fileInfo.UploadedBytes, totalBytes = _browserFile.Size;
 
         while (totalBytesRead < totalBytes)
         {
             var startChunkTime = DateTime.UtcNow;
             var chunkBytesRead = 0;
 
-            // Đọc dữ liệu từ file
             while (chunkBytesRead < ChunkSize)
             {
-                var bytesRead = await fileStream.ReadAsync(buffer, chunkBytesRead, Math.Min(BufferSize, ChunkSize - chunkBytesRead));
+                var readCount = Math.Min(BufferSize, ChunkSize - chunkBytesRead);
+                var bytesRead = await _fileStream.ReadAsync(buffer, chunkBytesRead, readCount, CancellationToken.None);
                 if (bytesRead == 0) break;
                 chunkBytesRead += bytesRead;
             }
 
             totalBytesRead += chunkBytesRead;
 
-            // Gửi chunk lên server
             var content = new MultipartFormDataContent
             {
-                { new ByteArrayContent(buffer, 0, chunkBytesRead), "file", file.Name },
-                { new StringContent(totalBytes.ToString()), "fileSize" }
+                { new ByteArrayContent(buffer, 0, chunkBytesRead), "chunkFile", _browserFile.Name },
             };
 
-            await Http.PostAsync("api/video", content);
+            await Http.PostAsync($"api/upload/chunk/{fileInfo.Id}", content);
 
-            // ⏳ Đo thời gian upload chunk
             var elapsedSeconds = (DateTime.UtcNow - startChunkTime).TotalSeconds;
 
-            // 🎯 Tính thời gian tối thiểu cần để upload theo giới hạn tốc độ
             var minTimeForChunk = ChunkSize / MaxUploadSpeed;
             var remainingTime = minTimeForChunk - elapsedSeconds;
 
-            // ⏳ Delay nếu cần để đảm bảo tốc độ tối đa
             if (remainingTime > 0)
             {
                 await Task.Delay(TimeSpan.FromSeconds(remainingTime));
             }
 
-            // 📊 Tính tốc độ thực tế
             var totalChunkTime = (DateTime.UtcNow - startChunkTime).TotalSeconds;
             if (totalChunkTime > 0)
             {
@@ -72,8 +101,52 @@
             StateHasChanged();
         }
 
-        await fileStream.DisposeAsync();
+        await _fileStream.DisposeAsync();
         _uploadProgress = 100;
         StateHasChanged();
     }
+
+    private static async Task<string> ComputeFileFingerprintAsync(SeekableFileStream file)
+    {
+        using var sha256 = SHA256.Create();
+
+        const int chunkSize = 1 * 1024 * 1024;
+        var bufferSize = (int)Math.Min(chunkSize, file.Length);
+        var buffer = new byte[bufferSize];
+
+        _ = await file.ReadAsync(buffer, 0, bufferSize);
+
+        sha256.TransformBlock(buffer, 0, bufferSize, buffer, 0);
+
+        sha256.TransformFinalBlock([], 0, 0);
+
+        var hashBytes = sha256.Hash!;
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+    }
+
+    private async Task<UploadInfoDto> InitUploadAsync(SeekableFileStream fileStream)
+    {
+        if (_browserFile == null) throw new ArgumentException(nameof(_browserFile));
+
+        var sw = Stopwatch.StartNew();
+        var fileChecksum = await ComputeFileFingerprintAsync(fileStream);
+        sw.Stop();
+        Logger.LogInformation($"Hash file take :{sw.ElapsedMilliseconds}ms");
+
+        var metadata = new UploadInfoDto
+            {
+                FileName = _browserFile.Name,
+                FileSize = _browserFile.Size,
+                ContentType = _browserFile.ContentType,
+                Checksum = fileChecksum
+            };
+
+        var response = await Http.PostAsJsonAsync("api/upload/init", metadata);
+        response.EnsureSuccessStatusCode();
+
+        var uploadInfo = await response.Content.ReadFromJsonAsync<UploadInfoDto>();
+
+        return uploadInfo!;
+    }
+
 }

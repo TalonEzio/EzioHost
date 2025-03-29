@@ -5,11 +5,14 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using EzioHost.Domain.Entities;
 
 namespace EzioHost.ReverseProxy.Controllers
 {
     [ApiController]
-    public class AuthController(IOptionsMonitor<AppSettings> appSettings) : ControllerBase
+    public class AuthController(IOptionsMonitor<AppSettings> appSettings, HttpClient httpClient, ILogger<AuthController> logger) : ControllerBase
     {
 
         [HttpGet("/login")]
@@ -35,7 +38,7 @@ namespace EzioHost.ReverseProxy.Controllers
         public async Task<IActionResult> Logout(string? returnUrl = null)
         {
             returnUrl ??= "~/";
-            
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
 
@@ -46,6 +49,7 @@ namespace EzioHost.ReverseProxy.Controllers
         public IActionResult GetUser()
         {
             if (HttpContext.User.Identity is { IsAuthenticated: false }) return Unauthorized();
+            if (HttpContext.User.Identity is not ClaimsIdentity) return Unauthorized();
 
             var claims = HttpContext.User.Claims.ToList();
 
@@ -56,18 +60,14 @@ namespace EzioHost.ReverseProxy.Controllers
                 claims.Add(new Claim(ClaimTypes.Name, nameClaim.Value));
             }
 
-            var roleClaims = claims.Where(c => c.Type == appSettings.CurrentValue.OpenIdConnect.RoleClaimType).ToList();
+            var roleClaims = claims.Where(c => c.Type == appSettings.CurrentValue.OpenIdConnect.RoleClaimType).ToList();//Roles
             foreach (var roleClaim in roleClaims)
             {
                 claims.Remove(roleClaim);
                 var roles = roleClaim.Value.Split(',');
                 claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role.Trim())));
             }
-
             return Ok(claims.Select(ClaimDto.ConvertFromClaim));
         }
-
-
-
     }
 }
