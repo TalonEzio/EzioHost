@@ -8,7 +8,13 @@ namespace EzioHost.Core.Repositories
         Task<Video> AddNewVideo(Video newVideo);
         Task<Video?> GetVideoById(Guid id);
         Task<Video> UpdateVideo(Video updateVideo);
+        Task<Video> UpdateVideoForUnitOfWork(Video updateVideo);
         Task DeleteVideo(Video deleteVideo);
         Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null, Expression<Func<Video, object>>[]? includes = null);
+
+        Task<Video?> GetVideoToEncode();
+
+        Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
+
     }
 }

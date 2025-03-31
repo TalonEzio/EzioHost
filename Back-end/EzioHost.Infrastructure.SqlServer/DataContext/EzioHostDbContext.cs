@@ -25,7 +25,7 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
 
         private void ApplyGlobalFilters(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Video>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<Video>().HasQueryFilter(x => !x.DeletedAt.HasValue);
             modelBuilder.Entity<UserSubscription>().HasQueryFilter(x => x.IsActive);
         }
 

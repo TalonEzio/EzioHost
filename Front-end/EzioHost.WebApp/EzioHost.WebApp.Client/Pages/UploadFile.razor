@@ -1,9 +1,10 @@
 ﻿@page "/upload-file"
-@using System.Diagnostics
-@using EzioHost.WebApp.Client.Components
 
-@inject HttpClient Http
+@inject HttpClient HttpClient
 @rendermode InteractiveWebAssembly
+@attribute [Authorize]
+
+@_authenticationState.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value
 
 @if (RendererInfo.IsInteractive)
 {
@@ -33,8 +34,17 @@ else
     [Inject] public ILogger<UploadFile> Logger { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
 
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = null!;
+    private AuthenticationState _authenticationState = null!;
+
     private bool _disableButton;
     private IBrowserFile? _browserFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authenticationState = await AuthenticationStateTask;
+    }
+
     private Task OnFileChange(InputFileChangeEventArgs e)
     {
         _disableButton = false;
@@ -47,11 +57,17 @@ else
     {
         if (_browserFile == null) return;
 
-        _fileStream = new SeekableFileStream(JsRuntime, InputFileId, 0,_browserFile.Size);
+        _fileStream = new SeekableFileStream(JsRuntime, InputFileId, 0, _browserFile.Size);
         _disableButton = true;
         StateHasChanged();
 
         var fileInfo = await InitUploadAsync(_fileStream);
+
+        if (fileInfo.IsCompleted)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", $"File {fileInfo.FileName} already uploaded");
+            return;
+        }
 
         _fileStream.Seek(fileInfo.UploadedBytes, SeekOrigin.Begin);
 
@@ -79,7 +95,7 @@ else
                 { new ByteArrayContent(buffer, 0, chunkBytesRead), "chunkFile", _browserFile.Name },
             };
 
-            await Http.PostAsync($"api/upload/chunk/{fileInfo.Id}", content);
+            await HttpClient.PostAsync($"api/upload/chunk/{fileInfo.Id}", content);
 
             var elapsedSeconds = (DateTime.UtcNow - startChunkTime).TotalSeconds;
 
@@ -110,7 +126,7 @@ else
     {
         using var sha256 = SHA256.Create();
 
-        const int chunkSize = 1 * 1024 * 1024;
+        const int chunkSize = 512 * 1024;//512KB
         var bufferSize = (int)Math.Min(chunkSize, file.Length);
         var buffer = new byte[bufferSize];
 
@@ -128,20 +144,19 @@ else
     {
         if (_browserFile == null) throw new ArgumentException(nameof(_browserFile));
 
-        var sw = Stopwatch.StartNew();
         var fileChecksum = await ComputeFileFingerprintAsync(fileStream);
-        sw.Stop();
-        Logger.LogInformation($"Hash file take :{sw.ElapsedMilliseconds}ms");
 
         var metadata = new UploadInfoDto
             {
                 FileName = _browserFile.Name,
                 FileSize = _browserFile.Size,
                 ContentType = _browserFile.ContentType,
-                Checksum = fileChecksum
+                Checksum = fileChecksum,
+                Type = VideoEnum.VideoType.Other,
+                UserId = _authenticationState.GetUserId()
             };
 
-        var response = await Http.PostAsJsonAsync("api/upload/init", metadata);
+        var response = await HttpClient.PostAsJsonAsync("api/upload/init", metadata);
         response.EnsureSuccessStatusCode();
 
         var uploadInfo = await response.Content.ReadFromJsonAsync<UploadInfoDto>();

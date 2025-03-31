@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 using EzioHost.Domain.Entities;
-using EzioHost.Domain.Enums;
+using EzioHost.Shared.Enums;
 
 namespace EzioHost.Core.Services.Interface
 {

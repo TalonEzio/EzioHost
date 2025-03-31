@@ -1,4 +1,6 @@
-using BlazorBlobStream;
+using Blazorise;
+using Blazorise.Bootstrap5;
+using Blazorise.Icons.FontAwesome;
 using EzioHost.Shared.Common;
 using EzioHost.WebApp.Components;
 using EzioHost.WebApp.Handler;
@@ -20,7 +22,10 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents()
-            .AddAuthenticationStateSerialization();
+            .AddAuthenticationStateSerialization(cfg =>
+            {
+                cfg.SerializeAllClaims = true;
+            });
 
         // Add Authentication
         builder.Services.AddCascadingAuthenticationState();
@@ -66,6 +71,13 @@ public class Program
         //{
         //    x.MaximumReceiveMessageSize = 1 * 1024 * 1024; // 1MB per message
         //});
+
+        builder.Services.AddBlazorise(cfg =>
+            {
+                cfg.Immediate = true;
+            })
+            .AddBootstrap5Providers()
+            .AddFontAwesomeIcons();
 
         var app = builder.Build();
 

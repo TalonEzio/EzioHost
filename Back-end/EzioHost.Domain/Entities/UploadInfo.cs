@@ -1,4 +1,5 @@
-﻿using EzioHost.Domain.Enums;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using EzioHost.Shared.Enums;
 
 namespace EzioHost.Domain.Entities
 {
@@ -11,7 +12,10 @@ namespace EzioHost.Domain.Entities
         public long UploadedBytes { get; set; } = 0;
         public string? Checksum { get; set; }
 
+        public VideoEnum.VideoType Type { get; set; } = VideoEnum.VideoType.Other;
         public VideoEnum.FileUploadStatus Status { get; set; } = VideoEnum.FileUploadStatus.Pending;
-        public bool IsCompleted => FileSize == UploadedBytes;
+
+        [NotMapped]
+        public bool IsCompleted => FileSize == UploadedBytes && Status == VideoEnum.FileUploadStatus.Completed;
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using EzioHost.Domain.Enums;
+using EzioHost.Shared.Enums;
 
 namespace EzioHost.Domain.Entities
 {
@@ -11,6 +11,9 @@ namespace EzioHost.Domain.Entities
         public string M3U8Location { get; set; } = string.Empty;
 
         public VideoEnum.VideoResolution Resolution { get; set; }
+
+        public required string Key { get; set; }
+        public required string IV { get; set; }
         public Video Video { get; set; } = new();
 
         [ForeignKey(nameof(Video))]

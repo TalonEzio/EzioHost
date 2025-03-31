@@ -15,6 +15,7 @@ namespace EzioHost.Infrastructure.SqlServer.UnitOfWorks
         public async Task CommitTransactionAsync()
         {
             if (_transaction is null) throw new Exception("Error transaction, please open transaction first!");
+            await dbContext.SaveChangesAsync();
             await _transaction.CommitAsync();
 
             _transaction.Dispose();

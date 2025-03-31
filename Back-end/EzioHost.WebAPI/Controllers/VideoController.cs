@@ -1,5 +1,10 @@
-﻿using EzioHost.Core.Providers;
+﻿using System.Security.Claims;
+using AutoMapper;
+using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
+using EzioHost.Shared.Enums;
+using EzioHost.Shared.Models;
+using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,9 +12,36 @@ namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VideoController(IVideoService videoService,IDirectoryProvider directoryProvider) : ControllerBase
+    public class VideoController(IDirectoryProvider directoryProvider, IVideoService videoService, IMapper mapper) : ControllerBase
     {
         private string UploadFolder => directoryProvider.GetBaseUploadFolder();
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetVideos()
+        {
+            var userId = User.GetUserId();
+            var videos = (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams])).ToList();
+
+            var videoDtos = mapper.Map<List<VideoDto>>(videos);
+
+            
+            return Ok(videoDtos);
+        }
+
+        [HttpGet("play/{videoId:guid}")]
+        public async Task<IActionResult> GetVideoById([FromRoute] Guid videoId)
+        {
+            var video = await videoService.GetVideoById(videoId);
+            if (video == null || !System.IO.File.Exists(video.M3U8Location))
+            {
+                return NotFound();
+            }
+
+            var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
+            return File(fileContent, "application/x-mpegURL");
+        }
+
 
         [HttpPost]
         [Authorize]
@@ -34,18 +66,39 @@ namespace EzioHost.WebAPI.Controllers
             return Created();
         }
 
-        [HttpGet("DRM/{videoId:guid}")]
-        public async Task<IActionResult> GetDrm([FromRoute]Guid videoId)
+        [HttpGet("DRM/{videoStreamId:guid}")]
+        public async Task<IActionResult> GetDrm([FromRoute] Guid videoStreamId)
         {
-            var drmFilePath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "key.keyinfo");
+            var video = await videoService.GetVideoByVideoStreamId(videoStreamId);
 
-            if (!System.IO.File.Exists(drmFilePath))
+            if (video == null)
             {
-                return NotFound("File not found.");
+                return NotFound();
             }
 
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(drmFilePath);
-            return File(fileBytes, "application/octet-stream");
+            var contentKey = video.VideoStreams.First(x => x.Id == videoStreamId).Key;
+            var userIdString = User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            switch (video.ShareType)
+            {
+                case VideoEnum.VideoShareType.Public:
+                case VideoEnum.VideoShareType.Internal when User.Identity is { IsAuthenticated: true }:
+                    return Content(contentKey);
+
+                case VideoEnum.VideoShareType.Internal:
+                    return BadRequest();
+
+                case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
+                    var parse = Guid.TryParse(userIdString, out var userId);
+                    if (!parse) return BadRequest();
+                    if (video.CreatedBy == userId)
+                    {
+                        return Content(contentKey);
+                    }
+                    break;
+            }
+
+            return BadRequest();
         }
 
     }

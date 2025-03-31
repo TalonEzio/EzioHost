@@ -1,0 +1,63 @@
+﻿@page "/video"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+
+<table class="table table-hover">
+
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Title</th>
+            <th>M3U8</th>
+            <th>Type</th>
+            <th>Share</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var video in Videos)
+        {
+            <tr>
+                <td>@video.Id</td>
+                <td>@video.Title</td>
+                <td>@video.M3U8Location</td>
+                <td>@video.Type.GetDescription()</td>
+                <td>@video.ShareType.GetDescription()</td>
+                <td>
+                    <button class="btn btn-primary" @onclick="() => PlayVideo(video)">Play</button>
+                </td>
+            </tr>
+
+
+        }
+    </tbody>
+</table>
+
+@if (_videoSource != null)
+{
+    <Video Source="@_videoSource"></Video>
+
+}
+
+@code {
+
+    private List<VideoDto> Videos { get; set; } = [];
+
+    private VideoSource? _videoSource;
+    protected override async Task OnInitializedAsync()
+    {
+        Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+        StateHasChanged();
+    }
+    private async Task PlayVideo(VideoDto video)
+    {
+        var origin = await JsRuntime.GetOrigin();
+
+        var videoUrl = $"{origin.TrimEnd('/')}/{video.M3U8Location.Replace("\\", "/").TrimStart('/')}";
+
+        _videoSource = new VideoSource(videoUrl);
+        StateHasChanged();
+    }
+
+}

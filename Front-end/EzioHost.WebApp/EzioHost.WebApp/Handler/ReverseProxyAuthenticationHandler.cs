@@ -12,6 +12,7 @@ namespace EzioHost.WebApp.Handler
     public class ReverseProxyAuthenticationSchemeConstants
     {
         public const string AuthenticationScheme = "ReverseProxy.Oidc";
+        public const string AuthenticationType = "ReverseProxy.Authentication";
     }
     public class ReverseProxyAuthenticationSchemeOptions : AuthenticationSchemeOptions
     {
@@ -50,7 +51,7 @@ namespace EzioHost.WebApp.Handler
                 if (userInfo != null)
                 {
                     var claims = userInfo.Select(ClaimDto.ConvertToClaim).ToList();
-                    var identity = new ClaimsIdentity(claims, "OIDC");
+                    var identity = new ClaimsIdentity(claims, ReverseProxyAuthenticationSchemeConstants.AuthenticationType);
                     var principal = new ClaimsPrincipal(identity);
                     InnerLogger.LogError($"{Request.Path} - User authenticated - {DateTime.Now}");
                     return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));

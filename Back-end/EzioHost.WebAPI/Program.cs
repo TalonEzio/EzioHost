@@ -1,3 +1,4 @@
+using EzioHost.Core.Mappers;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
@@ -6,11 +7,13 @@ using EzioHost.Core.UnitOfWorks;
 using EzioHost.Infrastructure.SqlServer.DataContext;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
+using EzioHost.WebAPI.Jobs;
+using EzioHost.WebAPI.Middlewares;
 using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
+using Quartz;
 namespace EzioHost.WebAPI
 {
     public class Program
@@ -75,6 +78,37 @@ namespace EzioHost.WebAPI
             builder.Services.AddScoped<IFileUploadRepository, FileUploadSqlServerRepository>();
             builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 
+            builder.Services.AddScoped<IProtectService, ProtectService>();
+
+            builder.Services.AddQuartz(quartz =>
+            {
+                var videoProcessingJobKey = new JobKey(nameof(VideoProcessingJob));
+
+                quartz.AddJob<VideoProcessingJob>(opts => opts.WithIdentity(videoProcessingJobKey).StoreDurably());
+
+                quartz.AddTrigger(cfg => cfg
+                    .WithIdentity(nameof(VideoProcessingJob))
+                    .ForJob(videoProcessingJobKey)
+                    .StartNow()
+                    .WithSimpleSchedule(schedule => schedule
+                        .WithIntervalInSeconds(10)
+                        .RepeatForever()
+                    )
+                );
+            });
+
+            builder.Services.AddQuartzHostedService(cfg =>
+            {
+                cfg.AwaitApplicationStarted = true;
+                cfg.WaitForJobsToComplete = true;
+            });
+
+            builder.Services.AddAutoMapper(typeof(MapperClass));
+
+            builder.Services.AddScoped<BindingUserIdMiddleware>();
+
+
+
             var app = builder.Build();
 
             app.MapDefaultEndpoints();
@@ -88,7 +122,11 @@ namespace EzioHost.WebAPI
 
             app.UseHttpsRedirection();
 
+
+            app.UseAuthentication();
+
             app.UseAuthorization();
+            app.UseMiddleware<BindingUserIdMiddleware>();
 
             app.MapStaticAssets();
 

@@ -8,7 +8,7 @@ namespace EzioHost.WebAPI.Controllers
     [Route("api/[controller]")]
     [ApiController]
     //[Authorize]
-    public class UserController(IUserService userService, ILogger<UserController> logger) : ControllerBase
+    public class UserController(IUserService userService) : ControllerBase
     {
         [HttpPost]
         public async Task<IActionResult> CreateOrUpdateUser([FromBody] UserCreateUpdateRequestDto userDto)

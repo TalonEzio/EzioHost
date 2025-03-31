@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Security.Claims;
 using EzioHost.ReverseProxy.Extensions;
 using EzioHost.Shared.Common;
@@ -36,8 +35,8 @@ namespace EzioHost.ReverseProxy
                 })
                 .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, cfg =>
                 {
-                    cfg.LoginPath = "/login";//Map login from AuthController
-                    cfg.LogoutPath = "/logout";//Map logout from AuthController
+                    cfg.LoginPath = "/login"; //Map login from AuthController
+                    cfg.LogoutPath = "/logout"; //Map logout from AuthController
                 })
                 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
                 {
@@ -51,8 +50,9 @@ namespace EzioHost.ReverseProxy
                     //options.GetClaimsFromUserInfoEndpoint = true;
 
                     options.Scope.Add(OpenIdConnectScope.Email);
-                    options.Scope.Add(OpenIdConnectScope.OfflineAccess);//need for refresh token if provider not set default
-                    options.Scope.Add(settings.OpenIdConnect.WebApiScope);//need add this scope from OIDC server
+                    options.Scope.Add(OpenIdConnectScope
+                        .OfflineAccess); //need for refresh token if provider not set default
+                    options.Scope.Add(settings.OpenIdConnect.WebApiScope); //need add this scope from OIDC server
 
                     options.RequireHttpsMetadata = false;
 
@@ -68,14 +68,16 @@ namespace EzioHost.ReverseProxy
                                 var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
 
                                 var token = context.TokenEndpointResponse?.AccessToken;
-                                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                                httpClient.DefaultRequestHeaders.Authorization =
+                                    new AuthenticationHeaderValue("Bearer", token);
 
                                 var identity = (ClaimsIdentity)user.Identity!;
                                 var id = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
                                 var email = identity.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
                                 var firstName = identity.FindFirst(ClaimTypes.GivenName)?.Value ?? string.Empty;
                                 var lastName = identity.FindFirst(ClaimTypes.Surname)?.Value ?? string.Empty;
-                                var userName = identity.FindFirst(settings.OpenIdConnect.UserNameClaimType)?.Value ?? string.Empty;
+                                var userName = identity.FindFirst(settings.OpenIdConnect.UserNameClaimType)?.Value ??
+                                               string.Empty;
 
                                 var body = new UserCreateUpdateRequestDto
                                 {
@@ -90,7 +92,8 @@ namespace EzioHost.ReverseProxy
                                     var response = await httpClient.PostAsJsonAsync("api/User", body);
                                     response.EnsureSuccessStatusCode();
 
-                                    var userDto = await response.Content.ReadFromJsonAsync<UserCreateUpdateResponseDto>();
+                                    var userDto =
+                                        await response.Content.ReadFromJsonAsync<UserCreateUpdateResponseDto>();
 
                                     if (userDto?.Id != null)
                                     {
@@ -109,12 +112,11 @@ namespace EzioHost.ReverseProxy
 
 
                 });
-            builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
-            {
-                cfg.BaseAddress = new Uri(BaseUrlConstants.ReverseProxyUrl);
-            });
+            builder.Services.AddHttpClient(nameof(EzioHost),
+                cfg => { cfg.BaseAddress = new Uri(BaseUrlConstants.ReverseProxyUrl); });
 
-            builder.Services.AddScoped(serviceProvider => serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
+            builder.Services.AddScoped(serviceProvider =>
+                serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 
             builder.Services.ConfigureCookieOidcRefresh(
                 CookieAuthenticationDefaults.AuthenticationScheme,
@@ -134,16 +136,37 @@ namespace EzioHost.ReverseProxy
                         if (transformContext.HttpContext.Request.Path.StartsWithSegments("/api"))
                         {
                             var user = transformContext.HttpContext.User;
-                            if (user.Identity is { IsAuthenticated: true })
+                            if (user.Identity is ClaimsIdentity identity && user.Identity.IsAuthenticated)
                             {
-                                var token = await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
-                                transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                                var accessToken =
+                                    await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames
+                                        .AccessToken);
+                                transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                                var subClaimValue = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+                                if (!string.IsNullOrEmpty(subClaimValue))
+                                {
+                                    if (!transformContext.ProxyRequest.Headers.Contains("X-USER-ID"))
+                                    {
+                                        transformContext.ProxyRequest.Headers.Add("X-USER-ID", subClaimValue);
+                                    }
+                                }
                             }
                         }
                     });
                 });
 
+
             builder.Services.AddAntiforgery();
+
+            builder.Services.AddCors(cfg =>
+            {
+                cfg.AddPolicy(nameof(EzioHost), policyBuilder =>
+                {
+                    policyBuilder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+                });
+            });
 
             var app = builder.Build();
 
@@ -157,6 +180,8 @@ namespace EzioHost.ReverseProxy
 
             app.UseHttpsRedirection();
 
+            app.UseCors(nameof(EzioHost));
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseAntiforgery();
@@ -166,12 +191,11 @@ namespace EzioHost.ReverseProxy
             app.MapControllers();
 
             //Forward to frontend
-            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl, cfg =>
-            {
-                cfg.CopyRequestHeaders = true;
-            });
+            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl,
+                cfg => { cfg.CopyRequestHeaders = true; });
 
             app.Run();
         }
+
     }
 }

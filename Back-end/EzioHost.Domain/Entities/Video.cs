@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using EzioHost.Domain.Enums;
+using EzioHost.Shared.Enums;
 
 namespace EzioHost.Domain.Entities
 {
@@ -26,7 +26,7 @@ namespace EzioHost.Domain.Entities
                 >= 1060 and <= 1100 => VideoEnum.VideoResolution._1080p,
                 >= 1420 and <= 1460 => VideoEnum.VideoResolution._1440p,
                 >= 2140 and <= 2180 => VideoEnum.VideoResolution._2160p,
-                _ => VideoEnum.VideoResolution.Nothing
+                _ => VideoEnum.VideoResolution._720p
             };
         }
 

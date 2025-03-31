@@ -12,7 +12,7 @@ namespace EzioHost.Domain.Entities
         public DateTime ModifiedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
 
-        [NotMapped] public bool IsDeleted => DeletedAt.HasValue;
+        public bool IsDeleted => DeletedAt.HasValue;
     }
 
     public class BaseCreatedEntityWithUserId<T> : BaseCreatedEntity where T : struct

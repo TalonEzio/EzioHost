@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using EzioHost.Core.Repositories;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContext;
@@ -14,15 +13,9 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
         {
             var users = dbContext.Users.AsQueryable();
 
-            if (includes != null)
-            {
-                foreach (var include in includes)
-                {
-                    users = users.Include(include);
-                }
-            }
+            if (includes == null) return users.FirstOrDefaultAsync(expression);
 
-
+            users = includes.Aggregate(users, (current, include) => current.Include(include));
             return users.FirstOrDefaultAsync(expression);
         }
 

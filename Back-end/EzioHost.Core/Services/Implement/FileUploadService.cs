@@ -3,12 +3,13 @@ using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
-using EzioHost.Domain.Enums;
+using EzioHost.Shared.Enums;
 
 namespace EzioHost.Core.Services.Implement
 {
-    public class FileUploadService(IFileUploadRepository fileUploadRepository, IDirectoryProvider directoryProvider) : IFileUploadService
+    public class FileUploadService(IFileUploadRepository fileUploadRepository, IDirectoryProvider directoryProvider,IVideoService videoService) : IFileUploadService
     {
+        private string BaseWebRootFolder => directoryProvider.GetWebRootPath();
         private string BaseUploadFolder => directoryProvider.GetBaseUploadFolder();
         private string BaseVideoFolder => directoryProvider.GetBaseVideoFolder();
 
@@ -88,11 +89,10 @@ namespace EzioHost.Core.Services.Implement
                 Directory.CreateDirectory(videoDirectory);
             }
 
-            var fileName = Path.GetRandomFileName() + Path.GetExtension(Path.GetFileNameWithoutExtension(fileUpload.FileName));
+            var fileName = Path.GetFileNameWithoutExtension(Path.GetRandomFileName()) + Path.GetExtension(fileUpload.FileName);
             var videoFinalPath = Path.Combine(videoDirectory, fileName);
 
             File.Move(tempFilePath, videoFinalPath, true);
-
 
             fileUpload.UploadedBytes = fileInfo.Length;
             fileUpload.Status = VideoEnum.FileUploadStatus.Completed;
@@ -100,6 +100,17 @@ namespace EzioHost.Core.Services.Implement
 
             //insert video info to database
 
+            var newVideo = new Video
+            {
+                Title = fileUpload.FileName,
+                RawLocation = Path.GetRelativePath(BaseWebRootFolder, videoFinalPath),
+                M3U8Location = Path.ChangeExtension(Path.GetRelativePath(BaseWebRootFolder, videoFinalPath), ".m3u8"),
+                CreatedBy = fileUpload.CreatedBy,
+                Status = VideoEnum.VideoStatus.Queue,
+                Type = fileUpload.Type
+            };
+            
+            await videoService.AddNewVideo(newVideo);
             return VideoEnum.FileUploadStatus.Completed;
         }
     }

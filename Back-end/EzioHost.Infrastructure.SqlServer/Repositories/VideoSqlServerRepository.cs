@@ -1,8 +1,9 @@
 ﻿using System.Linq.Expressions;
 using EzioHost.Core.Repositories;
 using EzioHost.Domain.Entities;
-using EzioHost.Domain.Enums;
 using EzioHost.Infrastructure.SqlServer.DataContext;
+using EzioHost.Shared.Enums;
+using FFMpegCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EzioHost.Infrastructure.SqlServer.Repositories
@@ -38,7 +39,13 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
             await dbContext.SaveChangesAsync();
             return find;
         }
-        
+
+        public Task<Video> UpdateVideoForUnitOfWork(Video updateVideo)
+        {
+            _videos.Update(updateVideo);
+            return Task.FromResult(updateVideo);
+        }
+
         public async Task DeleteVideo(Video deleteVideo)
         {
             var find = await GetVideoById(deleteVideo.Id);
@@ -60,6 +67,18 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
                 }
             }
             return Task.FromResult<IEnumerable<Video>>(expression != null ? videoQueryable.Where(expression) : videoQueryable);
+        }
+
+        public Task<Video?> GetVideoToEncode()
+        {
+            var video = _videos.OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(x => x.Status == VideoEnum.VideoStatus.Queue);
+            return video;
+        }
+
+        public async Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId)
+        {
+            var videoStream = await dbContext.VideoStreams.Include(x => x.Video).FirstOrDefaultAsync(x => x.Id == videoStreamId);
+            return videoStream?.Video;
         }
 
         public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null)

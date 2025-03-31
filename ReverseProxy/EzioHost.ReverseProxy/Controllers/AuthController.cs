@@ -5,14 +5,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
-using System.Net.Http.Headers;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using EzioHost.Domain.Entities;
 
 namespace EzioHost.ReverseProxy.Controllers
 {
     [ApiController]
-    public class AuthController(IOptionsMonitor<AppSettings> appSettings, HttpClient httpClient, ILogger<AuthController> logger) : ControllerBase
+    public class AuthController(IOptionsMonitor<AppSettings> appSettings) : ControllerBase
     {
 
         [HttpGet("/login")]

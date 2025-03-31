@@ -7,11 +7,13 @@ namespace EzioHost.Core.Services.Interface
     public interface IVideoService
     {
         Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null, Expression<Func<Video, object>>[]? includes = null);
-
+        Task<Video?> GetVideoById(Guid videoId);
+        Task<Video?> GetVideoToEncode();
         public event Action<VideoChangedEvent>? VideoChanged;
         Task<Video> AddNewVideo(Video newVideo);
         Task<Video> UpdateVideo(Video updateVideo);
         Task EncodeVideo(Video inputVideo);
         Task DeleteVideo(Video deleteVideo);
+        Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
     }
 }
