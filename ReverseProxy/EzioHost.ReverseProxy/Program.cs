@@ -46,7 +46,7 @@ namespace EzioHost.ReverseProxy
 
                     options.ResponseType = OpenIdConnectResponseType.Code;
 
-                    options.SaveTokens = false;
+                    options.SaveTokens = true;
                     //options.GetClaimsFromUserInfoEndpoint = true;
 
                     options.Scope.Add(OpenIdConnectScope.Email);
@@ -121,7 +121,7 @@ namespace EzioHost.ReverseProxy
             builder.Services.ConfigureCookieOidcRefresh(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 OpenIdConnectDefaults.AuthenticationScheme,
-                TimeSpan.FromMinutes(5));
+                TimeSpan.FromMinutes(1));
 
             builder.Services.AddAuthorization();
 
@@ -182,6 +182,7 @@ namespace EzioHost.ReverseProxy
 
             app.UseCors(nameof(EzioHost));
 
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseAntiforgery();
@@ -190,9 +191,13 @@ namespace EzioHost.ReverseProxy
 
             app.MapControllers();
 
+
             //Forward to frontend
-            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl,
-                cfg => { cfg.CopyRequestHeaders = true; });
+            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl, cfg =>
+            {
+                cfg.CopyRequestHeaders = true;
+            });
+
 
             app.Run();
         }

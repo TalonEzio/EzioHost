@@ -11,6 +11,7 @@ using EzioHost.WebAPI.Jobs;
 using EzioHost.WebAPI.Middlewares;
 using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Quartz;
@@ -122,13 +123,22 @@ namespace EzioHost.WebAPI
 
             app.UseHttpsRedirection();
 
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ContentTypeProvider = new FileExtensionContentTypeProvider
+                {
+                    Mappings =
+                    {
+                        { ".m3u8", "application/x-mpegURL" }
+                    }
+                },
+            });
 
             app.UseAuthentication();
 
             app.UseAuthorization();
             app.UseMiddleware<BindingUserIdMiddleware>();
 
-            app.MapStaticAssets();
 
             app.MapControllers();
 

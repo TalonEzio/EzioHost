@@ -23,13 +23,13 @@ internal sealed class CookieOidcRefresher(IOptionsMonitor<OpenIdConnectOptions> 
 
     public async Task ValidateOrRefreshCookieAsync(CookieValidatePrincipalContext validateContext, string oidcScheme, TimeSpan refreshTimeSpan)
     {
-        //var requestPath = validateContext.HttpContext.Request.Path.ToString();
+        var requestPath = validateContext.HttpContext.Request.Path.ToString();
 
-        //if (!requestPath.Contains("/user"))
-        //{
-        //    //validateContext.RejectPrincipal();
-        //    return;
-        //}
+        if (!requestPath.Contains("/user"))
+        {
+            //validateContext.RejectPrincipal();
+            return;
+        }
 
         var accessTokenExpirationText = validateContext.Properties.GetTokenValue("expires_at");
         if (!DateTimeOffset.TryParse(accessTokenExpirationText, out var accessTokenExpiration))

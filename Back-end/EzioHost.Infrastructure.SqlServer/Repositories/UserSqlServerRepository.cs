@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace EzioHost.Infrastructure.SqlServer.Repositories
 {
-    public class UserSqlServerRepository(EzioHostDbContext dbContext,ILogger<UserSqlServerRepository> logger) : IUserRepository
+    public class UserSqlServerRepository(EzioHostDbContext dbContext) : IUserRepository
     {
         public Task<User?> GetUserByCondition(Expression<Func<User, bool>> expression, Expression<Func<User, object>>[]? includes = null)
         {

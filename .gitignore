@@ -10,6 +10,8 @@
 *.mp4
 *.mkv
 *.keyinfo
+[Uu]ploads/
+*.chunk
 
 # User-specific files
 *.rsuser

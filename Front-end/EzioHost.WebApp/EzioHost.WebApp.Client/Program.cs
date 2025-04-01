@@ -1,6 +1,3 @@
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
 using EzioHost.Shared.Common;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -24,12 +21,7 @@ internal class Program
         });
         builder.Services.AddScoped(provider => provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 
-        builder.Services.AddBlazorise(cfg =>
-            {
-                cfg.Immediate = true;
-            })
-            .AddBootstrap5Providers()
-            .AddFontAwesomeIcons();
+        builder.Services.AddBlazorBootstrap();
 
         await builder.Build().RunAsync();
     }

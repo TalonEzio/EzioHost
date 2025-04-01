@@ -27,17 +27,9 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
 
         public async Task<Video> UpdateVideo(Video updateVideo)
         {
-            var find = await GetVideoById(updateVideo.Id);
-            if (find is null) throw new Exception("Not found video");
-
-            find.RawLocation = updateVideo.RawLocation;
-            find.M3U8Location = string.Empty;
-            find.Resolution = updateVideo.Resolution;
-            find.Status = VideoEnum.VideoStatus.Queue;
-            find.Title = updateVideo.Title;
-
+            dbContext.Videos.Update(updateVideo);
             await dbContext.SaveChangesAsync();
-            return find;
+            return updateVideo;
         }
 
         public Task<Video> UpdateVideoForUnitOfWork(Video updateVideo)

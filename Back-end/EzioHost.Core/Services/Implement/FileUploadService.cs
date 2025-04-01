@@ -111,6 +111,7 @@ namespace EzioHost.Core.Services.Implement
             };
             
             await videoService.AddNewVideo(newVideo);
+            await DeleteFileUpload(fileUpload);
             return VideoEnum.FileUploadStatus.Completed;
         }
     }

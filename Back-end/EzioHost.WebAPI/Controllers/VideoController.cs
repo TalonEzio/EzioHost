@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using AutoMapper;
-using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
@@ -12,9 +11,8 @@ namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VideoController(IDirectoryProvider directoryProvider, IVideoService videoService, IMapper mapper) : ControllerBase
+    public class VideoController( IVideoService videoService, IMapper mapper) : ControllerBase
     {
-        private string UploadFolder => directoryProvider.GetBaseUploadFolder();
 
         [HttpGet]
         [Authorize]
@@ -25,46 +23,108 @@ namespace EzioHost.WebAPI.Controllers
 
             var videoDtos = mapper.Map<List<VideoDto>>(videos);
 
-            
+
             return Ok(videoDtos);
         }
 
         [HttpGet("play/{videoId:guid}")]
-        public async Task<IActionResult> GetVideoById([FromRoute] Guid videoId)
+        public async Task<IActionResult> GetM3U8ById([FromRoute] Guid videoId)
         {
             var video = await videoService.GetVideoById(videoId);
-            if (video == null || !System.IO.File.Exists(video.M3U8Location))
+            if (video == null)
             {
                 return NotFound();
+            }
+
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+            {
+                return BadRequest();
             }
 
             var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
             return File(fileContent, "application/x-mpegURL");
         }
 
+        [HttpGet("{videoId:guid}")]
+        public async Task<IActionResult> GetVideoById([FromRoute] Guid videoId)
+        {
+            var video = await videoService.GetVideoById(videoId);
+            if (video == null)
+            {
+                return NotFound();
+            }
 
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+            {
+                return BadRequest();
+            }
+
+            var videoDto = mapper.Map<VideoDto>(video);
+
+            switch (video.ShareType)
+            {
+                case VideoEnum.VideoShareType.Public:
+                case VideoEnum.VideoShareType.Internal when User.Identity is { IsAuthenticated: true }:
+                    return Ok(videoDto);
+
+                case VideoEnum.VideoShareType.Internal:
+                    return BadRequest();
+
+                case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
+                    if (video.CreatedBy == User.GetUserId())
+                    {
+                        return Ok(videoDto);
+                    }
+                    break;
+            }
+            return BadRequest();
+        }
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> UploadVideoChunk([FromForm] IFormFile file, [FromForm] long fileSize)
+        public async Task<IActionResult> UpdateVideo([FromBody] VideoDto videoDto)
         {
-            var tempFilePath = Path.Combine(UploadFolder, file.FileName + ".part");
-
-            await using (var stream = new FileStream(tempFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+            var video = await videoService.GetVideoById(videoDto.Id);
+            if (video == null)
             {
-                await file.CopyToAsync(stream);
+                return NotFound();
             }
-
-            var fileInfo = new FileInfo(tempFilePath);
-
-            if (fileInfo.Length >= fileSize)
+            try
             {
-                string finalPath = Path.Combine(UploadFolder, file.FileName);
-                System.IO.File.Move(tempFilePath, finalPath, true);
+                video.Title = videoDto.Title;
+                video.ShareType = videoDto.ShareType;
+                video.Type = videoDto.Type;
+                video.ModifiedBy = User.GetUserId();
 
+                await videoService.UpdateVideo(video);
+
+                return Ok();
             }
-
-            return Created();
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
+
+        [HttpDelete("{videoId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteVideo([FromRoute] Guid videoId)
+        {
+            var video = await videoService.GetVideoById(videoId);
+            if (video == null)
+            {
+                return NotFound();
+            }
+            try
+            {
+                await videoService.DeleteVideo(video);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
 
         [HttpGet("DRM/{videoStreamId:guid}")]
         public async Task<IActionResult> GetDrm([FromRoute] Guid videoStreamId)
@@ -89,9 +149,7 @@ namespace EzioHost.WebAPI.Controllers
                     return BadRequest();
 
                 case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
-                    var parse = Guid.TryParse(userIdString, out var userId);
-                    if (!parse) return BadRequest();
-                    if (video.CreatedBy == userId)
+                    if (video.CreatedBy == User.GetUserId())
                     {
                         return Content(contentKey);
                     }

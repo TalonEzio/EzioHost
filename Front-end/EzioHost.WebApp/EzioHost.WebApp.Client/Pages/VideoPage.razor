@@ -1,31 +1,54 @@
 ﻿@page "/video"
 @attribute [Authorize]
 @rendermode InteractiveServer
-@inject HttpClient Http
-@inject IJSRuntime JsRuntime
 
 <table class="table table-hover">
 
     <thead>
         <tr>
-            <th>Id</th>
             <th>Title</th>
-            <th>M3U8</th>
             <th>Type</th>
+            <th>Status</th>
             <th>Share</th>
+            <th>Action</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var video in Videos)
         {
             <tr>
-                <td>@video.Id</td>
-                <td>@video.Title</td>
-                <td>@video.M3U8Location</td>
-                <td>@video.Type.GetDescription()</td>
-                <td>@video.ShareType.GetDescription()</td>
                 <td>
-                    <button class="btn btn-primary" @onclick="() => PlayVideo(video)">Play</button>
+                    <InputText @bind-Value="video.Title" class="form-control" />
+                </td>
+                <td>
+                    <InputSelect class="form-select" @bind-Value="@video.Type">
+                        @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
+                        {
+                            <option value="@value">@value.GetDescription()</option>
+                        }
+                    </InputSelect>
+                </td>
+                <td>@video.Status.GetDescription()</td>
+                <td>
+                    <InputSelect class="form-select" @bind-Value="@video.ShareType">
+                        @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
+                        {
+                            <option value="@value">@value.GetDescription()</option>
+                        }
+                    </InputSelect>
+                </td>
+                <td>
+                    <div class="btn-group" role="group" aria-label="Action">
+                        <button type="button" class="btn btn-primary text-white" @onclick="() => PlayVideo(video)" disabled="@(video.Status != VideoEnum.VideoStatus.Ready)">Play</button>
+                        <button type="button" class="btn btn-success">
+                            @{
+                                var shareUrl = $"/video-share/{video.Id}";
+                            }
+                            <NavLink href="@shareUrl" target="_blank" class=" text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Share</NavLink>
+                        </button>
+                        <button type="button" class="btn btn-info text-white" @onclick="() => UpdateVideo(video)">Update</button>
+                        <button type="button" class="btn btn-danger text-white" @onclick="() => DeleteVideo(video)">Delete</button>
+                    </div>
                 </td>
             </tr>
 
@@ -34,30 +57,64 @@
     </tbody>
 </table>
 
-@if (_videoSource != null)
-{
-    <Video Source="@_videoSource"></Video>
-
-}
+<div class="row d-flex justify-content-center">
+    <div class="col-6">
+        <div id="player"></div>
+    </div>
+</div>
 
 @code {
-
+    [Inject] public ToastService ToastService { get; set; } = null!;
+    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
+    [Inject] public HttpClient Http { get; set; } = null!;
     private List<VideoDto> Videos { get; set; } = [];
 
-    private VideoSource? _videoSource;
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
-        StateHasChanged();
+        if (firstRender)
+        {
+            Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+            StateHasChanged();
+        }
     }
+
+
     private async Task PlayVideo(VideoDto video)
     {
-        var origin = await JsRuntime.GetOrigin();
+        await JsRuntime.InvokeVoidAsync("playVideo", "player", video.M3U8Location);
 
-        var videoUrl = $"{origin.TrimEnd('/')}/{video.M3U8Location.Replace("\\", "/").TrimStart('/')}";
-
-        _videoSource = new VideoSource(videoUrl);
         StateHasChanged();
+    }
+
+    private async Task UpdateVideo(VideoDto video)
+    {
+        try
+        {
+            var result = await Http.PostAsJsonAsync("api/Video", video);
+            result.EnsureSuccessStatusCode();
+            ToastService.Notify(new ToastMessage(ToastType.Success, $"Video updated success."));
+        }
+        catch (Exception e)
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Video update error: {e.Message}."));
+        }
+    }
+
+    private async Task DeleteVideo(VideoDto video)
+    {
+        try
+        {
+            var result = await Http.DeleteAsync($"api/Video/{video.Id}");
+            ToastService.Notify(new ToastMessage(ToastType.Success, $"Video delete success."));
+
+            result.EnsureSuccessStatusCode();
+            Videos.Remove(video);
+        }
+        catch (Exception e)
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Video delete error: {e.Message}."));
+
+        }
     }
 
 }

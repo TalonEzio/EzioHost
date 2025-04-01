@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Server;
 
 namespace EzioHost.WebApp.Handler
 {
-    public class ReverseProxyAuthenticationStateProvider(ILoggerFactory loggerFactory,NavigationManager navigation)
+    public class ReverseProxyAuthenticationStateProvider(ILoggerFactory loggerFactory)
         : RevalidatingServerAuthenticationStateProvider(loggerFactory)
     {
         protected override Task<bool> ValidateAuthenticationStateAsync(AuthenticationState authenticationState, CancellationToken cancellationToken)

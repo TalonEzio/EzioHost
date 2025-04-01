@@ -82,8 +82,8 @@ namespace EzioHost.Core.Services.Implement
                 await videoUnitOfWork.BeginTransactionAsync();
 
                 inputVideo.Status = VideoStatus.Encoding;
+                await _videoRepository.UpdateVideo(inputVideo);
 
-                var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
 
                 var videoStreams = new List<VideoStream>();
 
@@ -95,6 +95,8 @@ namespace EzioHost.Core.Services.Implement
                     _videoStreamRepository.Create(newVideoStream);
                     inputVideo.VideoStreams.Add(newVideoStream);
                 }
+
+                var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
                 if (!Directory.Exists(m3U8Folder))
                 {
                     Directory.CreateDirectory(m3U8Folder);
@@ -191,19 +193,19 @@ namespace EzioHost.Core.Services.Implement
                 .FromFileInput(absoluteRawLocation)
                 .OutputToFile(absoluteVideoStreamM3U8Location, true,
                     options => options
-                        .WithCustomArgument("-c:v h264_nvenc")
+                        .WithVideoCodec("h264_nvenc")
                         .WithAudioCodec(AudioCodec.Aac)
                         .WithVideoFilters(videoFilterOptions => videoFilterOptions.Scale(resolutionSize))
-                        .WithCustomArgument("-crf 18")
-                        //.WithCustomArgument("-preset ultrafast")
+                        //.WithCustomArgument("-crf 18")
                         .WithCustomArgument("-force_key_frames \"expr:gte(t,n_forced*1)\"")
                         .WithCustomArgument("-f hls")
                         .WithCustomArgument("-hls_time 15")
                         .WithCustomArgument($"-hls_segment_filename \"{segmentPath}\"")
                         .WithCustomArgument("-hls_playlist_type vod")
-                        .WithCustomArgument("-hls_enc 1")// enable encrypt video
-                        .WithCustomArgument($"-hls_enc_key {videoStream.Key}") // 🔑 Key
-                        .WithCustomArgument($"-hls_enc_iv {videoStream.IV}")   // 🔄 IV
+                        //.WithCustomArgument("-hls_enc 1")// enable encrypt video
+                        //.WithCustomArgument($"-hls_enc_key {videoStream.Key}") // 🔑 Key
+                        //.WithCustomArgument($"-hls_enc_iv {videoStream.IV}")   // 🔄 IV
+                        .WithAudibleEncryptionKeys(videoStream.Key,videoStream.IV)
                         .WithFastStart()
                 );
 

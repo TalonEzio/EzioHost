@@ -1,6 +1,3 @@
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
 using EzioHost.Shared.Common;
 using EzioHost.WebApp.Components;
 using EzioHost.WebApp.Handler;
@@ -72,15 +69,18 @@ public class Program
         //    x.MaximumReceiveMessageSize = 1 * 1024 * 1024; // 1MB per message
         //});
 
-        builder.Services.AddBlazorise(cfg =>
+        builder.Services.AddBlazorBootstrap();
+
+        builder.Services.AddCors(cfg =>
+        {
+            cfg.AddPolicy(nameof(EzioHost), policyBuilder =>
             {
-                cfg.Immediate = true;
-            })
-            .AddBootstrap5Providers()
-            .AddFontAwesomeIcons();
+                policyBuilder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+            });
+        });
 
         var app = builder.Build();
-
+        
         app.MapDefaultEndpoints();
 
         // Configure the HTTP request pipeline.
@@ -96,14 +96,19 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseCors(nameof(EzioHost));
 
         app.UseAntiforgery();
 
         app.MapStaticAssets();
+
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode()
+            .AddInteractiveServerRenderMode(cfg => cfg.ContentSecurityFrameAncestorsPolicy = "*")
             .AddInteractiveWebAssemblyRenderMode()
             .AddAdditionalAssemblies(typeof(Client._Imports).Assembly);
+
+
+
 
         app.Run();
     }
