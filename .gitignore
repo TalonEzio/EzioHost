@@ -12,12 +12,14 @@
 *.keyinfo
 [Uu]ploads/
 *.chunk
-
 # Model files
+OnnxModels/
 *.onnx
 *.bin
 *.pth
 *.param
+# Content files
+wwwroot/
 
 # User-specific files
 *.rsuser

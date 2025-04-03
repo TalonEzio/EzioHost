@@ -11,7 +11,7 @@ namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VideoController( IVideoService videoService, IMapper mapper) : ControllerBase
+    public class VideoController(IVideoService videoService, IMapper mapper) : ControllerBase
     {
 
         [HttpGet]

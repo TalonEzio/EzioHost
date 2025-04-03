@@ -26,6 +26,11 @@ namespace EzioHost.Core.Private
             return outputImage;
         }
 
+        public Task<Mat> UpscaleImageAsync(string imagePath, InferenceSession session, int scale)
+        {
+            return Task.Run(() => UpscaleImage(imagePath, session, scale));
+        }
+
         private static Tensor<float> ImageToTensor(Mat image)
         {
             var width = image.Width;

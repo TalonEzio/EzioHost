@@ -12,10 +12,7 @@ namespace EzioHost.WebAPI.Providers
         public string GetBaseUploadFolder() => GetSubFolderFromWebRoot("Uploads");
         public string GetBaseVideoFolder() => GetSubFolderFromWebRoot("Videos");
         public string GetOnnxModelFolder() => GetSubFolderFromWebRoot("OnnxModels");
-        public string GetTempPath()
-        {
-            return Path.GetTempPath();
-        }
+        public string GetTempPath() => GetSubFolderFromWebRoot("Temp");
 
         public string GetSubFolderFromWebRoot(string folderName)
         {

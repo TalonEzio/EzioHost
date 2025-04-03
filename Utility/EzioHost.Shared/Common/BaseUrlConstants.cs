@@ -6,4 +6,9 @@
         public const string WebApiUrl = "https://localhost:7289";
         public const string FrontendUrl = "https://localhost:7164";
     }
+
+    public static class PrefixConstants
+    {
+        public const string WebApiPrefixStaticFile = "static";
+    }
 }

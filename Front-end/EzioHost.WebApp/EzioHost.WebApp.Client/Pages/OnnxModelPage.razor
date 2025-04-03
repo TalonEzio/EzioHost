@@ -1,14 +1,20 @@
 ﻿@page "/onnx"
-@rendermode  InteractiveServer
+@rendermode InteractiveServer
 <PageTitle>Onnx Model</PageTitle>
 
+<HeadContent>
+    <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
+    <link rel="stylesheet" href="https://unpkg.com/beerslider/dist/BeerSlider.css">
+</HeadContent>
 
+<h3 class="h3 mb-2">Onnx Models</h3>
+<button class="  mb-2 btn btn-primary" type="button"><NavLink href="onnx-create" class="text-white">Create new</NavLink></button>
 @if (RendererInfo.IsInteractive)
 {
+
     if (OnnxModels.Any())
     {
-        <h3 class="h3 mb-2">Onnx Models</h3>
-        <button class="  mb-2 btn btn-primary" type="button"><NavLink href="onnx-create" class="text-white">Create new</NavLink></button>
+
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -26,24 +32,40 @@
                     <tr>
                         <td>@onnxModel.Name</td>
                         <td>
-                            <InputNumber @bind-Value="onnxModel.Scale" min="1" max="4"></InputNumber>
+                            @onnxModel.Scale
                         </td>
                         <td>@onnxModel.Precision</td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Action">
                                 <button type="button" class="btn btn-primary" @onclick="@(()=> OnPreviewClicked(onnxModel))">Preview</button>
-                                <button type="button" class="btn btn-primary">Update</button>
-                                <button type="button" class="btn btn-primary">Delete</button>
+                                <button type="button" class="btn btn-primary" @onclick="(() => OnDeleteModelClicked(onnxModel))">Delete</button>
                             </div>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
-
         @if (!string.IsNullOrEmpty(_beforeImage) && !string.IsNullOrEmpty(_afterImage))
         {
-            <ImageCompare BeforeImage="@_beforeImage" AfterImage="@_afterImage" />
+            <div class="row d-flex justify-content-center">
+                <div class="col-6">
+                    <ImageCompare @ref="ImageCompare" BeforeImage="@_beforeImage" AfterImage="@_afterImage" />
+                </div>
+            </div>
+        }
+        else
+        {
+            if (_selectedOnnxModelDto != null)
+            {
+                <h4 class="h4 mb-2">Selected: @_selectedOnnxModelDto.Name</h4>
+                <InputFile OnChange="OnDemoInputFileChanged" accept=".jpg,.png" class="form-control  mb-2" />
+
+                <button type="button" class="btn btn-primary mb-2" @onclick=@(() => OnTestUpscaleClicked(_selectedDemoInputFile,_selectedOnnxModelDto))>Test</button>
+            }
+            else
+            {
+                <p>Please select model to test</p>
+            }
         }
     }
     else
@@ -58,7 +80,13 @@
     private string _beforeImage = string.Empty;
     private string _afterImage = string.Empty;
 
+    private OnnxModelDto? _selectedOnnxModelDto;
+    private IBrowserFile? _selectedDemoInputFile;
+
+    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public HttpClient HttpClient { get; set; } = null!;
+    public ImageCompare? ImageCompare { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -78,11 +106,91 @@
         }
     }
 
-    private Task OnPreviewClicked(OnnxModelDto onnxModel)
+    private async Task OnPreviewClicked(OnnxModelDto onnxModel)
     {
         _beforeImage = onnxModel.DemoInput;
         _afterImage = onnxModel.DemoOutput;
+
+        _selectedOnnxModelDto = onnxModel;
+
+        if (ImageCompare != null)
+        {
+            await ImageCompare.ReDraw(_beforeImage,_afterImage);
+        }
         StateHasChanged();
-        return Task.CompletedTask;
     }
+
+    private async Task OnDeleteModelClicked(OnnxModelDto onnxModel)
+    {
+        var response = await HttpClient.DeleteAsync($"/api/OnnxModel/{onnxModel.Id}");
+
+        response.EnsureSuccessStatusCode();
+
+        await JsRuntime.ShowSuccessToast($"Delete {onnxModel.Name} done!");
+
+        OnnxModels.Remove(onnxModel);
+        StateHasChanged();
+    }
+
+    private async Task OnDemoInputFileChanged(InputFileChangeEventArgs arg)
+    {
+        _selectedDemoInputFile = arg.File;
+
+        if (_selectedDemoInputFile != null)
+        {
+            var buffer = new byte[_selectedDemoInputFile.Size];
+            _ = await _selectedDemoInputFile.OpenReadStream(_selectedDemoInputFile.Size).ReadAsync(buffer);
+            _beforeImage = $"data:{_selectedDemoInputFile.ContentType};base64,{Convert.ToBase64String(buffer)}";
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnTestUpscaleClicked(IBrowserFile? inputFile, OnnxModelDto? onnxModel)
+    {
+        if (inputFile == null || onnxModel == null)
+        {
+            await JsRuntime.ShowErrorToast("Need input!");
+            return;
+        }
+
+        var formContent = new MultipartFormDataContent();
+
+        var imageStream = inputFile.OpenReadStream(inputFile.Size);
+
+        formContent.Add(new StreamContent(imageStream), "imageFile", fileName: inputFile.Name);
+
+        try
+        {
+            var response = await HttpClient.PostAsync($"/api/OnnxModel/demo/{onnxModel.Id}", formContent);
+
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadFromJsonAsync<UpscaleDemoResponseDto>();
+
+            if (content != null)
+            {
+                _beforeImage = content.DemoInput;
+                _afterImage = content.DemoOutput;
+
+                var model = OnnxModels.FirstOrDefault(x => x.Id == content.ModelId);
+                if (model != null)
+                {
+                    model.DemoInput = content.DemoInput;
+                    model.DemoOutput = content.DemoOutput;
+                }
+
+                _selectedDemoInputFile = null;
+                _selectedOnnxModelDto = null;
+
+                await JsRuntime.ShowSuccessToast("Demo upscale done!");
+                StateHasChanged();
+            }
+        }
+        catch (Exception e)
+        {
+            await JsRuntime.ShowErrorToast(e.Message);
+        }
+    }
+
 }

@@ -59,17 +59,30 @@
                 hls:1
             });
         }
-        const notyf = new Notyf({
-            duration:3000,
-            dismissible:true,
-            ripple:false,
-            position:{x:'right',y:'top'}
-        });
+        // const notyf = new Notyf({
+        //     duration:3000,
+        //     dismissible:true,
+        //     ripple:false,
+        //     position:{x:'right',y:'top'}
+        // });
 
         window.showSuccessToast = function(message) {
+            const notyf = new window.Notyf({
+                duration:3000,
+                dismissible:true,
+                ripple:false,
+                position:{x:'right',y:'top'}
+            });
             notyf.success(message);
         };
+
         window.showErrorToast = function(message) {
+            const notyf = new window.Notyf({
+                duration:3000,
+                dismissible:true,
+                ripple:false,
+                position:{x:'right',y:'top'}
+            });
             notyf.error(message);
         };
     </script>

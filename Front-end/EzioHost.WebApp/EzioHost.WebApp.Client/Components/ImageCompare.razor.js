@@ -10,7 +10,5 @@ export function initImageCompare(id, beforeImage, afterImage) {
         beforeImage: beforeImage,
         afterImage: afterImage
     };
-    const _ = new window.SlickImageCompare(`#${id}`, options);
-
-    console.log('ok');
+    const _ = new window.SlickImageCompare(`#${id}`,options);
 }

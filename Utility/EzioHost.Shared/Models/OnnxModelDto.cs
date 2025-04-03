@@ -7,7 +7,7 @@ namespace EzioHost.Shared.Models
 
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string FileLocation { get; set; } = string.Empty;
+        //public string FileLocation { get; set; } = string.Empty;
         public string DemoInput { get; set; } = string.Empty;
         public string DemoOutput { get; set; } = string.Empty;
         public int Scale { get; set; }

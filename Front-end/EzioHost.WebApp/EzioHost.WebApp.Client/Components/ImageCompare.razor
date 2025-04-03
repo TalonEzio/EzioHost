@@ -1,16 +1,20 @@
 ﻿@inject IJSRuntime Js
 @rendermode InteractiveAuto
 
-<HeadContent>
-    <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
-</HeadContent>
+<div id="@Id1"></div>
 
-<div id="@Id"></div>
+@* <div id="@Id2" class="beer-slider" data-beer-label="before">
+    <img src="@AfterImage" alt="">
+    <div class="beer-reveal" data-beer-label="after">
+        <img src="@BeforeImage" alt="">
+    </div>
+</div> *@
 
 @code {
     [Parameter] public string BeforeImage { get; set; } = "";
     [Parameter] public string AfterImage { get; set; } = "";
-    [Parameter] public string Id { get; set; } = $"image-compare-{Guid.NewGuid()}";
+    [Parameter] public string Id1 { get; set; } = $"image-compare-{Guid.NewGuid()}";
+    [Parameter] public string Id2 { get; set; } = $"image-compare-{Guid.NewGuid()}";
 
     private IJSObjectReference? _jsObjectReference;
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -18,6 +22,7 @@
         if (firstRender)
         {
             await Js.InvokeAsync<IJSObjectReference>("import", "https://unpkg.com/slick-image-compare");
+            // await Js.InvokeAsync<IJSObjectReference>("import", "https://unpkg.com/beerslider/dist/BeerSlider.js");
 
             _jsObjectReference = await Js.InvokeAsync<IJSObjectReference>("import", "/Components/ImageCompare.razor.js");
             if (_jsObjectReference is null)
@@ -25,7 +30,20 @@
                 throw new InvalidOperationException("Failed to load ImageCompare.razor.js");
             }
 
-            StateHasChanged();
+            await _jsObjectReference.InvokeVoidAsync("initImageCompare", Id1, BeforeImage, AfterImage);
+            // await _jsObjectReference.InvokeVoidAsync("initBeerSlider", Id2);
+        }
+    }
+
+    public async ValueTask ReDraw(string beforeImage,string afterImage)
+    {
+        if (_jsObjectReference != null)
+        {
+            BeforeImage = beforeImage;
+            AfterImage = afterImage;
+            await _jsObjectReference.InvokeVoidAsync("initImageCompare", Id1, BeforeImage, AfterImage);
+            // await _jsObjectReference.InvokeVoidAsync("initBeerSlider", Id2);
+
         }
     }
 }

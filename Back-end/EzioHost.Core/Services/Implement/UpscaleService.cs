@@ -20,7 +20,7 @@ namespace EzioHost.Core.Services.Implement
             ImageEncodingParam = new ImageEncodingParam(ImwriteFlags.JpegQuality, 90);
             Options = new();
             Options.GraphOptimizationLevel = GraphOptimizationLevel.ORT_DISABLE_ALL;
-            Options.AppendExecutionProvider_CUDA();//Enable GPU
+            //Options.AppendExecutionProvider_CUDA();//Enable GPU
 
             Upscaler = new ImageOpenCvUpscaler();
         }
@@ -43,16 +43,13 @@ namespace EzioHost.Core.Services.Implement
             throw new FileLoadException("Cannot add onnx model");
         }
 
-        public Task UpscaleImage(OnnxModel model, string inputPath, out string outputPath)
+        public async Task UpscaleImage(OnnxModel model, string inputPath, string outputPath)
         {
             var inferenceSession = AddInferenceSession((model));
 
-            var upscale = Upscaler.UpscaleImage(inputPath, inferenceSession, model.Scale);
-
-            outputPath = Path.Combine(TempPath, Path.ChangeExtension(Path.GetRandomFileName(), ".jpg"));
+            var upscale = await Upscaler.UpscaleImageAsync(inputPath, inferenceSession, model.Scale);
 
             upscale.SaveImage(outputPath, ImageEncodingParam);
-            return Task.CompletedTask;
         }
 
         public Task UpscaleVideo(OnnxModel model, Video video)
