@@ -21,7 +21,6 @@ internal class Program
         });
         builder.Services.AddScoped(provider => provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 
-        builder.Services.AddBlazorBootstrap();
 
         await builder.Build().RunAsync();
     }

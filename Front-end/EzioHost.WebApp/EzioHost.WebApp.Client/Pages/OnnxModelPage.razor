@@ -1,0 +1,88 @@
+﻿@page "/onnx"
+@rendermode  InteractiveServer
+<PageTitle>Onnx Model</PageTitle>
+
+
+@if (RendererInfo.IsInteractive)
+{
+    if (OnnxModels.Any())
+    {
+        <h3 class="h3 mb-2">Onnx Models</h3>
+        <button class="  mb-2 btn btn-primary" type="button"><NavLink href="onnx-create" class="text-white">Create new</NavLink></button>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Scale</th>
+                    <th>Precision</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var onnxModel in OnnxModels)
+                {
+                    <tr>
+                        <td>@onnxModel.Name</td>
+                        <td>
+                            <InputNumber @bind-Value="onnxModel.Scale" min="1" max="4"></InputNumber>
+                        </td>
+                        <td>@onnxModel.Precision</td>
+                        <td>
+                            <div class="btn-group" role="group" aria-label="Action">
+                                <button type="button" class="btn btn-primary" @onclick="@(()=> OnPreviewClicked(onnxModel))">Preview</button>
+                                <button type="button" class="btn btn-primary">Update</button>
+                                <button type="button" class="btn btn-primary">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!string.IsNullOrEmpty(_beforeImage) && !string.IsNullOrEmpty(_afterImage))
+        {
+            <ImageCompare BeforeImage="@_beforeImage" AfterImage="@_afterImage" />
+        }
+    }
+    else
+    {
+        <p>@_message</p>
+    }
+}
+@code {
+    public List<OnnxModelDto> OnnxModels { get; set; } = [];
+
+    private string _message = "Waiting for data...";
+    private string _beforeImage = string.Empty;
+    private string _afterImage = string.Empty;
+
+    [Inject] public HttpClient HttpClient { get; set; } = null!;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var response = await HttpClient.GetFromJsonAsync<List<OnnxModelDto>>("api/OnnxModel");
+
+            if (response != null && response.Any())
+            {
+                OnnxModels.AddRange(response);
+            }
+            else
+            {
+                _message = "No ONNX model!";
+            }
+            StateHasChanged();
+
+        }
+    }
+
+    private Task OnPreviewClicked(OnnxModelDto onnxModel)
+    {
+        _beforeImage = onnxModel.DemoInput;
+        _afterImage = onnxModel.DemoOutput;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

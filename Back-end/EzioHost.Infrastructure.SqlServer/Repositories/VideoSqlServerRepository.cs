@@ -3,7 +3,6 @@ using EzioHost.Core.Repositories;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContext;
 using EzioHost.Shared.Enums;
-using FFMpegCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EzioHost.Infrastructure.SqlServer.Repositories

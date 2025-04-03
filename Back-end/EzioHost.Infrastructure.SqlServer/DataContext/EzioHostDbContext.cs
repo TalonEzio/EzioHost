@@ -13,11 +13,12 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
         public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
 
+        public DbSet<OnnxModel> OnnxModels { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(EzioHostDbContext).Assembly);
-            
+
             ApplyGlobalFilters(modelBuilder);
 
             base.OnModelCreating(modelBuilder);
@@ -27,6 +28,7 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
         {
             modelBuilder.Entity<Video>().HasQueryFilter(x => !x.DeletedAt.HasValue);
             modelBuilder.Entity<UserSubscription>().HasQueryFilter(x => x.IsActive);
+            modelBuilder.Entity<OnnxModel>().HasQueryFilter(x => !x.DeletedAt.HasValue);
         }
 
         public override int SaveChanges()
@@ -35,7 +37,7 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
             return base.SaveChanges();
         }
 
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new())
         {
             HandleAuditableEntities();
             return base.SaveChangesAsync(cancellationToken);

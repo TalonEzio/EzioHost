@@ -8,7 +8,7 @@ export function initImageCompare(id, beforeImage, afterImage) {
 
     const options = {
         beforeImage: beforeImage,
-        afterImage: afterImage,
+        afterImage: afterImage
     };
     const _ = new window.SlickImageCompare(`#${id}`, options);
 

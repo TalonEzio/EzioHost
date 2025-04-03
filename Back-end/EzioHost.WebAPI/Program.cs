@@ -81,6 +81,11 @@ namespace EzioHost.WebAPI
 
             builder.Services.AddScoped<IProtectService, ProtectService>();
 
+            builder.Services.AddScoped<IOnnxModelRepository, OnnxModelSqlServerRepository>();
+            builder.Services.AddScoped<IOnnxModelService,OnnxModelService>();
+            builder.Services.AddScoped<IUpscaleService, UpscaleService>();
+
+
             builder.Services.AddQuartz(quartz =>
             {
                 var videoProcessingJobKey = new JobKey(nameof(VideoProcessingJob));

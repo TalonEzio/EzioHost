@@ -196,20 +196,15 @@ namespace EzioHost.Core.Services.Implement
                         .WithVideoCodec("h264_nvenc")
                         .WithAudioCodec(AudioCodec.Aac)
                         .WithVideoFilters(videoFilterOptions => videoFilterOptions.Scale(resolutionSize))
-                        //.WithCustomArgument("-crf 18")
                         .WithCustomArgument("-force_key_frames \"expr:gte(t,n_forced*1)\"")
                         .WithCustomArgument("-f hls")
-                        .WithCustomArgument("-hls_time 15")
+                        .WithCustomArgument("-hls_time 5")
                         .WithCustomArgument($"-hls_segment_filename \"{segmentPath}\"")
                         .WithCustomArgument("-hls_playlist_type vod")
-                        //.WithCustomArgument("-hls_enc 1")// enable encrypt video
-                        //.WithCustomArgument($"-hls_enc_key {videoStream.Key}") // 🔑 Key
-                        //.WithCustomArgument($"-hls_enc_iv {videoStream.IV}")   // 🔄 IV
                         .WithAudibleEncryptionKeys(videoStream.Key,videoStream.IV)
                         .WithFastStart()
                 );
-
-
+            
             try
             {
                 await argumentProcessor.ProcessAsynchronously();

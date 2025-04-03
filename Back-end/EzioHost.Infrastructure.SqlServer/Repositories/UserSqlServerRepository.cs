@@ -3,7 +3,6 @@ using EzioHost.Core.Repositories;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContext;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace EzioHost.Infrastructure.SqlServer.Repositories
 {

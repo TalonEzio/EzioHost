@@ -13,6 +13,12 @@
 [Uu]ploads/
 *.chunk
 
+# Model files
+*.onnx
+*.bin
+*.pth
+*.param
+
 # User-specific files
 *.rsuser
 *.suo

@@ -1,0 +1,164 @@
+﻿@page "/onnx-create"
+
+@rendermode InteractiveServer
+
+<PageTitle>Create Onnx</PageTitle>
+<HeadContent>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css">
+</HeadContent>
+
+<h3>Create Onnx Model</h3>
+
+@if (RendererInfo.IsInteractive)
+{
+    <EditForm Model="Onnx" Enhance="true" FormName="FrmCreateOnnx" OnValidSubmit="CreateNewOnnxModelSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container">
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Name:</label>
+                <div class="col-sm-10">
+                    <InputText @bind-Value="Onnx.Name" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Scale:</label>
+                <div class="col-sm-10">
+                    <InputNumber @bind-Value="Onnx.Scale" class="form-control" min="1" max="8" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Width:</label>
+                <div class="col-sm-10">
+                    <InputNumber @bind-Value="Onnx.MustInputWidth" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Height:</label>
+                <div class="col-sm-10">
+                    <InputNumber @bind-Value="Onnx.MustInputHeight" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Support Type:</label>
+                <div class="col-sm-10">
+                    <select multiple id="videoTypeSelect">
+                        @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
+                        {
+                            if (value == VideoEnum.VideoType.None) continue;
+                            <option value="@((int)value)">@value.GetDescription()</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Precision:</label>
+                <div class="col-sm-10">
+                    <InputSelect @bind-Value="Onnx.Precision" class="form-control">
+                        @foreach (var value in Enum.GetValues<OnnxModelPrecision>())
+                        {
+                            <option value="@value">@value</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">File:</label>
+                <div class="col-sm-10">
+                    <InputFile class="form-control" accept=".onnx" OnChange="OnFileChanged" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-sm-10 offset-sm-2">
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+else
+{
+    <p>Waiting...</p>
+}
+
+@code {
+    [Inject] public HttpClient HttpClient { get; set; } = null!;
+    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
+
+    [SupplyParameterFromForm] public OnnxModelCreateDto Onnx { get; set; } = new();
+    private IJSObjectReference _jsObjectReference = null!;
+
+    private IBrowserFile? _file;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JsRuntime.InvokeAsync<IJSObjectReference>("import", "https://cdn.jsdelivr.net/npm/tom-select");
+
+            _jsObjectReference = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Pages/OnnxModelCreatePage.razor.js");
+
+            await _jsObjectReference.InvokeVoidAsync("initTomSelect", "videoTypeSelect");
+        }
+    }
+
+    private async Task<List<VideoEnum.VideoType>> GetSelectedVideoTypes()
+    {
+        var selectedValues = await _jsObjectReference.InvokeAsync<int[]>("getSelectedValues", "videoTypeSelect");
+        var selectedTypes = selectedValues.Select(v => (VideoEnum.VideoType)v).ToList();
+        return selectedTypes;
+    }
+
+    private async Task CreateNewOnnxModelSubmit()
+    {
+        if (_file == null)
+        {
+            await JsRuntime.ShowErrorToast("Must upload file!");
+            return;
+        }
+
+        var selected = await GetSelectedVideoTypes();
+        Onnx.SupportVideoType = selected.Aggregate(VideoEnum.VideoType.None, (current, type) => current | type);
+
+        var formData = new MultipartFormDataContent();
+
+        formData.Add(new StringContent(Onnx.Name), "Name");
+        formData.Add(new StringContent(Onnx.Scale.ToString()), "Scale");
+        formData.Add(new StringContent(Onnx.MustInputWidth.ToString()), "MustInputWidth");
+        formData.Add(new StringContent(Onnx.MustInputHeight.ToString()), "MustInputHeight");
+        formData.Add(new StringContent(Onnx.SupportVideoType.ToString()), "SupportVideoType");
+        formData.Add(new StringContent(Onnx.Precision.ToString()), "Precision");
+
+
+        var fileContent = new StreamContent(_file.OpenReadStream(_file.Size));
+        formData.Add(fileContent, "modelFile", _file.Name);
+
+        try
+        {
+            var response = await HttpClient.PutAsync("/api/OnnxModel", formData);
+            response.EnsureSuccessStatusCode();
+
+            await JsRuntime.ShowSuccessToast("Create new Onnx model ok!");
+        }
+        catch (Exception e)
+        {
+            await JsRuntime.ShowErrorToast(e.Message);
+        }
+
+    }
+
+    private Task OnFileChanged(InputFileChangeEventArgs arg)
+    {
+        _file = arg.File;
+        return Task.CompletedTask;
+    }
+
+}

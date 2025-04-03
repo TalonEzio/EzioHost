@@ -43,43 +43,46 @@ namespace EzioHost.Shared.Enums
             Deleted
         }
 
-        public enum VideoType : byte
+        [Flags]
+        public enum VideoType : ushort
         {
+            None = 0,
+
             [Description("Anime / Hoạt hình Nhật Bản")]
-            Anime,
+            Anime = 1 << 0, // 1
 
             [Description("Phim điện ảnh")]
-            Movie,
+            Movie = 1 << 1, // 2
 
             [Description("Phim truyền hình")]
-            TvShow,
+            TvShow = 1 << 2, // 4
 
             [Description("Phim tài liệu")]
-            Documentary,
+            Documentary = 1 << 3, // 8
 
             [Description("MV ca nhạc")]
-            MusicVideo,
+            MusicVideo = 1 << 4, // 16
 
             [Description("Phim ngắn")]
-            ShortFilm,
+            ShortFilm = 1 << 5, // 32
 
             [Description("Video thể thao")]
-            Sports,
+            Sports = 1 << 6, // 64
 
             [Description("Nội dung gaming (stream, review)")]
-            Gaming,
+            Gaming = 1 << 7, // 128
 
             [Description("Hướng dẫn, giáo dục")]
-            Tutorial,
+            Tutorial = 1 << 8, // 256
 
             [Description("Phát trực tiếp")]
-            LiveStream,
+            LiveStream = 1 << 9, // 512
 
             [Description("Tin tức, thời sự")]
-            News,
+            News = 1 << 10, // 1024
 
             [Description("Loại khác")]
-            Other
+            Other = 1 << 11 // 2048
         }
         public enum VideoShareType : byte
         {

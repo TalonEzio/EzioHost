@@ -63,8 +63,8 @@
     </div>
 </div>
 
+
 @code {
-    [Inject] public ToastService ToastService { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public HttpClient Http { get; set; } = null!;
     private List<VideoDto> Videos { get; set; } = [];
@@ -82,8 +82,6 @@
     private async Task PlayVideo(VideoDto video)
     {
         await JsRuntime.InvokeVoidAsync("playVideo", "player", video.M3U8Location);
-
-        StateHasChanged();
     }
 
     private async Task UpdateVideo(VideoDto video)
@@ -92,11 +90,12 @@
         {
             var result = await Http.PostAsJsonAsync("api/Video", video);
             result.EnsureSuccessStatusCode();
-            ToastService.Notify(new ToastMessage(ToastType.Success, $"Video updated success."));
+            await JsRuntime.ShowSuccessToast($"Video updated success.");
         }
         catch (Exception e)
         {
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Video update error: {e.Message}."));
+            await JsRuntime.ShowErrorToast($"Video update error: {e.Message}.");
+
         }
     }
 
@@ -105,14 +104,14 @@
         try
         {
             var result = await Http.DeleteAsync($"api/Video/{video.Id}");
-            ToastService.Notify(new ToastMessage(ToastType.Success, $"Video delete success."));
+            await JsRuntime.ShowSuccessToast($"Video delete success.");
 
             result.EnsureSuccessStatusCode();
             Videos.Remove(video);
         }
         catch (Exception e)
         {
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Video delete error: {e.Message}."));
+            await JsRuntime.ShowErrorToast($"Video delete error: {e.Message}.");
 
         }
     }

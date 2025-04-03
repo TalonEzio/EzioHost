@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace EzioHost.Domain.Entities
+﻿namespace EzioHost.Domain.Entities
 {
     public class BaseCreatedEntity
     {

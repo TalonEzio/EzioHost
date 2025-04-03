@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="wwwroot\OnnxModels\" />
     <Folder Include="wwwroot\Videos\" />
   </ItemGroup>
 

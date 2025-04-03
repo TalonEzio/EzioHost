@@ -69,8 +69,6 @@ public class Program
         //    x.MaximumReceiveMessageSize = 1 * 1024 * 1024; // 1MB per message
         //});
 
-        builder.Services.AddBlazorBootstrap();
-
         builder.Services.AddCors(cfg =>
         {
             cfg.AddPolicy(nameof(EzioHost), policyBuilder =>

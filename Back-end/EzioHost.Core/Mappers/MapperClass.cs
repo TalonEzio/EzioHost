@@ -10,17 +10,25 @@ namespace EzioHost.Core.Mappers
         {
             CreateMap<Video, VideoDto>()
                 .ForMember(x =>
-                    x.M3U8Location, 
+                    x.M3U8Location,
                     otp =>
-                        otp.MapFrom(x => Path.Combine("/static", x.M3U8Location).Replace("\\","/"))
+                        otp.MapFrom(x => Path.Combine("/static", x.M3U8Location).Replace("\\", "/"))
                         )
                 .ReverseMap();
             CreateMap<VideoStream, VideoStreamDto>()
-                .ForMember(x => 
-                x.M3U8Location, 
-                    otp => 
+                .ForMember(x =>
+                x.M3U8Location,
+                    otp =>
                         otp.MapFrom(x => Path.Combine("/static", x.M3U8Location).Replace("\\", "/")))
                 .ReverseMap();
+
+
+            CreateMap<OnnxModel, OnnxModelDto>()
+                .ForMember(x => x.FileLocation,
+                    cfg => cfg.MapFrom(x => x.FileLocation.Replace("\\", "/")))
+                .ReverseMap();
         }
+
+
     }
 }

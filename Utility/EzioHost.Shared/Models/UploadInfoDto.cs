@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using EzioHost.Shared.Enums;
+﻿using EzioHost.Shared.Enums;
 
 namespace EzioHost.Shared.Models
 {
