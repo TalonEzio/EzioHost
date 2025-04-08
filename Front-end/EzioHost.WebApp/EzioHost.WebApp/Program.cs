@@ -64,18 +64,24 @@ public class Program
 
         builder.Services.AddOptions<AppSettings>().Bind(builder.Configuration.GetSection(nameof(AppSettings)));
 
-        //builder.Services.AddSignalR(x =>
-        //{
-        //    x.MaximumReceiveMessageSize = 1 * 1024 * 1024; // 1MB per message
-        //});
+        builder.Services.AddSignalR(x =>
+        {
+            x.MaximumReceiveMessageSize = 1 * 1024 * 1024; // 1MB per message
+            x.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
+            x.HandshakeTimeout = TimeSpan.FromMinutes(1);
+        });
 
         builder.Services.AddCors(cfg =>
         {
             cfg.AddPolicy(nameof(EzioHost), policyBuilder =>
             {
-                policyBuilder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+                policyBuilder
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowAnyOrigin();
             });
         });
+
 
         var app = builder.Build();
         

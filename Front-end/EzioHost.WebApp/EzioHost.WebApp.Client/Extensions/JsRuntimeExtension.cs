@@ -14,18 +14,28 @@ namespace EzioHost.WebApp.Client.Extensions
             return jsRuntime.InvokeAsync<string>("eval", "window.location.href");
         }
 
-        public static ValueTask ShowSuccessToast(this IJSRuntime jsRuntime, string message)
-        {
-            return jsRuntime.InvokeVoidAsync("showSuccessToast", message);
+        public static ValueTask ShowToast(this IJSRuntime js, string type, string message)
+            => js.InvokeVoidAsync("showToast", type, message);
 
-        }
-        public static ValueTask ShowErrorToast(this IJSRuntime jsRuntime, string message)
-        {
-            return jsRuntime.InvokeVoidAsync("showErrorToast", message);
-        }
-        public static ValueTask NavigateTo(this IJSRuntime jsRuntime, string url)
+        public static ValueTask ShowSuccessToast(this IJSRuntime js, string message)
+            => js.ShowToast("success", message);
+
+        public static ValueTask ShowErrorToast(this IJSRuntime js, string message)
+            => js.ShowToast("error", message);
+
+        public static ValueTask ShowInfoToast(this IJSRuntime js, string message)
+            => js.ShowToast("info", message);
+
+        public static ValueTask ShowWarningToast(this IJSRuntime js, string message)
+            => js.ShowToast("warning", message);
+
+        public static ValueTask NavigateToAsync(this IJSRuntime jsRuntime, string url)
         {
             return jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';");
+        }
+        public static void NavigateTo(this IJSRuntime jsRuntime, string url)
+        {
+            jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';").GetAwaiter().GetResult();
         }
 
     }

@@ -14,6 +14,8 @@ namespace EzioHost.Shared.Enums
 
             [Description("720p")]
             _720p = 720,
+            [Description("960p")]
+            _960p = 960,
 
             [Description("1080p")]
             _1080p = 1080,
@@ -40,7 +42,7 @@ namespace EzioHost.Shared.Enums
             Ready,
 
             [Description("Đã xóa")]
-            Deleted
+            Deleted,
         }
 
         [Flags]
@@ -111,6 +113,12 @@ namespace EzioHost.Shared.Enums
 
             [Description("Đã hủy")]
             Canceled
+        }
+
+        public enum VideoUpscaleStatus : byte
+        {
+            Queue = 0,
+            Ready = 1
         }
     }
 }

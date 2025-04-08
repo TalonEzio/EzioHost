@@ -5,13 +5,14 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Platforms>AnyCPU;x64</Platforms>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="FFMpegCore" Version="5.2.0" />
-		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.21.0" />
 		<PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu.Windows" Version="1.21.0" />
+		<PackageReference Include="OnnxStack.ImageUpscaler" Version="0.39.0" />
 		<PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />

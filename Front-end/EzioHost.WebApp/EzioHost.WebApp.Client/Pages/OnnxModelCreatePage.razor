@@ -15,38 +15,37 @@
         <DataAnnotationsValidator />
         <ValidationSummary />
 
-        <div class="container">
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">Name:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <InputText @bind-Value="Onnx.Name" class="form-control" />
                 </div>
             </div>
 
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">Scale:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <InputNumber @bind-Value="Onnx.Scale" class="form-control" min="1" max="8" />
                 </div>
             </div>
 
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">Width:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <InputNumber @bind-Value="Onnx.MustInputWidth" class="form-control" />
                 </div>
             </div>
 
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">Height:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <InputNumber @bind-Value="Onnx.MustInputHeight" class="form-control" />
                 </div>
             </div>
 
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">Support Type:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <select multiple id="videoTypeSelect">
                         @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
                         {
@@ -59,7 +58,7 @@
 
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">Precision:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <InputSelect @bind-Value="Onnx.Precision" class="form-control">
                         @foreach (var value in Enum.GetValues<OnnxModelPrecision>())
                         {
@@ -71,17 +70,16 @@
 
             <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">File:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-6">
                     <InputFile class="form-control" accept=".onnx" OnChange="OnFileChanged" />
                 </div>
             </div>
 
             <div class="row mb-3">
-                <div class="col-sm-10 offset-sm-2">
+                <div class="col-sm-6 offset-sm-2">
                     <button type="submit" class="btn btn-primary">Create</button>
                 </div>
             </div>
-        </div>
     </EditForm>
 }
 else
@@ -149,7 +147,7 @@ else
             await JsRuntime.ShowSuccessToast("Create new ONNX model ok!");
 
             await Task.Delay(3000);
-            await JsRuntime.NavigateTo("/onnx");
+            await JsRuntime.NavigateToAsync("/onnx");
         }
         catch (Exception e)
         {

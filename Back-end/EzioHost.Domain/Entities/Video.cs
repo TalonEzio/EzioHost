@@ -30,6 +30,7 @@ namespace EzioHost.Domain.Entities
             };
         }
 
+        public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
         [NotMapped] public bool IsReady => Status == VideoEnum.VideoStatus.Ready;
 
         [NotMapped] public bool IsValid => !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(RawLocation);

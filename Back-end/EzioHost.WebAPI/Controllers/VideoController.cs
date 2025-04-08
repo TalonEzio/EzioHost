@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Diagnostics;
+using System.Security.Claims;
 using AutoMapper;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Shared.Enums;
@@ -11,7 +12,11 @@ namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VideoController(IVideoService videoService, IMapper mapper) : ControllerBase
+    public class VideoController(
+        IVideoService videoService,
+        IMapper mapper,
+        IUpscaleService upscaleService,
+        IOnnxModelService modelService) : ControllerBase
     {
 
         [HttpGet]
@@ -75,10 +80,13 @@ namespace EzioHost.WebAPI.Controllers
                     {
                         return Ok(videoDto);
                     }
+
                     break;
             }
+
             return BadRequest();
         }
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> UpdateVideo([FromBody] VideoDto videoDto)
@@ -88,6 +96,7 @@ namespace EzioHost.WebAPI.Controllers
             {
                 return NotFound();
             }
+
             try
             {
                 video.Title = videoDto.Title;
@@ -114,6 +123,7 @@ namespace EzioHost.WebAPI.Controllers
             {
                 return NotFound();
             }
+
             try
             {
                 await videoService.DeleteVideo(video);
@@ -153,11 +163,45 @@ namespace EzioHost.WebAPI.Controllers
                     {
                         return Content(contentKey);
                     }
+
                     break;
             }
 
             return BadRequest();
         }
 
+
+        [HttpPost("{videoId:guid}/upscale/{modelId:guid}")]
+        public async Task<IActionResult> UpscaleVideo([FromRoute] Guid videoId, [FromRoute] Guid modelId)
+        {
+            var video = await videoService.GetVideoById(videoId);
+            var model = await modelService.GetOnnxModelById(modelId);
+            if (video == null || model == null)
+            {
+                return NotFound();
+            }
+
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+            {
+                return BadRequest();
+            }
+
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                await upscaleService.UpscaleVideo(model, video);
+                sw.Stop();
+
+                return Ok(new
+                {
+                    sw.ElapsedMilliseconds
+                });
+            }
+            catch (Exception e)
+            {
+                sw.Stop();
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

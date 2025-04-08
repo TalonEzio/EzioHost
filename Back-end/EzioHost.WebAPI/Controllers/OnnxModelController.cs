@@ -1,8 +1,8 @@
-﻿using AutoMapper;
+﻿using System.Diagnostics;
+using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
-using EzioHost.Shared.Common;
 using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -19,13 +19,20 @@ namespace EzioHost.WebAPI.Controllers
         public string OnnxPath = directoryProvider.GetOnnxModelFolder();
         public string TempPath = directoryProvider.GetTempPath();
         [HttpGet]
-        public async Task<IActionResult> GetOnnxModels()
+        public async Task<IActionResult> GetOnnxModels([FromQuery] bool? requireDemo = false)
         {
             var models = await onnxModelService.GetOnnxModels();
+
+            if (requireDemo.HasValue && requireDemo.Value)
+            {
+                models = models.Where(x => !string.IsNullOrEmpty(x.DemoInput) && !string.IsNullOrEmpty(x.DemoOutput)).ToList();
+            }
 
             var onnxModelDtos = mapper.Map<List<OnnxModelDto>>(models);
             return Ok(onnxModelDtos);
         }
+
+
 
         [HttpPut]
         public async Task<IActionResult> AddNewOnnxModel([FromForm] OnnxModelCreateDto model, [FromForm] IFormFile modelFile)
@@ -57,6 +64,24 @@ namespace EzioHost.WebAPI.Controllers
             return Ok(new { Message = $"Model uploaded successfully. Detected precision: {onnxFilePath}" });
         }
 
+        [HttpPost("demo-reset/{modelId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> ResetDemo([FromRoute] Guid modelId)
+        {
+            var model = await onnxModelService.GetOnnxModelById(modelId);
+            if (model == null) return NotFound();
+
+            if (model.CreatedBy != User.GetUserId())
+            {
+                return Unauthorized();
+            }
+            model.DemoInput = model.DemoOutput = string.Empty;
+
+            await onnxModelService.UpdateOnnxModel(model);
+            return Ok();
+        }
+
+
         [HttpPost("demo/{modelId:guid}")]
         //[Authorize]
         public async Task<IActionResult> DemoUpscale([FromRoute] Guid modelId, [FromForm] IFormFile imageFile)
@@ -68,7 +93,7 @@ namespace EzioHost.WebAPI.Controllers
             //{
             //    return Unauthorized();
             //}
-
+            var sw = Stopwatch.StartNew();
             var inputFilepath = Path.Combine(TempPath, Path.GetFileNameWithoutExtension(Path.GetRandomFileName()) + Path.GetExtension(imageFile.FileName));
             var outputFilePath = Path.Combine(TempPath, Path.GetFileNameWithoutExtension(Path.GetRandomFileName()) + Path.GetExtension(imageFile.FileName));
             var tempFile = new FileStream(inputFilepath, FileMode.Create);
@@ -90,8 +115,11 @@ namespace EzioHost.WebAPI.Controllers
             model.DemoOutput = outputFilePath;
 
             await onnxModelService.UpdateOnnxModel(model);
+            sw.Stop();
 
             var responseDto = mapper.Map<UpscaleDemoResponseDto>(model);
+            responseDto.ElapsedMilliseconds = sw.ElapsedMilliseconds;
+
             return Ok(responseDto);
         }
 

@@ -8,5 +8,7 @@ namespace EzioHost.Core.Services.Interface
         Task UpscaleImage(OnnxModel model, string inputPath, string outputPath);
 
         Task UpscaleVideo(OnnxModel model, Video video);
+        Task Test(OnnxModel model, Video video);
+
     }
 }

@@ -42,6 +42,7 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
             var find = await GetVideoById(deleteVideo.Id);
             if (find != null)
             {
+                find.ShareType = VideoEnum.VideoShareType.Private;//block share
                 _videos.Remove(find);
                 await dbContext.SaveChangesAsync();
             }

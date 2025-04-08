@@ -7,12 +7,14 @@ using EzioHost.Core.UnitOfWorks;
 using EzioHost.Infrastructure.SqlServer.DataContext;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
+using EzioHost.WebAPI.Hubs;
 using EzioHost.WebAPI.Jobs;
 using EzioHost.WebAPI.Middlewares;
 using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Quartz;
 namespace EzioHost.WebAPI
@@ -82,7 +84,7 @@ namespace EzioHost.WebAPI
             builder.Services.AddScoped<IProtectService, ProtectService>();
 
             builder.Services.AddScoped<IOnnxModelRepository, OnnxModelSqlServerRepository>();
-            builder.Services.AddScoped<IOnnxModelService,OnnxModelService>();
+            builder.Services.AddScoped<IOnnxModelService, OnnxModelService>();
             builder.Services.AddScoped<IUpscaleService, UpscaleService>();
 
 
@@ -128,30 +130,29 @@ namespace EzioHost.WebAPI
 
             app.UseHttpsRedirection();
 
+            var wwwrootDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+            if(!Directory.Exists(wwwrootDirectory))
+            {
+                Directory.CreateDirectory(wwwrootDirectory);
+            }
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 ContentTypeProvider = new FileExtensionContentTypeProvider
                 {
-                    Mappings =
-                    {
-                        { ".m3u8", "application/x-mpegURL" }
-                    }
+                    Mappings = { [".m3u8"] = "application/x-mpegURL" }
                 },
+                FileProvider = new PhysicalFileProvider(wwwrootDirectory),
             });
+
 
             app.UseAuthentication();
 
             app.UseAuthorization();
             app.UseMiddleware<BindingUserIdMiddleware>();
 
-
             app.MapControllers();
-
-#if SEED_DATA
-            await using var scope = app.Services.CreateAsyncScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-            await dbContext.SeedData();
-#endif
+            app.MapHub<VideoHub>("/hubs/VideoHub");
 
             await app.RunAsync();
         }

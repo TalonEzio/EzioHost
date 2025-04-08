@@ -9,11 +9,10 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
         public DbSet<FileUpload> FileUploads { get; set; }
         public DbSet<VideoStream> VideoStreams { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
-        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
-        public DbSet<UserSubscription> UserSubscriptions { get; set; }
 
         public DbSet<OnnxModel> OnnxModels { get; set; }
+
+        public DbSet<VideoUpscale> VideoUpscales { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -27,7 +26,6 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
         private void ApplyGlobalFilters(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Video>().HasQueryFilter(x => !x.DeletedAt.HasValue);
-            modelBuilder.Entity<UserSubscription>().HasQueryFilter(x => x.IsActive);
             modelBuilder.Entity<OnnxModel>().HasQueryFilter(x => !x.DeletedAt.HasValue);
         }
 
@@ -82,39 +80,5 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext
                 }
             }
         }
-
-        public async Task SeedData()
-        {
-            if (await SubscriptionPlans.AnyAsync())
-            {
-                await SubscriptionPlans.AddRangeAsync([
-                    new SubscriptionPlan()
-                    {
-                        Name = "Monthly",
-                        Description = "Monthly VIP",
-                        DurationInDays = 30,
-                        Id = Guid.NewGuid(),
-                        Price = 7.99
-                    },
-                    new SubscriptionPlan()
-                    {
-                        Name = "Half Yearly",
-                        Description = "Half Yearly VIP",
-                        DurationInDays = 180,
-                        Id = Guid.NewGuid(),
-                        Price = 37.99
-                    },
-                    new SubscriptionPlan()
-                    {
-                        Name = "Yearly",
-                        Description = "Yearly VIP",
-                        DurationInDays = 30,
-                        Id = Guid.NewGuid(),
-                        Price = 77.99
-                    }
-                ]);
-            }
-        }
-
     }
 }

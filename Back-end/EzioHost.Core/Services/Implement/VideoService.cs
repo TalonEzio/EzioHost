@@ -195,16 +195,16 @@ namespace EzioHost.Core.Services.Implement
                     options => options
                         .WithVideoCodec("h264_nvenc")
                         .WithAudioCodec(AudioCodec.Aac)
-                        .WithVideoFilters(videoFilterOptions => videoFilterOptions.Scale(resolutionSize))
+                        .WithCustomArgument($"-vf \"scale={resolutionSize.Width}:{resolutionSize.Height},format=yuv420p\"")//handle 10 bit file
                         .WithCustomArgument("-force_key_frames \"expr:gte(t,n_forced*1)\"")
                         .WithCustomArgument("-f hls")
                         .WithCustomArgument("-hls_time 5")
                         .WithCustomArgument($"-hls_segment_filename \"{segmentPath}\"")
                         .WithCustomArgument("-hls_playlist_type vod")
-                        .WithAudibleEncryptionKeys(videoStream.Key,videoStream.IV)
+                        .WithAudibleEncryptionKeys(videoStream.Key, videoStream.IV)
                         .WithFastStart()
                 );
-            
+
             try
             {
                 await argumentProcessor.ProcessAsynchronously();

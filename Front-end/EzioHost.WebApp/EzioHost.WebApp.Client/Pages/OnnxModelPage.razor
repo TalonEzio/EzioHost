@@ -1,20 +1,21 @@
 ﻿@page "/onnx"
-@rendermode InteractiveServer
+@using System.Diagnostics
+@rendermode InteractiveWebAssembly
 <PageTitle>Onnx Model</PageTitle>
 
 <HeadContent>
     <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
-    <link rel="stylesheet" href="https://unpkg.com/beerslider/dist/BeerSlider.css">
 </HeadContent>
 
 <h3 class="h3 mb-2">Onnx Models</h3>
-<button class="  mb-2 btn btn-primary" type="button"><NavLink href="onnx-create" class="text-white">Create new</NavLink></button>
+
 @if (RendererInfo.IsInteractive)
 {
-
+    <button class="  mb-2 btn btn-primary" type="button" @onclick=@(() => JsRuntime.NavigateTo("onnx-create"))>
+        Create new
+    </button>
     if (OnnxModels.Any())
     {
-
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -26,19 +27,30 @@
             </thead>
 
             <tbody>
-
                 @foreach (var onnxModel in OnnxModels)
                 {
                     <tr>
-                        <td>@onnxModel.Name</td>
+                        <td><InputText @bind-Value="@onnxModel.Name" class="form-control"></InputText></td>
                         <td>
-                            @onnxModel.Scale
+                            <InputNumber @bind-Value="@onnxModel.Scale" class="form-control" min="1" max="4"></InputNumber>
                         </td>
-                        <td>@onnxModel.Precision</td>
+                        <td>
+                            <InputSelect @bind-Value="@onnxModel.Precision" class="form-select">
+                                @foreach (var precision in Enum.GetValues<OnnxModelPrecision>())
+                                {
+                                    <option value="@precision">@precision.GetDescription()</option>
+                                }
+                            </InputSelect>
+                        </td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Action">
-                                <button type="button" class="btn btn-primary" @onclick="@(()=> OnPreviewClicked(onnxModel))">Preview</button>
-                                <button type="button" class="btn btn-primary" @onclick="(() => OnDeleteModelClicked(onnxModel))">Delete</button>
+                                <button type="button" class="btn btn-success" @onclick="@(() => OnPreviewClicked(onnxModel))">Preview</button>
+                                @if (onnxModel.CanPreview)
+                                {
+                                    <button type="button" class="btn btn-info text-white" @onclick="@(() => OnRemovePreviewClicked(onnxModel))">Xóa Preview</button>
+
+                                }
+                                <button type="button" class="btn btn-danger" @onclick="() => OnDeleteModelClicked(onnxModel)">Xóa</button>
                             </div>
                         </td>
                     </tr>
@@ -48,7 +60,7 @@
         @if (!string.IsNullOrEmpty(_beforeImage) && !string.IsNullOrEmpty(_afterImage))
         {
             <div class="row d-flex justify-content-center">
-                <div class="col-6">
+                <div class="col-8">
                     <ImageCompare @ref="ImageCompare" BeforeImage="@_beforeImage" AfterImage="@_afterImage" />
                 </div>
             </div>
@@ -58,13 +70,19 @@
             if (_selectedOnnxModelDto != null)
             {
                 <h4 class="h4 mb-2">Selected: @_selectedOnnxModelDto.Name</h4>
-                <InputFile OnChange="OnDemoInputFileChanged" accept=".jpg,.png" class="form-control  mb-2" />
-
-                <button type="button" class="btn btn-primary mb-2" @onclick=@(() => OnTestUpscaleClicked(_selectedDemoInputFile,_selectedOnnxModelDto))>Test</button>
+                @if (_upscaling)
+                {
+                    <p>Đang upscale, vui lòng chờ...</p>
+                }
+                else
+                {
+                    <InputFile OnChange="OnDemoInputFileChanged" accept=".jpg,.png" class="form-control  mb-2" />
+                    <button type="button" class="btn btn-secondary mb-2" @onclick=@(() => OnTestUpscaleClicked(_selectedDemoInputFile, _selectedOnnxModelDto))>Test</button>
+                }
             }
             else
             {
-                <p>Please select model to test</p>
+                <h4 class="h4">Please select model to test</h4>
             }
         }
     }
@@ -73,12 +91,15 @@
         <p>@_message</p>
     }
 }
+
 @code {
     public List<OnnxModelDto> OnnxModels { get; set; } = [];
 
     private string _message = "Waiting for data...";
     private string _beforeImage = string.Empty;
     private string _afterImage = string.Empty;
+
+    bool _upscaling;
 
     private OnnxModelDto? _selectedOnnxModelDto;
     private IBrowserFile? _selectedDemoInputFile;
@@ -101,8 +122,8 @@
             {
                 _message = "No ONNX model!";
             }
-            StateHasChanged();
 
+            StateHasChanged();
         }
     }
 
@@ -115,8 +136,9 @@
 
         if (ImageCompare != null)
         {
-            await ImageCompare.ReDraw(_beforeImage,_afterImage);
+            await ImageCompare.ReDraw(_beforeImage, _afterImage);
         }
+
         StateHasChanged();
     }
 
@@ -126,7 +148,7 @@
 
         response.EnsureSuccessStatusCode();
 
-        await JsRuntime.ShowSuccessToast($"Delete {onnxModel.Name} done!");
+        await JsRuntime.ShowSuccessToast($"Xóa {onnxModel.Name} thành công!");
 
         OnnxModels.Remove(onnxModel);
         StateHasChanged();
@@ -150,15 +172,18 @@
     {
         if (inputFile == null || onnxModel == null)
         {
-            await JsRuntime.ShowErrorToast("Need input!");
+            await JsRuntime.ShowErrorToast("Vui lòng chọn đầu vào!");
             return;
         }
+
+        _upscaling = true;
+        StateHasChanged();
 
         var formContent = new MultipartFormDataContent();
 
         var imageStream = inputFile.OpenReadStream(inputFile.Size);
 
-        formContent.Add(new StreamContent(imageStream), "imageFile", fileName: inputFile.Name);
+        formContent.Add(new StreamContent(imageStream), "imageFile", inputFile.Name);
 
         try
         {
@@ -183,13 +208,37 @@
                 _selectedDemoInputFile = null;
                 _selectedOnnxModelDto = null;
 
-                await JsRuntime.ShowSuccessToast("Demo upscale done!");
+                await JsRuntime.ShowSuccessToast($"Upscale thử thành công, hết: {content.ElapsedMilliseconds}ms!");
                 StateHasChanged();
             }
         }
         catch (Exception e)
         {
             await JsRuntime.ShowErrorToast(e.Message);
+        }
+        finally
+        {
+            _upscaling = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnRemovePreviewClicked(OnnxModelDto onnxModel)
+    {
+        try
+        {
+            onnxModel.DemoInput = onnxModel.DemoOutput = string.Empty;
+            _beforeImage = _afterImage = string.Empty;
+
+            var response = await HttpClient.PostAsync($"/api/OnnxModel/demo-reset/{onnxModel.Id}", null);
+
+            response.EnsureSuccessStatusCode();
+            await JsRuntime.ShowSuccessToast($"Xóa preview cho {onnxModel.Name} thành công!");
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            await JsRuntime.ShowErrorToast($"Xóa preview lỗi, vui long thử lại. {e.Message}");
         }
     }
 

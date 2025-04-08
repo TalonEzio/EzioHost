@@ -16,6 +16,9 @@ namespace EzioHost.Domain.Entities
         public int MustInputHeight { get; set; }
         public VideoEnum.VideoType SupportVideoType { get; set; } = VideoEnum.VideoType.Anime | VideoEnum.VideoType.Movie;
         public OnnxModelPrecision Precision { get; set; }
+
+        public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
+
     }
-   
+
 }

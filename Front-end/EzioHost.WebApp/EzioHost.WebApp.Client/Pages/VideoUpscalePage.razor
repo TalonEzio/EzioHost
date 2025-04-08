@@ -1,0 +1,90 @@
+﻿@page "/video-upscale/{VideoId:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Upscale Video</PageTitle>
+<HeadContent>
+    <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
+</HeadContent>
+<h2 class="h2">Upscale Page</h2>
+@if (RendererInfo.IsInteractive)
+{
+    <p>Please select Model to upscale</p>
+
+    <select @onchange="OnOnnxModelChange" class="form-select">
+        @foreach (var model in OnnxModels)
+        {
+            <option value="@model.Id">@model.Name</option>
+        }
+    </select>
+
+    <div class="row d-flex mt-2">
+        <div class="col-md-6">
+            @if (_selectedModel != null)
+            {
+                <h4>Selected model info:</h4>
+                <p>Name: @_selectedModel.Name</p>
+                <p>Scale: @_selectedModel.Scale</p>
+                <ImageCompare @ref="ImageCompareComponent" BeforeImage="@_selectedModel.DemoInput" AfterImage="@_selectedModel.DemoOutput" />
+                <button class="btn btn-primary" @onclick=@(RequestUpscaleVideo)>Upscale</button>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p>Waiting...</p>
+}
+
+@code
+{
+    [Parameter] public Guid VideoId { get; set; }
+    [Inject] public HttpClient HttpClient { get; set; } = null!;
+    public VideoDto? Video { get; set; }
+
+    public List<OnnxModelDto> OnnxModels { get; set; } = [];
+    public ImageCompare? ImageCompareComponent { get; set; }
+
+    private Guid _selectedModelId;
+    private OnnxModelDto? _selectedModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Video = await HttpClient.GetFromJsonAsync<VideoDto>($"/api/Video/{VideoId}");
+
+        OnnxModels = await HttpClient.GetFromJsonAsync<List<OnnxModelDto>>("/api/OnnxModel?requireDemo=true") ?? [];
+        if (Video == null)
+        {
+            throw new Exception($"Video Id {VideoId} not found");
+        }
+
+        if (!OnnxModels.Any())
+        {
+            throw new Exception("No ONNX models found, please upload new model");
+        }
+
+        _selectedModel = OnnxModels.First();
+        if (_selectedModel != null)
+        {
+            _selectedModelId = _selectedModel.Id;
+        }
+        StateHasChanged();
+    }
+
+    private async Task OnOnnxModelChange(ChangeEventArgs eventArgs)
+    {
+        _selectedModelId = Guid.Parse(eventArgs.Value!.ToString() ?? string.Empty);
+        _selectedModel = OnnxModels.FirstOrDefault(m => m.Id == _selectedModelId);
+        StateHasChanged();
+
+        if (_selectedModel != null && ImageCompareComponent != null)
+        {
+            await ImageCompareComponent.ReDraw(_selectedModel.DemoInput, _selectedModel.DemoOutput);
+        }
+    }
+
+    private async Task RequestUpscaleVideo()
+    {
+
+    }
+}

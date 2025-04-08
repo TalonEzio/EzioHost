@@ -11,6 +11,8 @@ namespace EzioHost.Shared.Models
         public VideoEnum.VideoStatus Status { get; set; }
         public VideoEnum.VideoType Type { get; set; }
         public VideoEnum.VideoShareType ShareType { get; set; } = VideoEnum.VideoShareType.Private;
+        public bool CanPlay => Status == VideoEnum.VideoStatus.Ready;
+        public bool CanUpscale => CanPlay &&  Resolution <= VideoEnum.VideoResolution._720p;
         public ICollection<VideoStreamDto> VideoStreams { get; set; } = [];
     }
 
