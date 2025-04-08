@@ -1,8 +1,10 @@
 ﻿@page "/video"
-@using Microsoft.AspNetCore.SignalR.Client
+
+@rendermode InteractiveWebAssembly
+
 @attribute [Authorize]
-@rendermode InteractiveServer
 @attribute [StreamRendering]
+@implements IAsyncDisposable
 
 @if (RendererInfo.IsInteractive)
 {
@@ -105,18 +107,43 @@ else
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public HttpClient Http { get; set; } = null!;
     private List<VideoDto> Videos { get; set; } = [];
+    private HubConnection? _hubConnection;
 
-    private HubConnection _hubConnection = null!;
+
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+            StateHasChanged();
+
+            var url = await JsRuntime.GetOrigin();
+
+            var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("/hubs/VideoHub")
+                .WithUrl(hubUrl, options =>
+                {
+                    options.AccessTokenProvider = () => Http.GetStringAsync("/access-token")!;
+                })
                 .Build();
-            StateHasChanged();
+
+            _hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage), async (message) =>
+            {
+                Console.WriteLine(message);
+                await JsRuntime.ShowErrorToast(message);
+            });
+            try
+            {
+                await _hubConnection.StartAsync();
+
+                await _hubConnection.SendAsync("SendMessage");
+            }
+            catch (Exception e)
+            {
+                await JsRuntime.ShowErrorToast($"Lỗi kết nối đến server: {e.Message}");
+            }
         }
     }
 
@@ -128,7 +155,6 @@ else
 
     private async Task UpdateVideo(VideoDto video)
     {
-
         try
         {
             var result = await Http.PostAsJsonAsync("api/Video", video);
@@ -156,6 +182,11 @@ else
             await JsRuntime.ShowErrorToast($"Video xóa lỗi: {e.Message}!");
 
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null) await _hubConnection.DisposeAsync();
     }
 
 }

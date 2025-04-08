@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using AutoMapper;
 using EzioHost.Core.Services.Interface;
+using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
@@ -24,7 +25,7 @@ namespace EzioHost.WebAPI.Controllers
         public async Task<IActionResult> GetVideos()
         {
             var userId = User.GetUserId();
-            var videos = (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams])).ToList();
+            var videos = (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams, x => x.VideoUpscales])).ToList();
 
             var videoDtos = mapper.Map<List<VideoDto>>(videos);
 
@@ -176,6 +177,7 @@ namespace EzioHost.WebAPI.Controllers
         {
             var video = await videoService.GetVideoById(videoId);
             var model = await modelService.GetOnnxModelById(modelId);
+
             if (video == null || model == null)
             {
                 return NotFound();
@@ -186,22 +188,17 @@ namespace EzioHost.WebAPI.Controllers
                 return BadRequest();
             }
 
-            var sw = Stopwatch.StartNew();
-            try
+            var videoUpscale = new VideoUpscale()
             {
-                await upscaleService.UpscaleVideo(model, video);
-                sw.Stop();
+                Scale = model.Scale,
+                Video = video,
+                Model = model,
+                Status = VideoEnum.VideoUpscaleStatus.Queue
+            };
 
-                return Ok(new
-                {
-                    sw.ElapsedMilliseconds
-                });
-            }
-            catch (Exception e)
-            {
-                sw.Stop();
-                return BadRequest(e.Message);
-            }
+            await upscaleService.AddNewVideoUpscale(videoUpscale);
+
+            return Created();
         }
     }
 }

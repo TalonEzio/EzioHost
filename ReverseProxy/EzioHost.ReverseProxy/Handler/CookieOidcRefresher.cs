@@ -25,7 +25,7 @@ internal sealed class CookieOidcRefresher(IOptionsMonitor<OpenIdConnectOptions> 
     {
         var requestPath = validateContext.HttpContext.Request.Path.ToString();
 
-        if (!requestPath.Contains("/user"))
+        if (!requestPath.Contains("/user") || !requestPath.StartsWith("/api"))
         {
             //validateContext.RejectPrincipal();
             return;

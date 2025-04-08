@@ -21,4 +21,8 @@
     <ProjectReference Include="..\..\..\Utility\EzioHost.Shared\EzioHost.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Handlers\" />
+  </ItemGroup>
+
 </Project>

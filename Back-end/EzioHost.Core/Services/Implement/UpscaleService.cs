@@ -1,21 +1,21 @@
 ﻿using System.Collections.Concurrent;
+using System.Text;
 using EzioHost.Core.Private;
 using EzioHost.Core.Providers;
+using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
+using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
+using EzioHost.Shared.Extensions;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using Microsoft.ML.OnnxRuntime;
-using OnnxStack.Core.Config;
-using OnnxStack.Core.Video;
-using OnnxStack.FeatureExtractor.Pipelines;
-using OnnxStack.ImageUpscaler.Common;
 using OpenCvSharp;
 using static EzioHost.Shared.Enums.VideoEnum;
 
 namespace EzioHost.Core.Services.Implement
 {
-    public class UpscaleService(IDirectoryProvider directoryProvider) : IUpscaleService
+    public class UpscaleService(IDirectoryProvider directoryProvider, IUpscaleRepository upscaleRepository, IVideoService videoService, IVideoUnitOfWork videoUnitOfWork) : IUpscaleService
     {
         private const int ConcurrentUpscaleTask = 10;
         private const string FramePattern = "frame_%05d.jpg";
@@ -26,6 +26,10 @@ namespace EzioHost.Core.Services.Implement
         private static readonly SessionOptions SessionOptions;
         private string TempPath => directoryProvider.GetTempPath();
         private string WebRootPath => directoryProvider.GetWebRootPath();
+
+        private IVideoRepository VideoRepository => videoUnitOfWork.VideoRepository;
+        private IVideoStreamRepository VideoStreamRepository => videoUnitOfWork.VideoStreamRepository;
+
 
         static UpscaleService()
         {
@@ -64,8 +68,29 @@ namespace EzioHost.Core.Services.Implement
             upscale.SaveImage(outputPath, ImageEncodingParam);
         }
 
-        public async Task UpscaleVideo(OnnxModel model, Video video)
+        public async Task UpscaleVideo(VideoUpscale videoUpscale)
         {
+            var model = videoUpscale.Model;
+            var video = videoUpscale.Video;
+
+            var resolutionValue = (int)video.Resolution * model.Scale;
+
+            var resolutions = Enum.GetValues(typeof(VideoResolution))
+                .Cast<VideoResolution>()
+                .Select(r => (int)r)
+                .Where(r => r <= resolutionValue)
+                .OrderByDescending(r => r)
+                .ToList();
+
+            if (resolutions.Any())
+            {
+                videoUpscale.Resolution = (VideoResolution)resolutions.First();
+            }
+            else
+            {
+                throw new ArgumentException("Không có độ phân giải phù hợp", nameof(videoUpscale));
+            }
+
             var inferenceSession = GetInferenceSession(model);
 
             // Đường dẫn đến file video gốc
@@ -99,7 +124,6 @@ namespace EzioHost.Core.Services.Implement
                 var originalWidth = videoStream.Width;
                 var originalHeight = videoStream.Height;
                 var frameRate = videoStream.FrameRate;
-                var duration = videoStream.Duration.TotalSeconds;
 
                 // Tính toán kích thước đầu ra sau khi upscale
                 var outputWidth = originalWidth * model.Scale;
@@ -108,17 +132,19 @@ namespace EzioHost.Core.Services.Implement
                 var frameExtractionArguments = FFMpegArguments
                     .FromFileInput(inputVideoPath)
                     .OutputToFile(Path.Combine(framesDir, FramePattern), true, options => options
-                            .WithFramerate(frameRate)
-                            .WithCustomArgument("-qscale:v 1")
-                            .WithCustomArgument("-qmin 1")
-                            .WithCustomArgument("-qmax 1")
-                            .WithCustomArgument("-fps_mode cfr") 
+                        .WithFramerate(frameRate)
+                        .WithCustomArgument("-qscale:v 1")
+                        .WithCustomArgument("-qmin 1")
+                        .WithCustomArgument("-qmax 1")
+                        .WithCustomArgument("-fps_mode cfr")
                     );
+                var randomVideoFileName = Path.GetRandomFileName() + ".mp4";
+                var randomAudioFileName = Path.GetRandomFileName() + ".aac";
 
                 // Trích xuất âm thanh từ video
                 var audioExtractionArguments = FFMpegArguments
                     .FromFileInput(inputVideoPath)
-                    .OutputToFile(Path.Combine(tempDir, "audio.aac"), true, options => options
+                    .OutputToFile(Path.Combine(tempDir, randomAudioFileName), true, options => options
                         .WithAudioCodec(AudioCodec.Aac)
                     );
 
@@ -160,21 +186,20 @@ namespace EzioHost.Core.Services.Implement
                     .FromFileInput(Path.Combine(upscaledFramesDir, FramePattern), false, options => options
                         .WithFramerate(frameRate)
                     )
-                    .OutputToFile(Path.Combine(tempDir, "video_no_audio.mp4"), true, options => options
+                    .OutputToFile(Path.Combine(tempDir, randomVideoFileName), true, options => options
                         .WithVideoCodec("h264_nvenc")
-                        .WithCustomArgument("-b:v 8000k") // Bitrate
-                        .WithCustomArgument("-pix_fmt yuv420p")        // Pixel format
+                        .WithCustomArgument("-b:v 8000k")
+                        .WithCustomArgument("-pix_fmt yuv420p")
                         .WithVideoFilters(filterOptions => filterOptions
                             .Scale(outputWidth, outputHeight)
                         )
                     );
 
-
                 await videoCreationArguments.ProcessAsynchronously();
 
                 var finalVideoArguments = FFMpegArguments
-                    .FromFileInput(Path.Combine(tempDir, "video_no_audio.mp4"))
-                    .AddFileInput(Path.Combine(tempDir, "audio.aac"))
+                    .FromFileInput(Path.Combine(tempDir, randomVideoFileName))
+                    .AddFileInput(Path.Combine(tempDir, randomAudioFileName))
                     .OutputToFile(outputVideoPath, true, options => options
                         .CopyChannel(Channel.Video)
                         .CopyChannel(Channel.Audio)
@@ -182,7 +207,40 @@ namespace EzioHost.Core.Services.Implement
 
                 await finalVideoArguments.ProcessAsynchronously();
 
-                video.Status = VideoStatus.Ready;
+                videoUpscale.OutputLocation = Path.GetRelativePath(WebRootPath, outputVideoPath);
+                await UpdateVideoUpscale(videoUpscale);
+
+                var newVideoHlsStream =
+                    await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution);
+
+                await videoUnitOfWork.BeginTransactionAsync();
+
+                VideoStreamRepository.Create(newVideoHlsStream);
+                video.VideoStreams.Add(newVideoHlsStream);
+
+                var currentResolution = videoUpscale.Resolution.GetDescription();
+                var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location))
+                    .Replace("\\", "/");
+
+                var m3U8ContentBuilder = new StringBuilder();
+                m3U8ContentBuilder.AppendLine(
+                    $"#EXT-X-STREAM-INF:BANDWIDTH={videoService.GetBandwidthForResolution(currentResolution)},RESOLUTION={videoService.GetResolutionDimensions(currentResolution)}");
+                m3U8ContentBuilder.AppendLine(filePath);
+
+                var m3U8MergeFileStream = new FileStream(Path.Combine(WebRootPath, video.M3U8Location), FileMode.Append,
+                    FileAccess.Write);
+
+                await m3U8MergeFileStream.WriteAsync(Encoding.UTF8.GetBytes(m3U8ContentBuilder.ToString()));
+
+                await VideoRepository.UpdateVideoForUnitOfWork(video);
+                await videoUnitOfWork.CommitTransactionAsync();
+
+                videoUpscale.Status = VideoUpscaleStatus.Ready;
+                await UpdateVideoUpscale(videoUpscale);
+            }
+            catch
+            {
+                await videoUnitOfWork.RollbackTransactionAsync();
             }
             finally
             {
@@ -193,41 +251,33 @@ namespace EzioHost.Core.Services.Implement
             }
         }
 
-        public async Task Test(OnnxModel model, Video video)
+        public Task<VideoUpscale> AddNewVideoUpscale(VideoUpscale newVideoUpscale)
         {
-            var inputVideoPath = Path.Combine(WebRootPath, video.RawLocation);
-            var onnxModelPath = Path.Combine(WebRootPath, model.FileLocation);
+            return upscaleRepository.AddNewVideoUpscale(newVideoUpscale);
+        }
+        public Task<VideoUpscale?> GetVideoUpscaleById(Guid id)
+        {
+            return upscaleRepository.GetVideoUpscaleById(id);
+        }
+        public Task<VideoUpscale> UpdateVideoUpscale(VideoUpscale updateVideoUpscale)
+        {
+            return upscaleRepository.UpdateVideoUpscale(updateVideoUpscale);
+        }
+        public Task DeleteVideoUpscale(VideoUpscale deleteVideoUpscale)
+        {
+            return upscaleRepository.DeleteVideoUpscale(deleteVideoUpscale);
+        }
 
-            // Read Video Info
-            var videoInfo = await OnnxVideo.FromFileAsync(inputVideoPath);
-
-            // Create Video Stream
-            var videoStream = VideoHelper.ReadVideoStreamAsync(inputVideoPath, videoInfo.FrameRate);
-
-            // Create pipeline
-            var pipeline = ImageUpscalePipeline.CreatePipeline(new UpscaleModelSet()
+        public Task<VideoUpscale?> GetVideoNeedUpscale()
+        {
+            return upscaleRepository.GetVideoUpscales(
+                expression: x => x.Status == VideoUpscaleStatus.Queue,
+                includes: [x => x.Video, x => x.Model, x => x.Video.VideoStreams]
+            ).ContinueWith(task =>
             {
-                Name = Path.GetFileNameWithoutExtension(onnxModelPath),
-                UpscaleModelConfig = new UpscaleModelConfig()
-                {
-                    Precision = OnnxModelPrecision.F32,
-                    OnnxModelPath = onnxModelPath,
-                    SampleSize = 512,
-                    Channels = 3,
-                    ScaleFactor = 4,
-                    ExecutionProvider = ExecutionProvider.Cuda,
-                },
-                IsEnabled = true
+                var videoUpscales = task.Result.OrderBy(x => x.CreatedAt);
+                return videoUpscales.FirstOrDefault();
             });
-
-            // Create Pipeline
-            var pipelineStream = await pipeline.RunAsync(videoInfo);
-
-            // Write Video
-            await pipelineStream.SaveAsync(@"C:\Users\Talon Ezio\Downloads\Compressed\Result.mp4");
-
-            //Unload
-            await pipeline.UnloadAsync();
         }
     }
 }

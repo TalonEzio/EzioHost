@@ -14,6 +14,7 @@ namespace EzioHost.Shared.Enums
 
             [Description("720p")]
             _720p = 720,
+
             [Description("960p")]
             _960p = 960,
 
@@ -23,11 +24,12 @@ namespace EzioHost.Shared.Enums
             [Description("1440p")]
             _1440p = 1440,
 
+            [Description("1920p")]
+            _1920p = 1920,
+
             [Description("2160p")]
             _2160p = 2160,
 
-            //[Description("Nothing")]
-            //Nothing = 0,
         }
 
         public enum VideoStatus : byte

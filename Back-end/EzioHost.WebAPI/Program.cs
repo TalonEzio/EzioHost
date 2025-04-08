@@ -4,6 +4,7 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
+using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContext;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
@@ -12,6 +13,8 @@ using EzioHost.WebAPI.Jobs;
 using EzioHost.WebAPI.Middlewares;
 using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -42,28 +45,49 @@ namespace EzioHost.WebAPI
                     cfg.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 })
                 .AddJwtBearer(x =>
-                {
-                    var jwtOidc = appSettings.JwtOidc;
-
-                    x.RequireHttpsMetadata = false;
-                    x.Audience = jwtOidc.Audience;
-                    x.MetadataAddress = jwtOidc.MetaDataAddress;
-                    x.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = jwtOidc.Issuer,
-                        ValidAudience = jwtOidc.Audience
-                    };
-                });
+                        var jwtOidc = appSettings.JwtOidc;
+
+                        x.RequireHttpsMetadata = false;
+                        x.Audience = jwtOidc.Audience;
+                        x.MetadataAddress = jwtOidc.MetaDataAddress;
+                        x.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = jwtOidc.Issuer,
+                            ValidAudience = jwtOidc.Audience,
+                            ClockSkew = TimeSpan.Zero
+                        };
+
+
+                        x.Events = new JwtBearerEvents
+                        {
+                            OnMessageReceived = context =>
+                            {
+                                var accessToken = context.Request.Query["access_token"];
+
+                                var path = context.HttpContext.Request.Path;
+                                if (!string.IsNullOrEmpty(accessToken) &&
+                                    path.StartsWithSegments("/hubs"))
+                                {
+                                    context.Token = accessToken;
+                                }
+
+                                return Task.CompletedTask;
+                            }
+                        };
+                    }
+
+                );
 
             builder.Services.AddDbContext<EzioHostDbContext>(cfg =>
-            {
-                cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));
-                cfg.EnableServiceProviderCaching();
-            });
+        {
+            cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));
+            cfg.EnableServiceProviderCaching();
+        });
 
             builder.Services.AddScoped<IVideoRepository, VideoSqlServerRepository>();
             builder.Services.AddScoped<IVideoStreamRepository, VideoStreamSqlServerRepository>();
@@ -85,18 +109,31 @@ namespace EzioHost.WebAPI
 
             builder.Services.AddScoped<IOnnxModelRepository, OnnxModelSqlServerRepository>();
             builder.Services.AddScoped<IOnnxModelService, OnnxModelService>();
-            builder.Services.AddScoped<IUpscaleService, UpscaleService>();
 
+            builder.Services.AddScoped<IUpscaleRepository, UpscaleSqlServerRepository>();
+            builder.Services.AddScoped<IUpscaleService, UpscaleService>();
 
             builder.Services.AddQuartz(quartz =>
             {
                 var videoProcessingJobKey = new JobKey(nameof(VideoProcessingJob));
-
                 quartz.AddJob<VideoProcessingJob>(opts => opts.WithIdentity(videoProcessingJobKey).StoreDurably());
 
                 quartz.AddTrigger(cfg => cfg
                     .WithIdentity(nameof(VideoProcessingJob))
                     .ForJob(videoProcessingJobKey)
+                    .StartNow()
+                    .WithSimpleSchedule(schedule => schedule
+                        .WithIntervalInSeconds(10)
+                        .RepeatForever()
+                    )
+                );
+
+                var videoUpscaleJobKey = new JobKey(nameof(VideoUpscaleJob));
+                quartz.AddJob<VideoUpscaleJob>(opts => opts.WithIdentity(videoUpscaleJobKey).StoreDurably());
+
+                quartz.AddTrigger(cfg => cfg
+                    .WithIdentity(nameof(VideoUpscaleJob))
+                    .ForJob(videoUpscaleJobKey)
                     .StartNow()
                     .WithSimpleSchedule(schedule => schedule
                         .WithIntervalInSeconds(10)
@@ -115,7 +152,7 @@ namespace EzioHost.WebAPI
 
             builder.Services.AddScoped<BindingUserIdMiddleware>();
 
-
+            builder.Services.AddSignalR();
 
             var app = builder.Build();
 
@@ -131,7 +168,7 @@ namespace EzioHost.WebAPI
             app.UseHttpsRedirection();
 
             var wwwrootDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-            if(!Directory.Exists(wwwrootDirectory))
+            if (!Directory.Exists(wwwrootDirectory))
             {
                 Directory.CreateDirectory(wwwrootDirectory);
             }
@@ -152,7 +189,11 @@ namespace EzioHost.WebAPI
             app.UseMiddleware<BindingUserIdMiddleware>();
 
             app.MapControllers();
-            app.MapHub<VideoHub>("/hubs/VideoHub");
+            app.MapHub<VideoHub>("/hubs/VideoHub", cfg =>
+            {
+                cfg.LongPolling.PollTimeout = TimeSpan.FromSeconds(30);
+                cfg.Transports = HttpTransportType.LongPolling | HttpTransportType.WebSockets;
+            });
 
             await app.RunAsync();
         }

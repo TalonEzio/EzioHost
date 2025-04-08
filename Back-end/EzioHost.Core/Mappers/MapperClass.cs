@@ -49,6 +49,13 @@ namespace EzioHost.Core.Mappers
                     x.DemoOutput,
                     cfg => cfg.MapFrom(x => AddPrefixIfNotNullOrEmpty(x.DemoOutput))
                 );
+
+            CreateMap<VideoUpscale, VideoUpscaleDto>()
+                .ForMember(x =>
+                        x.OutputLocation,
+                    otp => otp.MapFrom(x => AddPrefixIfNotNullOrEmpty(x.OutputLocation))
+                )
+                .ReverseMap();
         }
 
         private string AddPrefixIfNotNullOrEmpty(string? path)

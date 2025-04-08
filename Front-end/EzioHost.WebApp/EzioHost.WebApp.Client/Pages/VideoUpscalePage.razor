@@ -40,6 +40,7 @@ else
 {
     [Parameter] public Guid VideoId { get; set; }
     [Inject] public HttpClient HttpClient { get; set; } = null!;
+    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     public VideoDto? Video { get; set; }
 
     public List<OnnxModelDto> OnnxModels { get; set; } = [];
@@ -85,6 +86,19 @@ else
 
     private async Task RequestUpscaleVideo()
     {
+        try
+        {
+            var response = await HttpClient.PostAsync($"/api/video/{VideoId}/upscale/{_selectedModelId}", null);
 
+            response.EnsureSuccessStatusCode();
+            await JsRuntime.ShowSuccessToast("Đã thêm vào hàng đợi upscale thành công!");
+            await Task.Delay(3000);
+
+            await JsRuntime.NavigateToAsync("/video");
+        }
+        catch (Exception e)
+        {
+            await JsRuntime.ShowErrorToast($"Lỗi upscale :{e.Message}");
+        }
     }
 }

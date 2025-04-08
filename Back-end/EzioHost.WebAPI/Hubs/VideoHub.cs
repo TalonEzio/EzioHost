@@ -1,26 +1,17 @@
 ﻿using EzioHost.Shared.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace EzioHost.WebAPI.Hubs
 {
+    [Authorize]
     public class VideoHub : Hub<IVideoHubAction>
     {
         public async Task SendMessage()
         {
-            await Clients.All.ReceiveMessage("Test");
-        }
+            var userName = Context.User?.Claims.FirstOrDefault(x => x.Type == "name")?.Value;
 
-        public override Task OnConnectedAsync()
-        {
-            Console.WriteLine($"Connected :{Context.ConnectionId}");
-            return base.OnConnectedAsync();
-        }
-
-        public override Task OnDisconnectedAsync(Exception? exception)
-        {
-            Console.WriteLine($"Disconnected :{Context.ConnectionId} - {exception?.Message}");
-
-            return base.OnDisconnectedAsync(exception);
+            await Clients.Caller.ReceiveMessage($"Xin chào {userName}");
         }
     }
 }

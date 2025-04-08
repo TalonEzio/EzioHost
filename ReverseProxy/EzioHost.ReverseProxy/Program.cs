@@ -76,8 +76,7 @@ namespace EzioHost.ReverseProxy
                                 var email = identity.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
                                 var firstName = identity.FindFirst(ClaimTypes.GivenName)?.Value ?? string.Empty;
                                 var lastName = identity.FindFirst(ClaimTypes.Surname)?.Value ?? string.Empty;
-                                var userName = identity.FindFirst(settings.OpenIdConnect.UserNameClaimType)?.Value ??
-                                               string.Empty;
+                                var userName = identity.FindFirst(settings.OpenIdConnect.UserNameClaimType)?.Value ?? string.Empty;
 
                                 var body = new UserCreateUpdateRequestDto
                                 {
@@ -136,11 +135,9 @@ namespace EzioHost.ReverseProxy
                         if (transformContext.HttpContext.Request.Path.StartsWithSegments("/api"))
                         {
                             var user = transformContext.HttpContext.User;
-                            if (user.Identity is ClaimsIdentity identity && user.Identity.IsAuthenticated)
+                            if (user.Identity is ClaimsIdentity && user.Identity.IsAuthenticated)
                             {
-                                var accessToken =
-                                    await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames
-                                        .AccessToken);
+                                var accessToken = await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
                                 transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
                                 var subClaimValue = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
@@ -156,7 +153,6 @@ namespace EzioHost.ReverseProxy
                         }
                     });
                 });
-
 
             builder.Services.AddAntiforgery();
 
@@ -193,10 +189,7 @@ namespace EzioHost.ReverseProxy
 
 
             //Forward to frontend
-            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl, cfg =>
-            {
-                cfg.CopyRequestHeaders = true;
-            });
+            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl);
 
 
             app.Run();

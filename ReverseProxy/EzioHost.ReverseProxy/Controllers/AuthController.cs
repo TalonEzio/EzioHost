@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace EzioHost.ReverseProxy.Controllers
 {
@@ -65,6 +66,15 @@ namespace EzioHost.ReverseProxy.Controllers
                 claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role.Trim())));
             }
             return Ok(claims.Select(ClaimDto.ConvertFromClaim));
+        }
+
+        [HttpGet("/access-token")]
+        public async Task<IActionResult> GetAccessToken()
+        {
+            if (HttpContext.User.Identity is { IsAuthenticated: false }) return Unauthorized();
+            if (HttpContext.User.Identity is not ClaimsIdentity) return Unauthorized();
+
+            return Ok(await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken));
         }
     }
 }

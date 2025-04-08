@@ -19,7 +19,6 @@ namespace EzioHost.Core.Services.Implement
     {
 
         private readonly string _webRootPath = directoryProvider.GetWebRootPath();
-
         private readonly IVideoRepository _videoRepository = videoUnitOfWork.VideoRepository;
         private readonly IVideoStreamRepository _videoStreamRepository = videoUnitOfWork.VideoStreamRepository;
 
@@ -73,7 +72,6 @@ namespace EzioHost.Core.Services.Implement
 
         public async Task EncodeVideo(Video inputVideo)
         {
-            //Absolute path
             var absoluteRawLocation = Path.Combine(_webRootPath, inputVideo.RawLocation);
             var absoluteM3U8Location = Path.Combine(_webRootPath, inputVideo.M3U8Location);
 
@@ -110,8 +108,7 @@ namespace EzioHost.Core.Services.Implement
                 foreach (var videoStream in videoStreams)
                 {
                     var currentResolution = videoStream.Resolution.GetDescription();
-                    var filePath = Path.Combine(currentResolution, Path.GetFileName(videoStream.M3U8Location))
-                        .Replace("\\", "/");
+                    var filePath = Path.Combine(currentResolution, Path.GetFileName(videoStream.M3U8Location)).Replace("\\", "/");
 
                     m3U8AllContentBuilder.AppendLine(
                         $"#EXT-X-STREAM-INF:BANDWIDTH={GetBandwidthForResolution(currentResolution)},RESOLUTION={GetResolutionDimensions(currentResolution)}");
@@ -126,6 +123,7 @@ namespace EzioHost.Core.Services.Implement
                 await videoUnitOfWork.VideoRepository.UpdateVideoForUnitOfWork(inputVideo);
 
                 await videoUnitOfWork.CommitTransactionAsync();
+
             }
             catch (Exception)
             {
@@ -133,35 +131,39 @@ namespace EzioHost.Core.Services.Implement
             }
         }
 
-        private static int GetBandwidthForResolution(string resolution)
+        public int GetBandwidthForResolution(string resolution)
         {
             return resolution switch
             {
                 "360p" => 800000,
                 "480p" => 1400000,
                 "720p" => 2800000,
+                "960p" => 4000000,
                 "1080p" => 5000000,
                 "1440p" => 8000000,
+                "1920p" => 8000000,
                 "2160p" => 15000000,
                 _ => 1000000
             };
         }
 
-        private static string GetResolutionDimensions(string resolution)
+        public string GetResolutionDimensions(string resolution)
         {
             switch (resolution)
             {
                 case "360p": return "640x360";
                 case "480p": return "854x480";
                 case "720p": return "1280x720";
+                case "960p": return "1280x960";
                 case "1080p": return "1920x1080";
                 case "1440p": return "2560x1440";
+                case "1920p": return "2560x1920";
                 case "2160p": return "3840x2160";
                 default: return "1920x1080";
             }
         }
 
-        private async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo, VideoResolution targetResolution)
+        public async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo, VideoResolution targetResolution)
         {
             var segmentFolder = Path.Combine(_webRootPath, Path.GetDirectoryName(inputVideo.M3U8Location)!, targetResolution.GetDescription());
             if (!Directory.Exists(segmentFolder))
@@ -201,7 +203,9 @@ namespace EzioHost.Core.Services.Implement
                         .WithCustomArgument("-hls_time 5")
                         .WithCustomArgument($"-hls_segment_filename \"{segmentPath}\"")
                         .WithCustomArgument("-hls_playlist_type vod")
-                        .WithAudibleEncryptionKeys(videoStream.Key, videoStream.IV)
+                        .WithCustomArgument("-hls_enc 1")
+                        .WithCustomArgument($"-hls_enc_key \"{videoStream.Key}\"")
+                        .WithCustomArgument($"-hls_enc_iv \"{videoStream.IV}\"")
                         .WithFastStart()
                 );
 
@@ -239,8 +243,6 @@ namespace EzioHost.Core.Services.Implement
             {
                 Console.WriteLine($"FFMpeg processing error: {e.Message}");
             }
-
-
             return videoStream;
         }
 

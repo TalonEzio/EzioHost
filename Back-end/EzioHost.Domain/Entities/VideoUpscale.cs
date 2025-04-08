@@ -12,6 +12,7 @@ namespace EzioHost.Domain.Entities
         public Guid ModelId { get; set; }
         public OnnxModel Model { get; set; } = null!;
         public Guid VideoId { get; set; }
+        public VideoEnum.VideoResolution Resolution { get; set; } 
         public VideoEnum.VideoUpscaleStatus Status { get; set; } = VideoEnum.VideoUpscaleStatus.Queue;
         public Video Video { get; set; } = null!;
     }
