@@ -1,11 +1,11 @@
-﻿using EzioHost.Domain.Entities;
+﻿using EzioHost.Shared.Models;
 
-namespace EzioHost.Domain.Events
+namespace EzioHost.Shared.Events
 {
     public class VideoChangedEvent
     {
         public VideoChangedType ChangedType { get; set; }
-        public required Video Instance { get; set; }
+        public required VideoDto Video { get; set; }
     }
 
     public enum VideoChangedType : byte

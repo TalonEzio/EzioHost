@@ -12,7 +12,7 @@ namespace EzioHost.Shared.Models
         public VideoEnum.VideoType Type { get; set; }
         public VideoEnum.VideoShareType ShareType { get; set; } = VideoEnum.VideoShareType.Private;
         public bool CanPlay => Status == VideoEnum.VideoStatus.Ready;
-        public bool CanUpscale => CanPlay && Resolution <= VideoEnum.VideoResolution._480p && !VideoUpscales.Any();
+        public bool CanUpscale => CanPlay && Resolution <= VideoEnum.VideoResolution._480p && VideoUpscales.Count == 0;
         public ICollection<VideoStreamDto> VideoStreams { get; set; } = [];
         public ICollection<VideoUpscaleDto> VideoUpscales { get; set; } = [];
     }

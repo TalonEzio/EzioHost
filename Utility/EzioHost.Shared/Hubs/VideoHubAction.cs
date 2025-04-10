@@ -1,8 +1,10 @@
-﻿namespace EzioHost.Shared.Hubs
+﻿using EzioHost.Shared.Events;
+
+namespace EzioHost.Shared.Hubs
 {
     public interface IVideoHubAction
     {
-        Task OnConnected(string s);
         Task ReceiveMessage(string message);
+        Task ReceiveNewVideoStream(VideoStreamAddedEvent videoChangedEvent);
     }
 }

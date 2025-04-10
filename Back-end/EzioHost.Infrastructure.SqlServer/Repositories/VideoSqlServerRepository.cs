@@ -55,7 +55,7 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
             {
                 foreach (var include in includes)
                 {
-                    videoQueryable = _videos.Include(include);
+                    videoQueryable = videoQueryable.Include(include);
                 }
             }
             return Task.FromResult<IEnumerable<Video>>(expression != null ? videoQueryable.Where(expression) : videoQueryable);

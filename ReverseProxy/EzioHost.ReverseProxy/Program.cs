@@ -183,13 +183,14 @@ namespace EzioHost.ReverseProxy
             app.UseAuthorization();
             app.UseAntiforgery();
 
+            //Forward to frontend
+            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl);
+
             app.MapReverseProxy();
 
             app.MapControllers();
 
 
-            //Forward to frontend
-            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl);
 
 
             app.Run();

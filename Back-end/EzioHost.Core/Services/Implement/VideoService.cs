@@ -1,13 +1,16 @@
 ﻿using System.Drawing;
 using System.Linq.Expressions;
 using System.Text;
+using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
-using EzioHost.Domain.Events;
+using EzioHost.Domain.Settings;
+using EzioHost.Shared.Events;
 using EzioHost.Shared.Extensions;
+using EzioHost.Shared.Models;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using static EzioHost.Shared.Enums.VideoEnum;
@@ -15,8 +18,9 @@ using VideoStream = EzioHost.Domain.Entities.VideoStream;
 
 namespace EzioHost.Core.Services.Implement
 {
-    public class VideoService(IVideoUnitOfWork videoUnitOfWork, IDirectoryProvider directoryProvider, IProtectService protectService) : IVideoService
+    public class VideoService(IVideoUnitOfWork videoUnitOfWork, IDirectoryProvider directoryProvider, IProtectService protectService, ISettingProvider settingProvider, IMapper mapper) : IVideoService
     {
+        private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
         private readonly string _webRootPath = directoryProvider.GetWebRootPath();
         private readonly IVideoRepository _videoRepository = videoUnitOfWork.VideoRepository;
@@ -27,7 +31,8 @@ namespace EzioHost.Core.Services.Implement
             return _videoRepository.GetVideoToEncode();
         }
 
-        public event Action<VideoChangedEvent>? VideoChanged;
+
+        public event Action<VideoStreamAddedEvent>? OnVideoStreamAdded;
 
         public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null, Expression<Func<Video, object>>[]? includes = null)
         {
@@ -38,18 +43,11 @@ namespace EzioHost.Core.Services.Implement
         {
             var rawLocation = Path.Combine(_webRootPath, newVideo.RawLocation);
             var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
-
             var videoHeight = mediaInfo.VideoStreams[0].Height;
 
             newVideo.UpdateResolution(videoHeight);
 
             await _videoRepository.AddNewVideo(newVideo);
-
-            VideoChanged?.Invoke(new VideoChangedEvent()
-            {
-                Instance = newVideo,
-                ChangedType = VideoChangedType.Added
-            });
 
             return newVideo;
         }
@@ -62,11 +60,7 @@ namespace EzioHost.Core.Services.Implement
         public async Task<Video> UpdateVideo(Video updateVideo)
         {
             var video = await _videoRepository.UpdateVideo(updateVideo);
-            VideoChanged?.Invoke(new VideoChangedEvent()
-            {
-                Instance = video,
-                ChangedType = VideoChangedType.Edited
-            });
+
             return video;
         }
 
@@ -92,6 +86,12 @@ namespace EzioHost.Core.Services.Implement
 
                     _videoStreamRepository.Create(newVideoStream);
                     inputVideo.VideoStreams.Add(newVideoStream);
+
+                    OnVideoStreamAdded?.Invoke(new VideoStreamAddedEvent()
+                    {
+                        VideoId = inputVideo.Id,
+                        VideoStream = mapper.Map<VideoStreamDto>(newVideoStream)
+                    });
                 }
 
                 var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
@@ -171,7 +171,7 @@ namespace EzioHost.Core.Services.Implement
                 Directory.CreateDirectory(segmentFolder);
             }
 
-            var segmentPath = Path.Combine(segmentFolder, $"{targetResolution.GetDescription()}_%05d.ts");
+            var segmentPath = Path.Combine(segmentFolder, $"{targetResolution.GetDescription()}_%07d.ts");
             var absoluteVideoStreamM3U8Location = Path.Combine(segmentFolder, $"{targetResolution.GetDescription()}.m3u8");
 
             var videoStream = new VideoStream()
@@ -195,12 +195,14 @@ namespace EzioHost.Core.Services.Implement
                 .FromFileInput(absoluteRawLocation)
                 .OutputToFile(absoluteVideoStreamM3U8Location, true,
                     options => options
-                        .WithVideoCodec("h264_nvenc")
-                        .WithAudioCodec(AudioCodec.Aac)
+                        .WithVideoCodec(VideoEncodeSetting.VideoCodec)
+                        .WithAudioCodec(VideoEncodeSetting.AudioCodec)
+                        .WithVideoBitrate(GetBandwidthForResolution(targetResolution.GetDescription()) / 1000) //kbps
+                        .WithAudioBitrate(AudioQuality.Normal)//128kbps
                         .WithCustomArgument($"-vf \"scale={resolutionSize.Width}:{resolutionSize.Height},format=yuv420p\"")//handle 10 bit file
                         .WithCustomArgument("-force_key_frames \"expr:gte(t,n_forced*1)\"")
                         .WithCustomArgument("-f hls")
-                        .WithCustomArgument("-hls_time 5")
+                        .WithCustomArgument($"-hls_time {VideoEncodeSetting.HlsTime}")
                         .WithCustomArgument($"-hls_segment_filename \"{segmentPath}\"")
                         .WithCustomArgument("-hls_playlist_type vod")
                         .WithCustomArgument("-hls_enc 1")
@@ -212,6 +214,7 @@ namespace EzioHost.Core.Services.Implement
             try
             {
                 await argumentProcessor.ProcessAsynchronously();
+
                 var m3U8Content = await File.ReadAllLinesAsync(absoluteVideoStreamM3U8Location);
 
                 for (int i = 0; i < m3U8Content.Length; i++)
@@ -228,7 +231,7 @@ namespace EzioHost.Core.Services.Implement
                             {
                                 string oldUri = line.Substring(startIndex, endIndex - startIndex);
 
-                                string newUri = $"/api/video/drm/{videoStream.Id}";
+                                string newUri = Path.Combine(VideoEncodeSetting.BaseDrmUrl, videoStream.Id.ToString()).Replace("\\", "/");
 
                                 m3U8Content[i] = line.Replace(oldUri, newUri);
                             }
@@ -246,19 +249,12 @@ namespace EzioHost.Core.Services.Implement
             return videoStream;
         }
 
-
         public async Task DeleteVideo(Video deleteVideo)
         {
+            //var videoLocation = Path.Combine(_webRootPath, deleteVideo.RawLocation);
+            //Directory.Delete(Path.GetDirectoryName(videoLocation) ?? throw new InvalidOperationException());
             await _videoRepository.DeleteVideo(deleteVideo);
-
-            VideoChanged?.Invoke(new VideoChangedEvent()
-            {
-                Instance = deleteVideo,
-                ChangedType = VideoChangedType.Deleted
-            });
-
         }
-
         public Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId)
         {
             return _videoRepository.GetVideoByVideoStreamId(videoStreamId);

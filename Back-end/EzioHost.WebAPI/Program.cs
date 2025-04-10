@@ -4,7 +4,6 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
-using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContext;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
@@ -14,7 +13,6 @@ using EzioHost.WebAPI.Middlewares;
 using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -33,6 +31,7 @@ namespace EzioHost.WebAPI
 
             builder.Configuration.Bind(nameof(AppSettings), appSettings);
 
+            builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
             builder.Services.AddControllers();
 
             builder.Services.AddOpenApi();
@@ -96,6 +95,7 @@ namespace EzioHost.WebAPI
             builder.Services.AddScoped<IVideoUnitOfWork, VideoUnitOfWork>();
 
             builder.Services.AddScoped<IDirectoryProvider, DirectoryProvider>();
+            builder.Services.AddScoped<ISettingProvider, SettingProvider>();
 
             builder.Services.AddScoped<IVideoService, VideoService>();
 
@@ -112,6 +112,7 @@ namespace EzioHost.WebAPI
 
             builder.Services.AddScoped<IUpscaleRepository, UpscaleSqlServerRepository>();
             builder.Services.AddScoped<IUpscaleService, UpscaleService>();
+
 
             builder.Services.AddQuartz(quartz =>
             {

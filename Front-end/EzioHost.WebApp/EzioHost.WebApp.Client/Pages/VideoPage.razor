@@ -1,103 +1,114 @@
 ﻿@page "/video"
 
-@rendermode InteractiveWebAssembly
+@rendermode InteractiveServer
 
 @attribute [Authorize]
 @attribute [StreamRendering]
+@using EzioHost.Shared.Events
 @implements IAsyncDisposable
 
 @if (RendererInfo.IsInteractive)
 {
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th scope="col">Tiêu đề</th>
-                <th scope="col">Thể loại</th>
-                <th scope="col">Chất lượng</th>
-                @* <th scope="col">Trạng thái</th> *@
-                <th scope="col">Chia sẻ</th>
-                <th scope="col">Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var video in Videos)
-            {
-                <tr scope="row">
-                    <td>
-                        <InputText @bind-Value="video.Title" class="form-control" />
-                    </td>
+    <button type="button" class="btn btn-primary mb-2">
 
-                    <td>
-                        <InputSelect class="form-select" @bind-Value="@video.Type">
-                            @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
-                            {
-                                <option value="@value">@value.GetDescription()</option>
-                            }
-                        </InputSelect>
-                    </td>
+        <NavLink href="/upload-video"
+                 class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Upload</NavLink>
+    </button>
+    @if (Videos.Any())
+    {
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Tiêu đề</th>
+                    <th scope="col">Thể loại</th>
+                    <th scope="col">Chất lượng</th>
+                    @* <th scope="col">Trạng thái</th> *@
+                    <th scope="col">Chia sẻ</th>
+                    <th scope="col">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var video in Videos)
+                {
+                    <tr scope="row">
+                        <td>
+                            <InputText @bind-Value="video.Title" class="form-control" />
+                        </td>
 
-                    <td>
-                        @{
-                            var content = string.Join(",", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
-                            if (string.IsNullOrEmpty(content)) content = "Đợi xử lý";
-                        }
-                        <text>@content</text>
-                    </td>
-
-                    @* <td>@video.Status.GetDescription()</td> *@
-
-                    <td>
-                        @if (video.CanPlay)
-                        {
-                            <InputSelect class="form-select" @bind-Value="@video.ShareType">
-                                @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
+                        <td>
+                            <InputSelect class="form-select" @bind-Value="@video.Type">
+                                @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
                                 {
                                     <option value="@value">@value.GetDescription()</option>
                                 }
                             </InputSelect>
-                        }
-                        else
-                        {
-                            <p class="p">Đợi xử lý</p>
-                        }
-                    </td>
+                        </td>
 
-                    <td>
-                        <div class="btn-group" role="group" aria-label="Action">
+                        <td>
+                            @{
+                                var content = string.Join(",", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
+                                if (string.IsNullOrEmpty(content)) content = "Đợi xử lý";
+                            }
+                            <text>@content</text>
+                        </td>
+
+                        @* <td>@video.Status.GetDescription()</td> *@
+
+                        <td>
                             @if (video.CanPlay)
                             {
-                                <button type="button" class="btn btn-primary text-white" @onclick="() => PlayVideo(video)" disabled="@(!video.CanPlay)">Play</button>
-                                <button type="button" class="btn btn-success">
-                                    @{
-                                        var shareUrl = $"/video-share/{video.Id}";
+                                <InputSelect class="form-select" @bind-Value="@video.ShareType">
+                                    @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
+                                    {
+                                        <option value="@value">@value.GetDescription()</option>
                                     }
-                                    <NavLink href="@shareUrl" target="_blank" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Share</NavLink>
-                                </button>
+                                </InputSelect>
                             }
-                            @if (video.CanUpscale)
+                            else
                             {
-                                var upscaleUrl = "/video-upscale/" + video.Id;
-                                <button class="btn btn-warning text-white" @onclick="@(() => JsRuntime.NavigateTo(upscaleUrl))">
-                                    Upscale
-                                </button>
+                                <p class="p">Đợi xử lý</p>
                             }
-                            <button type="button" class="btn btn-info text-white" @onclick="() => UpdateVideo(video)">Update</button>
-                            <button type="button" class="btn btn-danger text-white" @onclick="() => DeleteVideo(video)">Delete</button>
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                        </td>
 
+                        <td>
+                            <div class="btn-group" role="group" aria-label="Action">
+                                @if (video.CanPlay)
+                                {
+                                    <button type="button" class="btn btn-primary text-white" @onclick="() => PlayVideo(video)" disabled="@(!video.CanPlay)">Play</button>
+                                    <button type="button" class="btn btn-success">
+                                        @{
+                                            var shareUrl = $"/video-share/{video.Id}";
+                                        }
+                                        <NavLink href="@shareUrl" target="_blank" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Share</NavLink>
+                                    </button>
+                                }
+                                @if (video.CanUpscale)
+                                {
+                                    var upscaleUrl = "/video-upscale/" + video.Id;
+                                    <button class="btn btn-warning text-white" @onclick="@(async () => await JsRuntime.NavigateToAsync(upscaleUrl))">
+                                        Upscale
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-info text-white" @onclick="() => UpdateVideo(video)">Update</button>
+                                <button type="button" class="btn btn-danger text-white" @onclick="() => DeleteVideo(video)">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    }
+    else
+    {
+        <p>Chưa có video nào, vui lòng upload</p>
+    }
     <div class="row d-flex justify-content-center">
         <div class="col-6">
             <div id="player"></div>
         </div>
     </div>
 }
-
-
 else
 {
     <p>Wait for interactive...</p>
@@ -106,8 +117,29 @@ else
 @code {
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public HttpClient Http { get; set; } = null!;
+    [Inject] private PersistentComponentState State { get; set; } = null!;
+
     private List<VideoDto> Videos { get; set; } = [];
     private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!State.TryTakeFromJson<List<VideoDto>>(nameof(Videos), out var savedVideos))
+        {
+            Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+        }
+        else
+        {
+            if (savedVideos != null) Videos = savedVideos;
+        }
+
+        State.RegisterOnPersisting(PersistState);
+    }
+    private Task PersistState()
+    {
+        State.PersistAsJson(nameof(Videos), Videos);
+        return Task.CompletedTask;
+    }
 
 
 
@@ -115,9 +147,6 @@ else
     {
         if (firstRender)
         {
-            Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
-            StateHasChanged();
-
             var url = await JsRuntime.GetOrigin();
 
             var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
@@ -131,13 +160,24 @@ else
 
             _hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage), async (message) =>
             {
-                Console.WriteLine(message);
-                await JsRuntime.ShowErrorToast(message);
+                await JsRuntime.ShowSuccessToast(message);
+            });
+
+            _hubConnection.On<VideoStreamAddedEvent>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
+            {
+                var video = Videos.FirstOrDefault(x => x.Id == args.VideoId);
+                if (video == null) return;
+
+                var videoStream = args.VideoStream;
+                video.VideoStreams.Add(videoStream);
+
+                await InvokeAsync(StateHasChanged);
+
+                await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong {videoStream.Resolution.GetDescription()}");
             });
             try
             {
                 await _hubConnection.StartAsync();
-
                 await _hubConnection.SendAsync("SendMessage");
             }
             catch (Exception e)

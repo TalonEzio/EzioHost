@@ -1,5 +1,5 @@
 ﻿@page "/upload-video"
-
+@using static Shared.Common.UploadConstants
 @inject HttpClient HttpClient
 @rendermode InteractiveWebAssembly
 @attribute [Authorize]
@@ -10,7 +10,7 @@
         <h3>Upload Videos</h3>
 
         <div class="upload-box">
-            <InputFile OnChange="OnFilesChange" multiple id="@InputFileId" accept=".mp4,.mkv,.avi" />
+            <InputFile class="form-control" OnChange="OnFilesChange" multiple id="@InputFileId" accept=".mp4,.mkv,.avi" />
         </div>
 
         @if (_fileUploads.Any())
@@ -27,12 +27,12 @@
                         </div>
 
                         <div class="file-controls">
-                            <select class="form-select" @bind="fileUpload.FileType">
+                            @* <select class="form-select" @bind="fileUpload.FileType">
                                 @foreach (var type in Enum.GetValues(typeof(VideoEnum.VideoType)))
                                 {
                                     <option value="@type">@type</option>
                                 }
-                            </select>
+                            </select> *@
 
                             <div class="progress-container">
                                 <progress max="100" value="@fileUpload.Progress"></progress>
@@ -63,9 +63,7 @@ else
 
 @code {
     private const string InputFileId = "fileInput";
-    private const int ChunkSize = 2 * 1024 * 1024;
-    private const int BufferSize = 1 * 1024 * 1024;
-    private const double MaxUploadSpeed = 5 * 1024 * 1024;
+
     private bool _isUploading;
 
     [Inject] public ILogger<UploadVideoPage> Logger { get; set; } = null!;
@@ -74,16 +72,11 @@ else
     [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = null!;
     private AuthenticationState _authenticationState = null!;
 
-    private readonly List<FileUploadItem> _fileUploads = new();
+    private readonly List<FileUploadItem> _fileUploads = [];
 
     protected override async Task OnInitializedAsync()
     {
         _authenticationState = await AuthenticationStateTask;
-    }
-
-    private async Task TriggerFileInput()
-    {
-        await JsRuntime.InvokeVoidAsync("document.getElementById", InputFileId, "click");
     }
 
     private Task OnFilesChange(InputFileChangeEventArgs e)
@@ -116,16 +109,16 @@ else
         _isUploading = true;
         StateHasChanged();
 
-        var uploadTasks = _fileUploads.Where(x => x.Progress == 0).Select(UploadSingleFile);
+        var uploadTasks = _fileUploads.Select(UploadSingleFile);
         await Task.WhenAll(uploadTasks);
 
         _isUploading = false;
         StateHasChanged();
     }
 
-    private async Task UploadSingleFile(FileUploadItem fileUpload)
+    private async Task UploadSingleFile(FileUploadItem fileUpload, int index)
     {
-        var fileStream = new SeekableFileStream(JsRuntime, InputFileId, 0, fileUpload.File.Size);
+        var fileStream = new SeekableFileStream(JsRuntime, InputFileId, index, fileUpload.File.Size);
         var fileInfo = await InitUploadAsync(fileUpload, fileStream);
 
         if (fileInfo.IsCompleted)
