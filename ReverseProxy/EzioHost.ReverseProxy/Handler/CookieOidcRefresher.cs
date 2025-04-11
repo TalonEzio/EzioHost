@@ -25,11 +25,11 @@ internal sealed class CookieOidcRefresher(IOptionsMonitor<OpenIdConnectOptions> 
     {
         var requestPath = validateContext.HttpContext.Request.Path.ToString();
 
-        if (!requestPath.Contains("/user") || !requestPath.StartsWith("/api"))
-        {
-            //validateContext.RejectPrincipal();
-            return;
-        }
+        //if (!requestPath.Contains("/user") || !requestPath.StartsWith("/api"))
+        //{
+        //    //validateContext.RejectPrincipal();
+        //    return;
+        //}
 
         var accessTokenExpirationText = validateContext.Properties.GetTokenValue("expires_at");
         if (!DateTimeOffset.TryParse(accessTokenExpirationText, out var accessTokenExpiration))

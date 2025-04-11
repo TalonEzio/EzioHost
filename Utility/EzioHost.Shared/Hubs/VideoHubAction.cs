@@ -6,5 +6,6 @@ namespace EzioHost.Shared.Hubs
     {
         Task ReceiveMessage(string message);
         Task ReceiveNewVideoStream(VideoStreamAddedEvent videoChangedEvent);
+        Task ReceiveVideoProcessingDone(VideoProcessDoneEvent videoProcessDoneEvent);
     }
 }

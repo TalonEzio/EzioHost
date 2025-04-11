@@ -73,6 +73,11 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
             return videoStream?.Video;
         }
 
+        public Task<Video?> GetVideoUpscaleById(Guid videoId)
+        {
+            return _videos.Include(x => x.VideoUpscales).FirstOrDefaultAsync(x => x.Id == videoId && x.VideoUpscales.All(upscale => upscale.Status == VideoEnum.VideoUpscaleStatus.Ready));
+        }
+
         public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null)
         {
             return Task.FromResult<IEnumerable<Video>>(expression == null ? _videos : _videos.Where(expression));

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Security.Claims;
 using AutoMapper;
+using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
@@ -17,9 +18,9 @@ namespace EzioHost.WebAPI.Controllers
         IVideoService videoService,
         IMapper mapper,
         IUpscaleService upscaleService,
-        IOnnxModelService modelService) : ControllerBase
+        IOnnxModelService modelService, IDirectoryProvider directoryProvider) : ControllerBase
     {
-
+        private string WebRootPath => directoryProvider.GetWebRootPath();
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetVideos()
@@ -50,6 +51,46 @@ namespace EzioHost.WebAPI.Controllers
             var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
             return File(fileContent, "application/x-mpegURL");
         }
+        [HttpGet("download/{videoId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
+        {
+            var video = await videoService.GetVideoById(videoId);
+            if (video == null)
+            {
+                return NotFound();
+            }
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+            {
+                return BadRequest();
+            }
+
+            var fileLocation = Path.Combine(WebRootPath, video.RawLocation);
+            var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
+            return File(fileContent, "application/octet-stream", $"{video.Title}");
+        }
+
+        [HttpGet("download-upscale/{videoId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> DownloadVideoUpscale([FromRoute] Guid videoId)
+        {
+            var video = await videoService.GetVideoUpscaleById(videoId);
+            if (video == null || !video.VideoUpscales.Any())
+            {
+                return NotFound();
+            }
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+            {
+                return BadRequest();
+            }
+
+            var videoUpscale = video.VideoUpscales.First();
+            var fileLocation = Path.Combine(WebRootPath, videoUpscale.OutputLocation);
+
+            var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
+            return File(fileContent, "application/octet-stream", $"{Path.GetFileName(videoUpscale.OutputLocation)}");
+        }
+
 
         [HttpGet("{videoId:guid}")]
         public async Task<IActionResult> GetVideoById([FromRoute] Guid videoId)

@@ -10,5 +10,6 @@ namespace EzioHost.Core.Repositories
         Task<VideoUpscale> UpdateVideoUpscale(VideoUpscale updateVideoUpscale);
         Task DeleteVideoUpscale(VideoUpscale deleteVideoUpscale);
         Task<IEnumerable<VideoUpscale>> GetVideoUpscales(Expression<Func<VideoUpscale, bool>>? expression = null, Expression<Func<VideoUpscale, object>>[]? includes = null);
+        Task<VideoUpscale?> GetVideoNeedUpscale();
     }
 }

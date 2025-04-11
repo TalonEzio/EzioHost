@@ -16,5 +16,7 @@ namespace EzioHost.Core.Repositories
 
         Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
 
+        Task<Video?> GetVideoUpscaleById(Guid videoId);
+
     }
 }

@@ -2,6 +2,7 @@
 using EzioHost.Core.Repositories;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContext;
+using EzioHost.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace EzioHost.Infrastructure.SqlServer.Repositories
@@ -50,6 +51,14 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
                 }
             }
             return Task.FromResult(queryable.AsEnumerable());
+        }
+
+        public Task<VideoUpscale?> GetVideoNeedUpscale()
+        {
+            return VideoUpscales.Include(x => x.Video).Include(x => x.Model)
+                .Where(x => x.Status == VideoEnum.VideoUpscaleStatus.Queue)
+                .OrderBy(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
         }
     }
 }

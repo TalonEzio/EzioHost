@@ -12,7 +12,7 @@
     <button type="button" class="btn btn-primary mb-2">
 
         <NavLink href="/upload-video"
-                 class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Upload</NavLink>
+        class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Upload</NavLink>
     </button>
     @if (Videos.Any())
     {
@@ -20,7 +20,7 @@
             <thead>
                 <tr>
                     <th scope="col">Tiêu đề</th>
-                    <th scope="col">Thể loại</th>
+                    @* <th scope="col">Thể loại</th> *@
                     <th scope="col">Chất lượng</th>
                     @* <th scope="col">Trạng thái</th> *@
                     <th scope="col">Chia sẻ</th>
@@ -35,7 +35,7 @@
                             <InputText @bind-Value="video.Title" class="form-control" />
                         </td>
 
-                        <td>
+                       @*  <td>
                             <InputSelect class="form-select" @bind-Value="@video.Type">
                                 @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
                                 {
@@ -43,7 +43,7 @@
                                 }
                             </InputSelect>
                         </td>
-
+ *@
                         <td>
                             @{
                                 var content = string.Join(",", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
@@ -75,12 +75,18 @@
                                 @if (video.CanPlay)
                                 {
                                     <button type="button" class="btn btn-primary text-white" @onclick="() => PlayVideo(video)" disabled="@(!video.CanPlay)">Play</button>
+                                    <button class="btn btn-primary" type="button">
+                                        <a target="_blank" href="/api/video/download/@video.Id" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Download</a>
+                                    </button>
+
+
                                     <button type="button" class="btn btn-success">
                                         @{
                                             var shareUrl = $"/video-share/{video.Id}";
                                         }
                                         <NavLink href="@shareUrl" target="_blank" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Share</NavLink>
                                     </button>
+
                                 }
                                 @if (video.CanUpscale)
                                 {
@@ -89,6 +95,13 @@
                                         Upscale
                                     </button>
                                 }
+                                @if (video.VideoUpscales.Any() && video.VideoUpscales.First().Status == VideoEnum.VideoUpscaleStatus.Ready)
+                                {
+                                    <button class="btn btn-primary" type="button" >
+                                        <a target="_blank" href="/api/video/download-upscale/@video.Id" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Download Upscale</a>
+                                    </button>
+                                }
+
                                 <button type="button" class="btn btn-info text-white" @onclick="() => UpdateVideo(video)">Update</button>
                                 <button type="button" class="btn btn-danger text-white" @onclick="() => DeleteVideo(video)">Delete</button>
                             </div>
@@ -175,10 +188,30 @@ else
 
                 await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong {videoStream.Resolution.GetDescription()}");
             });
+            
+            _hubConnection.On<VideoProcessDoneEvent>(nameof(IVideoHubAction.ReceiveVideoProcessingDone), async args =>
+            {
+                var video = Videos.FirstOrDefault(x => x.Id == args.Video.Id);
+                if (video == null)
+                {
+                    Videos.Add(args.Video);
+                    await InvokeAsync(StateHasChanged);
+                    await JsRuntime.ShowSuccessToast($"Video {args.Video.Title} đã xử lý xong");
+                    return;
+                }
+
+                video.VideoStreams.Clear();
+                video.VideoStreams.AddRange(args.Video.VideoStreams);
+                video.Status = args.Video.Status;
+                video.M3U8Location = args.Video.M3U8Location;
+
+                await InvokeAsync(StateHasChanged);
+                await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong");
+            });
             try
             {
                 await _hubConnection.StartAsync();
-                await _hubConnection.SendAsync("SendMessage");
+                // await _hubConnection.SendAsync("SendMessage");
             }
             catch (Exception e)
             {

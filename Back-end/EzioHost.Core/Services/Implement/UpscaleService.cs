@@ -91,6 +91,8 @@ namespace EzioHost.Core.Services.Implement
                 throw new ArgumentException("Không có độ phân giải phù hợp", nameof(videoUpscale));
             }
 
+            if (videoUpscale.Resolution > VideoResolution._1080p) videoUpscale.Resolution = VideoResolution._1080p;//force
+
             var inferenceSession = GetInferenceSession(model);
 
             // Đường dẫn đến file video gốc
@@ -210,8 +212,7 @@ namespace EzioHost.Core.Services.Implement
                 videoUpscale.OutputLocation = Path.GetRelativePath(WebRootPath, outputVideoPath);
                 await UpdateVideoUpscale(videoUpscale);
 
-                var newVideoHlsStream =
-                    await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution);
+                var newVideoHlsStream = await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution);
 
                 await videoUnitOfWork.BeginTransactionAsync();
 
@@ -219,18 +220,20 @@ namespace EzioHost.Core.Services.Implement
                 video.VideoStreams.Add(newVideoHlsStream);
 
                 var currentResolution = videoUpscale.Resolution.GetDescription();
-                var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location))
-                    .Replace("\\", "/");
+                var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location)).Replace("\\","/");
 
                 var m3U8ContentBuilder = new StringBuilder();
                 m3U8ContentBuilder.AppendLine(
                     $"#EXT-X-STREAM-INF:BANDWIDTH={videoService.GetBandwidthForResolution(currentResolution)},RESOLUTION={videoService.GetResolutionDimensions(currentResolution)}");
                 m3U8ContentBuilder.AppendLine(filePath);
 
-                var m3U8MergeFileStream = new FileStream(Path.Combine(WebRootPath, video.M3U8Location), FileMode.Append,
+                await using var m3U8MergeFileStream = new FileStream(
+                    Path.Combine(WebRootPath, video.M3U8Location),
+                    FileMode.OpenOrCreate,
                     FileAccess.Write);
-
+                m3U8MergeFileStream.Seek(0, SeekOrigin.End);
                 await m3U8MergeFileStream.WriteAsync(Encoding.UTF8.GetBytes(m3U8ContentBuilder.ToString()));
+
 
                 await VideoRepository.UpdateVideoForUnitOfWork(video);
                 await videoUnitOfWork.CommitTransactionAsync();
@@ -270,14 +273,7 @@ namespace EzioHost.Core.Services.Implement
 
         public Task<VideoUpscale?> GetVideoNeedUpscale()
         {
-            return upscaleRepository.GetVideoUpscales(
-                expression: x => x.Status == VideoUpscaleStatus.Queue,
-                includes: [x => x.Video, x => x.Model, x => x.Video.VideoStreams]
-            ).ContinueWith(task =>
-            {
-                var videoUpscales = task.Result.OrderBy(x => x.CreatedAt);
-                return videoUpscales.FirstOrDefault();
-            });
+            return upscaleRepository.GetVideoNeedUpscale();
         }
     }
 }

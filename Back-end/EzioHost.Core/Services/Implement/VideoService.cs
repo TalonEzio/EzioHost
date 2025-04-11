@@ -26,13 +26,18 @@ namespace EzioHost.Core.Services.Implement
         private readonly IVideoRepository _videoRepository = videoUnitOfWork.VideoRepository;
         private readonly IVideoStreamRepository _videoStreamRepository = videoUnitOfWork.VideoStreamRepository;
 
+        public Task<Video?> GetVideoUpscaleById(Guid videoId)
+        {
+            return _videoRepository.GetVideoUpscaleById(videoId);
+        }
+
         public Task<Video?> GetVideoToEncode()
         {
             return _videoRepository.GetVideoToEncode();
         }
 
-
         public event Action<VideoStreamAddedEvent>? OnVideoStreamAdded;
+        public event Action<VideoProcessDoneEvent>? OnVideoProcessDone;
 
         public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null, Expression<Func<Video, object>>[]? includes = null)
         {
@@ -87,11 +92,11 @@ namespace EzioHost.Core.Services.Implement
                     _videoStreamRepository.Create(newVideoStream);
                     inputVideo.VideoStreams.Add(newVideoStream);
 
-                    OnVideoStreamAdded?.Invoke(new VideoStreamAddedEvent()
-                    {
-                        VideoId = inputVideo.Id,
-                        VideoStream = mapper.Map<VideoStreamDto>(newVideoStream)
-                    });
+                    //OnVideoStreamAdded?.Invoke(new VideoStreamAddedEvent()
+                    //{
+                    //    VideoId = inputVideo.Id,
+                    //    VideoStream = mapper.Map<VideoStreamDto>(newVideoStream)
+                    //});
                 }
 
                 var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
@@ -123,6 +128,14 @@ namespace EzioHost.Core.Services.Implement
                 await videoUnitOfWork.VideoRepository.UpdateVideoForUnitOfWork(inputVideo);
 
                 await videoUnitOfWork.CommitTransactionAsync();
+
+                inputVideo.VideoStreams = inputVideo.VideoStreams.DistinctBy(x => x.Id).ToList();
+                var videoMapper = mapper.Map<VideoDto>(inputVideo);
+
+                OnVideoProcessDone?.Invoke(new VideoProcessDoneEvent()
+                {
+                    Video = videoMapper
+                });
 
             }
             catch (Exception)

@@ -15,6 +15,7 @@ namespace EzioHost.WebAPI.Jobs
         public async Task Execute(IJobExecutionContext context)
         {
             videoService.OnVideoStreamAdded += VideoServiceOnOnVideoStreamAdded;
+            videoService.OnVideoProcessDone += VideoServiceOnOnVideoProcessDone;
 
             var stopwatch = Stopwatch.StartNew();
             try
@@ -24,6 +25,8 @@ namespace EzioHost.WebAPI.Jobs
                 {
                     logger.LogInformation($"[VideoProcessingJob] Encoding video ID: {videoToEncode.Id}");
                     await videoService.EncodeVideo(videoToEncode);
+
+
                 }
                 else
                 {
@@ -39,6 +42,11 @@ namespace EzioHost.WebAPI.Jobs
                 stopwatch.Stop();
                 logger.LogInformation($"[VideoProcessingJob] Finished in {stopwatch.ElapsedMilliseconds} ms");
             }
+        }
+
+        private void VideoServiceOnOnVideoProcessDone(VideoProcessDoneEvent obj)
+        {
+            videoHub.Clients.All.ReceiveVideoProcessingDone(obj).SafeFireAndForget();
         }
 
         private void VideoServiceOnOnVideoStreamAdded(VideoStreamAddedEvent obj)

@@ -8,10 +8,12 @@ namespace EzioHost.Core.Services.Interface
     public interface IVideoService
     {
         public event Action<VideoStreamAddedEvent> OnVideoStreamAdded;
+        public event Action<VideoProcessDoneEvent> OnVideoProcessDone;
 
         Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null,
             Expression<Func<Video, object>>[]? includes = null);
         Task<Video?> GetVideoById(Guid videoId);
+        Task<Video?> GetVideoUpscaleById(Guid videoId);
         Task<Video?> GetVideoToEncode();
         Task<Video> AddNewVideo(Video newVideo);
         Task<Video> UpdateVideo(Video updateVideo);
