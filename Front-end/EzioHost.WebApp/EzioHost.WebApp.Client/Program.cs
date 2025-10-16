@@ -17,7 +17,7 @@ internal class Program
 
         builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
         {
-            cfg.BaseAddress = new Uri(BaseUrlConstants.ReverseProxyUrl);
+            cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl);
         });
         builder.Services.AddScoped(provider => provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 

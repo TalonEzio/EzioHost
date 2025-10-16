@@ -1,11 +1,11 @@
-﻿using System.Diagnostics;
-using AsyncAwaitBestPractices;
+﻿using AsyncAwaitBestPractices;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Shared.Events;
 using EzioHost.Shared.Hubs;
 using EzioHost.WebAPI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Quartz;
+using System.Diagnostics;
 
 namespace EzioHost.WebAPI.Jobs
 {
@@ -25,8 +25,6 @@ namespace EzioHost.WebAPI.Jobs
                 {
                     logger.LogInformation($"[VideoProcessingJob] Encoding video ID: {videoToEncode.Id}");
                     await videoService.EncodeVideo(videoToEncode);
-
-
                 }
                 else
                 {

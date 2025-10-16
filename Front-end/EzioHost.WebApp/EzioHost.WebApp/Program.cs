@@ -18,6 +18,13 @@ public class Program
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents()
+            .AddHubOptions(cfg =>
+            {
+                cfg.MaximumReceiveMessageSize = 12 * 1024 * 1024;
+                cfg.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+                cfg.HandshakeTimeout = TimeSpan.FromSeconds(30);
+                cfg.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            })
             .AddInteractiveWebAssemblyComponents()
             .AddAuthenticationStateSerialization(cfg =>
             {
@@ -40,7 +47,7 @@ public class Program
                 ReverseProxyAuthenticationSchemeConstants.AuthenticationScheme,
                 cfg =>
                 {
-                    cfg.ReverseProxyBaseUrl = BaseUrlConstants.ReverseProxyUrl;
+                    cfg.ReverseProxyBaseUrl = BaseUrlCommon.ReverseProxyUrl;
                 });
         builder.Services.AddAuthorization();
 
@@ -48,7 +55,7 @@ public class Program
         builder.Services.AddTransient<RequestCookieHandler>();
         builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
         {
-            cfg.BaseAddress = new Uri(BaseUrlConstants.ReverseProxyUrl);
+            cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl);
         })
             .AddHttpMessageHandler<RequestCookieHandler>()
             ;
@@ -84,7 +91,7 @@ public class Program
 
 
         var app = builder.Build();
-        
+
         app.MapDefaultEndpoints();
 
         // Configure the HTTP request pipeline.

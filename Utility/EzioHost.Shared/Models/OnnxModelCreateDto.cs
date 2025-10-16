@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using EzioHost.Shared.Enums;
+﻿using EzioHost.Shared.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace EzioHost.Shared.Models
 {
@@ -9,7 +9,7 @@ namespace EzioHost.Shared.Models
         [StringLength(maximumLength: 200, MinimumLength = 2)]
         public string Name { get; set; } = string.Empty;
 
-        [Range(1, 8)] 
+        [Range(1, 8)]
         public int Scale { get; set; } = 1;
         [Range(0, 2160)]
         public int MustInputWidth { get; set; }

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EzioHost.Infrastructure.SqlServer.DataContext.Configurations
 {
-    public class FileUploadConfiguration :IEntityTypeConfiguration<FileUpload>
+    public class FileUploadConfiguration : IEntityTypeConfiguration<FileUpload>
     {
         public void Configure(EntityTypeBuilder<FileUpload> builder)
         {

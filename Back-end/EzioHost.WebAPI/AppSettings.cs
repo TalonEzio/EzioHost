@@ -14,5 +14,5 @@ namespace EzioHost.WebAPI
         public string Audience { get; set; } = string.Empty;
         public string MetaDataAddress { get; set; } = string.Empty;
     }
-    
+
 }

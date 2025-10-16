@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Text;
-using EzioHost.Core.Private;
+﻿using EzioHost.Core.Private;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
@@ -11,15 +9,17 @@ using FFMpegCore;
 using FFMpegCore.Enums;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
+using System.Collections.Concurrent;
+using System.Text;
 using static EzioHost.Shared.Enums.VideoEnum;
 
 namespace EzioHost.Core.Services.Implement
 {
     public class UpscaleService(IDirectoryProvider directoryProvider, IUpscaleRepository upscaleRepository, IVideoService videoService, IVideoUnitOfWork videoUnitOfWork) : IUpscaleService
     {
-        private const int ConcurrentUpscaleTask = 10;
-        private const string FramePattern = "frame_%05d.jpg";
-        private const string FrameSearchPattern = "frame_*.jpg";
+        private const int CONCURRENT_UPSCALE_TASK = 2;
+        private const string FRAME_PATTERN = "frame_%05d.jpg";
+        private const string FRAME_SEARCH_PATTERN = "frame_*.jpg";
 
         private static readonly ImageEncodingParam ImageEncodingParam;
         private static readonly ImageOpenCvUpscaler Upscaler;
@@ -35,10 +35,18 @@ namespace EzioHost.Core.Services.Implement
         {
             ImageEncodingParam = new ImageEncodingParam(ImwriteFlags.JpegQuality, 90);
 
-            SessionOptions = SessionOptions.MakeSessionOptionWithCudaProvider(new OrtCUDAProviderOptions());
+            try
+            {
+                SessionOptions = SessionOptions.MakeSessionOptionWithCudaProvider(new OrtCUDAProviderOptions());
+            }
+            catch
+            {
+                SessionOptions = new SessionOptions();
+            }
+
             Upscaler = new ImageOpenCvUpscaler();
         }
-
+        
         private static ConcurrentDictionary<Guid, InferenceSession> CacheInferenceSessions { get; } = [];
 
         private InferenceSession GetInferenceSession(OnnxModel onnxModel)
@@ -133,7 +141,7 @@ namespace EzioHost.Core.Services.Implement
 
                 var frameExtractionArguments = FFMpegArguments
                     .FromFileInput(inputVideoPath)
-                    .OutputToFile(Path.Combine(framesDir, FramePattern), true, options => options
+                    .OutputToFile(Path.Combine(framesDir, FRAME_PATTERN), true, options => options
                         .WithFramerate(frameRate)
                         .WithCustomArgument("-qscale:v 1")
                         .WithCustomArgument("-qmin 1")
@@ -155,9 +163,9 @@ namespace EzioHost.Core.Services.Implement
                     audioExtractionArguments.ProcessAsynchronously()
                 );
 
-                var frameFiles = Directory.GetFiles(framesDir, FrameSearchPattern).OrderBy(f => f).ToList();
+                var frameFiles = Directory.GetFiles(framesDir, FRAME_SEARCH_PATTERN).OrderBy(f => f).ToList();
 
-                var semaphore = new SemaphoreSlim(ConcurrentUpscaleTask);
+                var semaphore = new SemaphoreSlim(CONCURRENT_UPSCALE_TASK);
                 var tasks = new List<Task>();
 
                 foreach (var frameFile in frameFiles)
@@ -185,7 +193,7 @@ namespace EzioHost.Core.Services.Implement
 
 
                 var videoCreationArguments = FFMpegArguments
-                    .FromFileInput(Path.Combine(upscaledFramesDir, FramePattern), false, options => options
+                    .FromFileInput(Path.Combine(upscaledFramesDir, FRAME_PATTERN), false, options => options
                         .WithFramerate(frameRate)
                     )
                     .OutputToFile(Path.Combine(tempDir, randomVideoFileName), true, options => options
@@ -220,7 +228,7 @@ namespace EzioHost.Core.Services.Implement
                 video.VideoStreams.Add(newVideoHlsStream);
 
                 var currentResolution = videoUpscale.Resolution.GetDescription();
-                var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location)).Replace("\\","/");
+                var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location)).Replace("\\", "/");
 
                 var m3U8ContentBuilder = new StringBuilder();
                 m3U8ContentBuilder.AppendLine(

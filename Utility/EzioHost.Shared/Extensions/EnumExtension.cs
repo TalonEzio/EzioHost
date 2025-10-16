@@ -32,7 +32,7 @@ namespace EzioHost.Shared.Extensions
         {
             return Enum.GetValues(typeof(TEnum))
                 .Cast<TEnum>()
-                .Where(e => Comparer<TEnum>.Default.Compare(e, value) <= 0);
+                .Where(e => Comparer<TEnum>.Default.Compare(e, value) == 0);
         }
     }
 }

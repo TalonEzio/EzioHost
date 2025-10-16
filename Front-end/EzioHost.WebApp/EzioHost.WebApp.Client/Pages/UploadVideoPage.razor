@@ -1,7 +1,7 @@
 ﻿@page "/upload-video"
 @using static Shared.Common.UploadConstants
 @inject HttpClient HttpClient
-@rendermode InteractiveWebAssembly
+@rendermode InteractiveServer
 @attribute [Authorize]
 
 @if (RendererInfo.IsInteractive)
@@ -10,7 +10,7 @@
         <h3>Upload Videos</h3>
 
         <div class="upload-box">
-            <InputFile class="form-control" OnChange="OnFilesChange" multiple id="@InputFileId" accept=".mp4,.mkv,.avi" />
+            <InputFile class="form-control" OnChange="OnFilesChange" multiple id="@INPUT_FILE_ID" accept=".mp4,.mkv,.avi" />
         </div>
 
         @if (_fileUploads.Any())
@@ -62,7 +62,7 @@ else
 }
 
 @code {
-    private const string InputFileId = "fileInput";
+    private const string INPUT_FILE_ID = "fileInput";
 
     private bool _isUploading;
 
@@ -118,7 +118,7 @@ else
 
     private async Task UploadSingleFile(FileUploadItem fileUpload, int index)
     {
-        var fileStream = new SeekableFileStream(JsRuntime, InputFileId, index, fileUpload.File.Size);
+        var fileStream = new SeekableFileStream(JsRuntime, INPUT_FILE_ID, index, fileUpload.File.Size);
         var fileInfo = await InitUploadAsync(fileUpload, fileStream);
 
         if (fileInfo.IsCompleted)

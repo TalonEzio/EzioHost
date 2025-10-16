@@ -1,13 +1,13 @@
-﻿using System.Linq.Expressions;
-using EzioHost.Core.Providers;
+﻿using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
+using System.Linq.Expressions;
 
 namespace EzioHost.Core.Services.Implement
 {
-    public class FileUploadService(IFileUploadRepository fileUploadRepository, IDirectoryProvider directoryProvider,IVideoService videoService) : IFileUploadService
+    public class FileUploadService(IFileUploadRepository fileUploadRepository, IDirectoryProvider directoryProvider, IVideoService videoService) : IFileUploadService
     {
         private string BaseWebRootFolder => directoryProvider.GetWebRootPath();
         private string BaseUploadFolder => directoryProvider.GetBaseUploadFolder();
@@ -109,7 +109,7 @@ namespace EzioHost.Core.Services.Implement
                 Status = VideoEnum.VideoStatus.Queue,
                 Type = fileUpload.Type
             };
-            
+
             await videoService.AddNewVideo(newVideo);
             await DeleteFileUpload(fileUpload);
             return VideoEnum.FileUploadStatus.Completed;

@@ -9,33 +9,33 @@
 
 @if (RendererInfo.IsInteractive)
 {
-    <button type="button" class="btn btn-primary mb-2">
+	<button type="button" class="btn btn-primary mb-2">
 
-        <NavLink href="/upload-video"
-        class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Upload</NavLink>
-    </button>
-    @if (Videos.Any())
-    {
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">Tiêu đề</th>
-                    @* <th scope="col">Thể loại</th> *@
-                    <th scope="col">Chất lượng</th>
-                    @* <th scope="col">Trạng thái</th> *@
-                    <th scope="col">Chia sẻ</th>
-                    <th scope="col">Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var video in Videos)
-                {
-                    <tr scope="row">
-                        <td>
-                            <InputText @bind-Value="video.Title" class="form-control" />
-                        </td>
+		<NavLink href="/upload-video"
+				 class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Upload</NavLink>
+	</button>
+	@if (Videos.Any())
+	{
+		<table class="table table-hover">
+			<thead>
+				<tr>
+					<th scope="col">Tiêu đề</th>
+					@* <th scope="col">Thể loại</th> *@
+					<th scope="col">Chất lượng</th>
+					@* <th scope="col">Trạng thái</th> *@
+					<th scope="col">Chia sẻ</th>
+					<th scope="col">Hành động</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var video in Videos)
+				{
+					<tr scope="row">
+						<td>
+							<InputText @bind-Value="video.Title" class="form-control" readonly="@(!video.CanPlay)" />
+						</td>
 
-                       @*  <td>
+						@*  <td>
                             <InputSelect class="form-select" @bind-Value="@video.Type">
                                 @foreach (var value in Enum.GetValues<VideoEnum.VideoType>())
                                 {
@@ -43,223 +43,229 @@
                                 }
                             </InputSelect>
                         </td>
- *@
-                        <td>
-                            @{
-                                var content = string.Join(",", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
-                                if (string.IsNullOrEmpty(content)) content = "Đợi xử lý";
-                            }
-                            <text>@content</text>
-                        </td>
+						*@
+						<td style="vertical-align:middle">
+							@{
+								var content = string.Join(",", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
+								if (string.IsNullOrEmpty(content)) content = "Đợi xử lý";
+							}
+							<span class="badge text-bg-primary">@content</span>
+						</td>
 
-                        @* <td>@video.Status.GetDescription()</td> *@
+						@* <td>@video.Status.GetDescription()</td> *@
 
-                        <td>
-                            @if (video.CanPlay)
-                            {
-                                <InputSelect class="form-select" @bind-Value="@video.ShareType">
-                                    @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
-                                    {
-                                        <option value="@value">@value.GetDescription()</option>
-                                    }
-                                </InputSelect>
-                            }
-                            else
-                            {
-                                <p class="p">Đợi xử lý</p>
-                            }
-                        </td>
+						<td>
+							@if (video.CanPlay)
+							{
+								<InputSelect class="form-select" @bind-Value="@video.ShareType">
+									@foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
+									{
+										<option value="@value">@value.GetDescription()</option>
+									}
+								</InputSelect>
+							}
+							else
+							{
+								<p class="p">Đợi xử lý</p>
+							}
+						</td>
 
-                        <td>
-                            <div class="btn-group" role="group" aria-label="Action">
-                                @if (video.CanPlay)
-                                {
-                                    <button type="button" class="btn btn-primary text-white" @onclick="() => PlayVideo(video)" disabled="@(!video.CanPlay)">Play</button>
-                                    <button class="btn btn-primary" type="button">
-                                        <a target="_blank" href="/api/video/download/@video.Id" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Download</a>
-                                    </button>
+						<td>
+							<div class="btn-group" role="group" aria-label="Action">
+								@if (video.CanPlay)
+								{
+									<button type="button" class="btn btn-primary text-white" @onclick="() => PlayVideo(video)" disabled="@(!video.CanPlay)">Play</button>
+
+									<a target="_blank"
+									   href="/api/video/download/@video.Id"
+									   class="btn btn-primary text-white link-offset-2 link-offset-3-hover
+          link-underline link-underline-opacity-0 link-underline-opacity-75-hover">
+										Download
+									</a>
+
+									<a target="_blank"
+									   href="/video-share/@video.Id"
+									   class="btn btn-success text-white link-offset-2 link-offset-3-hover
+          link-underline link-underline-opacity-0 link-underline-opacity-75-hover">
+										Share
+									</a>
 
 
-                                    <button type="button" class="btn btn-success">
-                                        @{
-                                            var shareUrl = $"/video-share/{video.Id}";
-                                        }
-                                        <NavLink href="@shareUrl" target="_blank" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Share</NavLink>
-                                    </button>
+								}
+								@if (video.CanUpscale)
+								{
+									var upscaleUrl = "/video-upscale/" + video.Id;
+									<button class="btn btn-warning text-white" @onclick="@(async () => await JsRuntime.NavigateToAsync(upscaleUrl))">
+										Upscale
+									</button>
+								}
+								@if (video.VideoUpscales.Any() && video.VideoUpscales.First().Status == VideoEnum.VideoUpscaleStatus.Ready)
+								{
+									<button class="btn btn-primary" type="button">
+										<a target="_blank" href="/api/video/download-upscale/@video.Id" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Download Upscale</a>
+									</button>
+								}
 
-                                }
-                                @if (video.CanUpscale)
-                                {
-                                    var upscaleUrl = "/video-upscale/" + video.Id;
-                                    <button class="btn btn-warning text-white" @onclick="@(async () => await JsRuntime.NavigateToAsync(upscaleUrl))">
-                                        Upscale
-                                    </button>
-                                }
-                                @if (video.VideoUpscales.Any() && video.VideoUpscales.First().Status == VideoEnum.VideoUpscaleStatus.Ready)
-                                {
-                                    <button class="btn btn-primary" type="button" >
-                                        <a target="_blank" href="/api/video/download-upscale/@video.Id" class="text-white link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Download Upscale</a>
-                                    </button>
-                                }
+								<button type="button" class="btn btn-info text-white" @onclick="() => UpdateVideo(video)">Update</button>
+								<button type="button" class="btn btn-danger text-white" @onclick="() => DeleteVideo(video)">Delete</button>
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
 
-                                <button type="button" class="btn btn-info text-white" @onclick="() => UpdateVideo(video)">Update</button>
-                                <button type="button" class="btn btn-danger text-white" @onclick="() => DeleteVideo(video)">Delete</button>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-
-    }
-    else
-    {
-        <p>Chưa có video nào, vui lòng upload</p>
-    }
-    <div class="row d-flex justify-content-center">
-        <div class="col-6">
-            <div id="player"></div>
-        </div>
-    </div>
+	}
+	else
+	{
+		<p>Chưa có video nào, vui lòng upload</p>
+	}
+	<div class="row d-flex justify-content-center">
+		<div class="col-6">
+			<div id="player"></div>
+		</div>
+	</div>
 }
 else
 {
-    <p>Wait for interactive...</p>
+	<p>Wait for interactive...</p>
 }
 
 @code {
-    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
-    [Inject] public HttpClient Http { get; set; } = null!;
-    [Inject] private PersistentComponentState State { get; set; } = null!;
+	[Inject] public IJSRuntime JsRuntime { get; set; } = null!;
+	[Inject] public HttpClient Http { get; set; } = null!;
+	[Inject] private PersistentComponentState State { get; set; } = null!;
 
-    private List<VideoDto> Videos { get; set; } = [];
-    private HubConnection? _hubConnection;
+	private List<VideoDto> Videos { get; set; } = [];
+	private HubConnection? _hubConnection;
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (!State.TryTakeFromJson<List<VideoDto>>(nameof(Videos), out var savedVideos))
-        {
-            Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
-        }
-        else
-        {
-            if (savedVideos != null) Videos = savedVideos;
-        }
+	protected override async Task OnInitializedAsync()
+	{
+		if (!State.TryTakeFromJson<List<VideoDto>>(nameof(Videos), out var savedVideos))
+		{
+			Videos = await Http.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+		}
+		else
+		{
+			if (savedVideos != null) Videos = savedVideos;
+		}
 
-        State.RegisterOnPersisting(PersistState);
-    }
-    private Task PersistState()
-    {
-        State.PersistAsJson(nameof(Videos), Videos);
-        return Task.CompletedTask;
-    }
-
-
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            var url = await JsRuntime.GetOrigin();
-
-            var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
-
-            _hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl, options =>
-                {
-                    options.AccessTokenProvider = () => Http.GetStringAsync("/access-token")!;
-                })
-                .Build();
-
-            _hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage), async (message) =>
-            {
-                await JsRuntime.ShowSuccessToast(message);
-            });
-
-            _hubConnection.On<VideoStreamAddedEvent>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
-            {
-                var video = Videos.FirstOrDefault(x => x.Id == args.VideoId);
-                if (video == null) return;
-
-                var videoStream = args.VideoStream;
-                video.VideoStreams.Add(videoStream);
-
-                await InvokeAsync(StateHasChanged);
-
-                await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong {videoStream.Resolution.GetDescription()}");
-            });
-            
-            _hubConnection.On<VideoProcessDoneEvent>(nameof(IVideoHubAction.ReceiveVideoProcessingDone), async args =>
-            {
-                var video = Videos.FirstOrDefault(x => x.Id == args.Video.Id);
-                if (video == null)
-                {
-                    Videos.Add(args.Video);
-                    await InvokeAsync(StateHasChanged);
-                    await JsRuntime.ShowSuccessToast($"Video {args.Video.Title} đã xử lý xong");
-                    return;
-                }
-
-                video.VideoStreams.Clear();
-                video.VideoStreams.AddRange(args.Video.VideoStreams);
-                video.Status = args.Video.Status;
-                video.M3U8Location = args.Video.M3U8Location;
-
-                await InvokeAsync(StateHasChanged);
-                await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong");
-            });
-            try
-            {
-                await _hubConnection.StartAsync();
-                // await _hubConnection.SendAsync("SendMessage");
-            }
-            catch (Exception e)
-            {
-                await JsRuntime.ShowErrorToast($"Lỗi kết nối đến server: {e.Message}");
-            }
-        }
-    }
+		State.RegisterOnPersisting(PersistState);
+	}
+	private Task PersistState()
+	{
+		State.PersistAsJson(nameof(Videos), Videos);
+		return Task.CompletedTask;
+	}
 
 
-    private async Task PlayVideo(VideoDto video)
-    {
-        await JsRuntime.InvokeVoidAsync("playVideo", "player", video.M3U8Location);
-    }
 
-    private async Task UpdateVideo(VideoDto video)
-    {
-        try
-        {
-            var result = await Http.PostAsJsonAsync("api/Video", video);
-            result.EnsureSuccessStatusCode();
-            await JsRuntime.ShowSuccessToast($"Cập nhật thành công");
-        }
-        catch (Exception e)
-        {
-            await JsRuntime.ShowErrorToast($"Cập nhật lỗi: {e.Message}.");
-        }
-    }
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			var url = await JsRuntime.GetOrigin();
 
-    private async Task DeleteVideo(VideoDto video)
-    {
-        try
-        {
-            var result = await Http.DeleteAsync($"api/Video/{video.Id}");
-            await JsRuntime.ShowSuccessToast($"Video xóa thành công.");
+			var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
 
-            result.EnsureSuccessStatusCode();
-            Videos.Remove(video);
-        }
-        catch (Exception e)
-        {
-            await JsRuntime.ShowErrorToast($"Video xóa lỗi: {e.Message}!");
+			_hubConnection = new HubConnectionBuilder()
+				.WithUrl(hubUrl, options =>
+				{
+					options.AccessTokenProvider = () => Http.GetStringAsync("/access-token")!;
+				})
+				.Build();
 
-        }
-    }
+			_hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage), async (message) =>
+			{
+				await JsRuntime.ShowSuccessToast(message);
+			});
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_hubConnection != null) await _hubConnection.DisposeAsync();
-    }
+			_hubConnection.On<VideoStreamAddedEvent>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
+			{
+				var video = Videos.FirstOrDefault(x => x.Id == args.VideoId);
+				if (video == null) return;
+
+				var videoStream = args.VideoStream;
+				video.VideoStreams.Add(videoStream);
+				video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
+				await InvokeAsync(StateHasChanged);
+
+				await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong {videoStream.Resolution.GetDescription()}");
+			});
+
+			_hubConnection.On<VideoProcessDoneEvent>(nameof(IVideoHubAction.ReceiveVideoProcessingDone), async args =>
+			{
+				var video = Videos.FirstOrDefault(x => x.Id == args.Video.Id);
+				if (video == null)
+				{
+					Videos.Add(args.Video);
+					await InvokeAsync(StateHasChanged);
+					await JsRuntime.ShowSuccessToast($"Video {args.Video.Title} đã xử lý xong");
+					return;
+				}
+
+				video.VideoStreams.Clear();
+				video.VideoStreams.AddRange(args.Video.VideoStreams);
+				video.Status = args.Video.Status;
+				video.M3U8Location = args.Video.M3U8Location;
+
+				video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
+
+				await InvokeAsync(StateHasChanged);
+				await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong");
+			});
+			try
+			{
+				await _hubConnection.StartAsync();
+				// await _hubConnection.SendAsync("SendMessage");
+			}
+			catch (Exception e)
+			{
+				await JsRuntime.ShowErrorToast($"Lỗi kết nối đến server: {e.Message}");
+			}
+		}
+	}
+
+
+	private async Task PlayVideo(VideoDto video)
+	{
+		await JsRuntime.InvokeVoidAsync("playVideo", "player", video.M3U8Location);
+	}
+
+	private async Task UpdateVideo(VideoDto video)
+	{
+		try
+		{
+			var result = await Http.PostAsJsonAsync("api/Video", video);
+			result.EnsureSuccessStatusCode();
+			await JsRuntime.ShowSuccessToast($"Cập nhật thành công");
+		}
+		catch (Exception e)
+		{
+			await JsRuntime.ShowErrorToast($"Cập nhật lỗi: {e.Message}.");
+		}
+	}
+
+	private async Task DeleteVideo(VideoDto video)
+	{
+		try
+		{
+			var result = await Http.DeleteAsync($"api/Video/{video.Id}");
+			await JsRuntime.ShowSuccessToast($"Video xóa thành công.");
+
+			result.EnsureSuccessStatusCode();
+			Videos.Remove(video);
+		}
+		catch (Exception e)
+		{
+			await JsRuntime.ShowErrorToast($"Video xóa lỗi: {e.Message}!");
+
+		}
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		if (_hubConnection != null) await _hubConnection.DisposeAsync();
+	}
 
 }

@@ -1,11 +1,12 @@
 ﻿using EzioHost.Shared.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Security.Claims;
 
 namespace EzioHost.ReverseProxy.Controllers
 {
@@ -14,7 +15,7 @@ namespace EzioHost.ReverseProxy.Controllers
     {
 
         [HttpGet("/login")]
-        public async Task Login(string? returnUrl)
+        public async Task Login([FromQuery] string? returnUrl)
         {
             if (HttpContext.User.Identity is { IsAuthenticated: true })
             {
@@ -44,11 +45,9 @@ namespace EzioHost.ReverseProxy.Controllers
         }
 
         [HttpGet("/user")]
+        [Authorize]
         public IActionResult GetUser()
         {
-            if (HttpContext.User.Identity is { IsAuthenticated: false }) return Unauthorized();
-            if (HttpContext.User.Identity is not ClaimsIdentity) return Unauthorized();
-
             var claims = HttpContext.User.Claims.ToList();
 
             var nameClaim = claims.FirstOrDefault(c => c.Type == appSettings.CurrentValue.OpenIdConnect.NameClaimType);
@@ -71,10 +70,10 @@ namespace EzioHost.ReverseProxy.Controllers
         [HttpGet("/access-token")]
         public async Task<IActionResult> GetAccessToken()
         {
-            if (HttpContext.User.Identity is { IsAuthenticated: false }) return Unauthorized();
-            if (HttpContext.User.Identity is not ClaimsIdentity) return Unauthorized();
+            if (HttpContext.User.Identity is { IsAuthenticated: false } or not ClaimsIdentity) return Unauthorized();
 
-            return Ok(await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken));
+            var idToken = await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.IdToken);
+            return Ok(idToken);
         }
     }
 }

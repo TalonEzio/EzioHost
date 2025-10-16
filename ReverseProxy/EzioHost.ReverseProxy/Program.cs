@@ -1,12 +1,13 @@
-﻿using System.Net.Http.Headers;
-using System.Security.Claims;
-using EzioHost.ReverseProxy.Extensions;
+﻿using EzioHost.ReverseProxy.Extensions;
 using EzioHost.Shared.Common;
 using EzioHost.Shared.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using Serilog;
 using Yarp.ReverseProxy.Transforms;
 
 namespace EzioHost.ReverseProxy
@@ -50,9 +51,8 @@ namespace EzioHost.ReverseProxy
                     //options.GetClaimsFromUserInfoEndpoint = true;
 
                     options.Scope.Add(OpenIdConnectScope.Email);
-                    options.Scope.Add(OpenIdConnectScope
-                        .OfflineAccess); //need for refresh token if provider not set default
-                    options.Scope.Add(settings.OpenIdConnect.WebApiScope); //need add this scope from OIDC server
+                    options.Scope.Add(OpenIdConnectScope.OfflineAccess); //need for refresh token if provider not set default
+                    options.Scope.Add(settings.OpenIdConnect.WebApiScope); //custom scope from OIDC server
 
                     options.RequireHttpsMetadata = false;
 
@@ -91,8 +91,7 @@ namespace EzioHost.ReverseProxy
                                     var response = await httpClient.PostAsJsonAsync("api/User", body);
                                     response.EnsureSuccessStatusCode();
 
-                                    var userDto =
-                                        await response.Content.ReadFromJsonAsync<UserCreateUpdateResponseDto>();
+                                    var userDto = await response.Content.ReadFromJsonAsync<UserCreateUpdateResponseDto>();
 
                                     if (userDto?.Id != null)
                                     {
@@ -112,7 +111,7 @@ namespace EzioHost.ReverseProxy
 
                 });
             builder.Services.AddHttpClient(nameof(EzioHost),
-                cfg => { cfg.BaseAddress = new Uri(BaseUrlConstants.ReverseProxyUrl); });
+                cfg => { cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl); });
 
             builder.Services.AddScoped(serviceProvider =>
                 serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
@@ -137,7 +136,7 @@ namespace EzioHost.ReverseProxy
                             var user = transformContext.HttpContext.User;
                             if (user.Identity is ClaimsIdentity && user.Identity.IsAuthenticated)
                             {
-                                var accessToken = await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
+                                var accessToken = await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames.IdToken);
                                 transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
                                 var subClaimValue = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
@@ -164,6 +163,13 @@ namespace EzioHost.ReverseProxy
                 });
             });
 
+
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(builder.Configuration)
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
+
             var app = builder.Build();
 
             app.MapDefaultEndpoints();
@@ -178,20 +184,21 @@ namespace EzioHost.ReverseProxy
 
             app.UseCors(nameof(EzioHost));
 
+            app.UseSerilogRequestLogging(opts =>
+            {
+                opts.IncludeQueryInRequestPath = true;
+            });
 
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseAntiforgery();
 
             //Forward to frontend
-            app.MapForwarder("{**rest}", BaseUrlConstants.FrontendUrl);
+            app.MapForwarder("{**rest}", BaseUrlCommon.FrontendUrl);
 
             app.MapReverseProxy();
 
             app.MapControllers();
-
-
-
 
             app.Run();
         }

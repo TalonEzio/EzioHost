@@ -1,5 +1,5 @@
-﻿using System.Linq.Expressions;
-using EzioHost.Domain.Entities;
+﻿using EzioHost.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace EzioHost.Core.Repositories
 {

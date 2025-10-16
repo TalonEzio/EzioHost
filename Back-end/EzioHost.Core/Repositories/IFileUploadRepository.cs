@@ -1,11 +1,11 @@
-﻿using System.Linq.Expressions;
-using EzioHost.Domain.Entities;
+﻿using EzioHost.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace EzioHost.Core.Repositories
 {
     public interface IFileUploadRepository
     {
-        Task<FileUpload?> GetFileUploadByCondition(Expression<Func<FileUpload,bool>> expression);
+        Task<FileUpload?> GetFileUploadByCondition(Expression<Func<FileUpload, bool>> expression);
         Task<FileUpload?> GetFileUploadById(Guid id);
         Task<FileUpload> AddFileUpload(FileUpload fileUpload);
         Task<FileUpload> UpdateFileUpload(FileUpload fileUpload);

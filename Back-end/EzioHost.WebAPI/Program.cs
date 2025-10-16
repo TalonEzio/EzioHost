@@ -61,7 +61,6 @@ namespace EzioHost.WebAPI
                             ClockSkew = TimeSpan.Zero
                         };
 
-
                         x.Events = new JwtBearerEvents
                         {
                             OnMessageReceived = context =>
@@ -149,7 +148,10 @@ namespace EzioHost.WebAPI
                 cfg.WaitForJobsToComplete = true;
             });
 
-            builder.Services.AddAutoMapper(typeof(MapperClass));
+            builder.Services.AddAutoMapper(cfg =>
+            {
+                cfg.AddMaps(typeof(MapperClass));
+            });
 
             builder.Services.AddScoped<BindingUserIdMiddleware>();
 

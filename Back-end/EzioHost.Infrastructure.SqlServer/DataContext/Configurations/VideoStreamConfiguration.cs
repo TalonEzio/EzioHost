@@ -8,10 +8,10 @@ namespace EzioHost.Infrastructure.SqlServer.DataContext.Configurations
     {
         public void Configure(EntityTypeBuilder<VideoStream> builder)
         {
-            builder.Property(x=>x.M3U8Location).HasMaxLength(500).IsUnicode();
+            builder.Property(x => x.M3U8Location).HasMaxLength(500).IsUnicode();
 
-            builder.Property(x=>x.Key).IsRequired().HasMaxLength(32).IsUnicode(false);
-            builder.Property(x=>x.IV).IsRequired().HasMaxLength(32).IsUnicode(false);
+            builder.Property(x => x.Key).IsRequired().HasMaxLength(32).IsUnicode(false);
+            builder.Property(x => x.Iv).IsRequired().HasMaxLength(32).IsUnicode(false);
         }
     }
 }

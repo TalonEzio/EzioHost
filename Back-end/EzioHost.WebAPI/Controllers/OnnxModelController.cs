@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using AutoMapper;
+﻿using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
@@ -7,6 +6,7 @@ using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace EzioHost.WebAPI.Controllers
 {

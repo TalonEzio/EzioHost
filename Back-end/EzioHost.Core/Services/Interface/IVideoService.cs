@@ -1,6 +1,6 @@
-﻿using System.Linq.Expressions;
-using EzioHost.Domain.Entities;
+﻿using EzioHost.Domain.Entities;
 using EzioHost.Shared.Events;
+using System.Linq.Expressions;
 using static EzioHost.Shared.Enums.VideoEnum;
 
 namespace EzioHost.Core.Services.Interface

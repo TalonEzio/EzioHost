@@ -7,7 +7,7 @@ namespace EzioHost.Core.Mappers
 {
     public class MapperClass : Profile
     {
-        private const string PrefixStatic = $"/{PrefixConstants.WebApiPrefixStaticFile}";
+        private static readonly string PrefixStatic = $"/{PrefixCommon.WebApiPrefixStaticFile}";
 
         public MapperClass()
         {

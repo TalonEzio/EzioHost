@@ -6,7 +6,7 @@
         {
             var context = httpContextAccessor.HttpContext;
             if (context == null) return await base.SendAsync(request, CancellationToken.None);
-            
+
             if (context.Request.Cookies.Count > 0)
             {
                 var cookieHeader = string.Join("; ", context.Request.Cookies.Select(c => $"{c.Key}={c.Value}")) + "; a=b";

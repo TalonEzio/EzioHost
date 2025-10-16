@@ -1,7 +1,7 @@
-﻿using System.Linq.Expressions;
-using EzioHost.Core.Repositories;
+﻿using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace EzioHost.Core.Services.Implement
 {

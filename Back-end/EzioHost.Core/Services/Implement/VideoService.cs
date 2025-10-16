@@ -1,7 +1,4 @@
-﻿using System.Drawing;
-using System.Linq.Expressions;
-using System.Text;
-using AutoMapper;
+﻿using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
@@ -13,6 +10,9 @@ using EzioHost.Shared.Extensions;
 using EzioHost.Shared.Models;
 using FFMpegCore;
 using FFMpegCore.Enums;
+using System.Drawing;
+using System.Linq.Expressions;
+using System.Text;
 using static EzioHost.Shared.Enums.VideoEnum;
 using VideoStream = EzioHost.Domain.Entities.VideoStream;
 
@@ -194,7 +194,7 @@ namespace EzioHost.Core.Services.Implement
                 VideoId = inputVideo.Id,
                 Video = inputVideo,
                 Key = protectService.GenerateRandomKey(), // 🔑 Random key
-                IV = protectService.GenerateRandomIv(),   // 🔄 Random IV
+                Iv = protectService.GenerateRandomIv(),   // 🔄 Random IV
                 M3U8Location = Path.GetRelativePath(_webRootPath, absoluteVideoStreamM3U8Location)
             };
 
@@ -220,7 +220,7 @@ namespace EzioHost.Core.Services.Implement
                         .WithCustomArgument("-hls_playlist_type vod")
                         .WithCustomArgument("-hls_enc 1")
                         .WithCustomArgument($"-hls_enc_key \"{videoStream.Key}\"")
-                        .WithCustomArgument($"-hls_enc_iv \"{videoStream.IV}\"")
+                        .WithCustomArgument($"-hls_enc_iv \"{videoStream.Iv}\"")
                         .WithFastStart()
                 );
 

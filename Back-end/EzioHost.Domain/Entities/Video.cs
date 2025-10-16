@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using EzioHost.Shared.Enums;
+﻿using EzioHost.Shared.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EzioHost.Domain.Entities
 {

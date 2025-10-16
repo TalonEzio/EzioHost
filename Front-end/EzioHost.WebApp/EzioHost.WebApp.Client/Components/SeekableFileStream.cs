@@ -82,14 +82,14 @@ internal sealed class SeekableFileStream : Stream
 
         if (_bufferOffset < _bufferSize)
         {
-            int bytesToCopy = Math.Min(count, _bufferSize - _bufferOffset);
+            var bytesToCopy = Math.Min(count, _bufferSize - _bufferOffset);
             Array.Copy(_buffer, _bufferOffset, buffer, offset, bytesToCopy);
             _bufferOffset += bytesToCopy;
             _position += bytesToCopy;
             return bytesToCopy;
         }
 
-        int bytesToRead = Math.Min(count, (int)(Length - _position));
+        var bytesToRead = Math.Min(count, (int)(Length - _position));
         if (bytesToRead <= 0)
         {
             return 0;
