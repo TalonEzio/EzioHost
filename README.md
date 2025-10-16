@@ -14,11 +14,11 @@ Bạn có thể thử nghiệm các file mẫu/tài nguyên có sẵn trong thư
 - **frame_compare.png**: Ảnh so sánh trước/sau nâng cấp để quan sát chất lượng.<br>
   <img src="Resources/frame_compare.png" alt="frame_compare.png" width="320"/>
 
-- **demo_480p.mp4**: Video mẫu 480p để upload, mã hóa HLS và nâng cấp bằng AI.<br>
-  <video src="Resources/demo_480p.mp4" controls width="320"></video>
+- **demo_480p.mp4**: Video mẫu 480p để upload, mã hóa HLS và nâng cấp bằng AI.  
+https://github.com/TalonEzio/EzioHost/blob/master/Resources/demo_480p.mp4
 
-- **demo_480p_upscaled.mp4**: Video mẫu đã được nâng cấp từ 480p (tham khảo kết quả).<br>
-  <video src="Resources/demo_480p_upscaled.mp4" controls width="320"></video>
+- **demo_480p_upscaled.mp4**: Video mẫu đã được nâng cấp từ 480p (tham khảo kết quả).  
+https://github.com/TalonEzio/EzioHost/blob/master/Resources/demo_480p_upscaled.mp4
 
 > **Lưu ý**: Các file này chỉ nên dùng cho mục đích kiểm thử. Có thể dùng chúng để upload thử nghiệm qua giao diện web hoặc các API liên quan.
 
