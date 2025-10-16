@@ -3,23 +3,28 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-#Video files
-[Vv]ideos/
-*.m3u8
-*.ts
-*.mp4
-*.mkv
-*.keyinfo
-[Uu]ploads/
-*.chunk
-# Model files
-OnnxModels/
-*.onnx
-*.bin
-*.pth
-*.param
-# Content files
-wwwroot/
+# =========================
+# Ignore rules for Backend only
+# =========================
+/Back-end/[Vv]ideos/
+/Back-end/*.m3u8
+/Back-end/*.ts
+/Back-end/*.mp4
+/Back-end/*.mkv
+/Back-end/*.keyinfo
+/Back-end/[Uu]ploads/
+/Back-end/*.chunk
+
+# Model files (for Back-end)
+Back-end/OnnxModels/
+Back-end/*.onnx
+Back-end/*.bin
+Back-end/*.pth
+Back-end/*.param
+
+# Content files (for Backend)
+Back-end/wwwroot/
+
 
 # User-specific files
 *.rsuser

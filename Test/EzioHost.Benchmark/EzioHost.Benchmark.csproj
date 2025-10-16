@@ -28,7 +28,7 @@
     <None Update="input.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="model.onnx">
+    <None Update="realesr-animevideov3_fp32_x4.onnx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
