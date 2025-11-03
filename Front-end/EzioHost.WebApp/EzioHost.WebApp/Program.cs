@@ -1,6 +1,7 @@
+using EzioHost.Aspire.ServiceDefaults;
 using EzioHost.Shared.Common;
 using EzioHost.WebApp.Components;
-using EzioHost.WebApp.Handler;
+using EzioHost.WebApp.Handlers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -21,9 +22,9 @@ public class Program
             .AddHubOptions(cfg =>
             {
                 cfg.MaximumReceiveMessageSize = 12 * 1024 * 1024;
-                cfg.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
-                cfg.HandshakeTimeout = TimeSpan.FromSeconds(30);
-                cfg.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                //cfg.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+                //cfg.HandshakeTimeout = TimeSpan.FromSeconds(30);
+                //cfg.KeepAliveInterval = TimeSpan.FromSeconds(15);
             })
             .AddInteractiveWebAssemblyComponents()
             .AddAuthenticationStateSerialization(cfg =>
@@ -57,8 +58,7 @@ public class Program
         {
             cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl);
         })
-            .AddHttpMessageHandler<RequestCookieHandler>()
-            ;
+            .AddHttpMessageHandler<RequestCookieHandler>();
 
         builder.Services.AddScoped(serviceProvider => serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
         builder.Services.AddHttpContextAccessor();

@@ -17,14 +17,15 @@ namespace EzioHost.ReverseProxy.Controllers
         [HttpGet("/login")]
         public async Task Login([FromQuery] string? returnUrl)
         {
+            returnUrl ??= "/";
+            var redirectUri = Url.IsLocalUrl(returnUrl) ? returnUrl : "/";
             if (HttpContext.User.Identity is { IsAuthenticated: true })
             {
-                Response.Redirect(Url.Content("~/"));
+                Response.Redirect(returnUrl);
             }
             else
             {
-                returnUrl ??= "/";
-                var redirectUri = Url.IsLocalUrl(returnUrl) ? returnUrl : "/";
+                
                 await HttpContext.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme,
                     new AuthenticationProperties()
                     {

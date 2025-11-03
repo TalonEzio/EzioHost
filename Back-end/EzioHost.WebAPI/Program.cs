@@ -1,3 +1,4 @@
+using EzioHost.Aspire.ServiceDefaults;
 using EzioHost.Core.Mappers;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
@@ -9,10 +10,10 @@ using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
 using EzioHost.WebAPI.Hubs;
 using EzioHost.WebAPI.Jobs;
-using EzioHost.WebAPI.Middlewares;
 using EzioHost.WebAPI.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -141,7 +142,6 @@ namespace EzioHost.WebAPI
                     )
                 );
             });
-
             builder.Services.AddQuartzHostedService(cfg =>
             {
                 cfg.AwaitApplicationStarted = true;
@@ -153,9 +153,13 @@ namespace EzioHost.WebAPI
                 cfg.AddMaps(typeof(MapperClass));
             });
 
-            builder.Services.AddScoped<BindingUserIdMiddleware>();
 
-            builder.Services.AddSignalR();
+            builder.Services.AddSignalR(cfg =>
+            {
+
+            });
+
+            builder.Services.AddSingleton<IUserIdProvider, ReverseProxyUserIdProvider>();
 
             var app = builder.Build();
 
@@ -189,7 +193,6 @@ namespace EzioHost.WebAPI
             app.UseAuthentication();
 
             app.UseAuthorization();
-            app.UseMiddleware<BindingUserIdMiddleware>();
 
             app.MapControllers();
             app.MapHub<VideoHub>("/hubs/VideoHub", cfg =>

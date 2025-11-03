@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 
-namespace EzioHost.WebApp.Handler
+namespace EzioHost.WebApp.Handlers
 {
     public class ReverseProxyAuthenticationStateProvider(ILoggerFactory loggerFactory)
         : RevalidatingServerAuthenticationStateProvider(loggerFactory)

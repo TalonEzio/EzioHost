@@ -61,7 +61,7 @@ else
 
         if (!OnnxModels.Any())
         {
-            throw new Exception("No ONNX models found, please upload new model");
+	        return;
         }
 
         _selectedModel = OnnxModels.First();
@@ -72,7 +72,7 @@ else
         StateHasChanged();
     }
 
-    private async Task OnOnnxModelChange(ChangeEventArgs eventArgs)
+    private Task OnOnnxModelChange(ChangeEventArgs eventArgs)
     {
         _selectedModelId = Guid.Parse(eventArgs.Value!.ToString() ?? string.Empty);
         _selectedModel = OnnxModels.FirstOrDefault(m => m.Id == _selectedModelId);
@@ -80,8 +80,10 @@ else
 
         if (_selectedModel != null && ImageCompareComponent != null)
         {
-            await ImageCompareComponent.ReDraw(_selectedModel.DemoInput, _selectedModel.DemoOutput);
+            ImageCompareComponent.UpdateImages(_selectedModel.DemoInput, _selectedModel.DemoOutput);
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task RequestUpscaleVideo()

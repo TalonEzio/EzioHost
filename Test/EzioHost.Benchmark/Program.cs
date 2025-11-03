@@ -1,17 +1,37 @@
-﻿using OpenCvSharp;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
-using BenchmarkDotNet.Running;
-using Microsoft.ML.OnnxRuntime;
 
 namespace EzioHost.Benchmark
 {
     internal class Program
     {
-        static async Task Main(string[] args)
+        private static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.Unicode;
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+
+            // Use an empty ManualConfig to prevent BenchmarkDotNet from attaching platform-specific diagnosers
+            //BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+
+            var sw = Stopwatch.StartNew();
+
+            var x = new FfmpegBenchmarkGemini();
+
+            x.Init();
+
+
+            x.IterationSetup();
+            sw.Restart();
+            x.Process_RemuxToHls_Encode();
+            sw.Stop();
+            Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
+
+            x.IterationSetup();
+            sw.Restart();
+            x.AutoGen_EncodeToHls();
+            sw.Stop();
+            Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
+            
+            //x.IterationCleanup();
         }
     }
 }

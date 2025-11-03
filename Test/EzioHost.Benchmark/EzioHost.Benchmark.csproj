@@ -12,7 +12,8 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.4" />
     <PackageReference Include="BenchmarkDotNet.Annotations" Version="0.15.4" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.23.1" />
+    <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="7.1.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.23.2" />
     <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
     <PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.11.0.20250507" />
@@ -22,13 +23,25 @@
     <None Update="480p.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="demo.mp4">
+    <None Update="Videos\10s.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Videos\30s.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Videos\60s.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Videos\demo.mp4">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="input.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="realesr-animevideov3_fp32_x4.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Videos\Gachiakuta - E15.mp4">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

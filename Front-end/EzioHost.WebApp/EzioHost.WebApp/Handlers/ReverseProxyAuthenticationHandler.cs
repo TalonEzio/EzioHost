@@ -1,13 +1,13 @@
-﻿using EzioHost.Shared.Common;
+﻿using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using EzioHost.Shared.Common;
 using EzioHost.Shared.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Endpoints;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 
-namespace EzioHost.WebApp.Handler
+namespace EzioHost.WebApp.Handlers
 {
     public class ReverseProxyAuthenticationSchemeConstants
     {
@@ -27,68 +27,75 @@ namespace EzioHost.WebApp.Handler
         UrlEncoder encoder)
         : AuthenticationHandler<ReverseProxyAuthenticationSchemeOptions>(options, logger, encoder)
     {
-        private readonly ILoggerFactory _logger = logger;
-        private ILogger InnerLogger => _logger.CreateLogger(typeof(ReverseProxyAuthenticationHandler));
-
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var isBlazorComponent = Context.GetEndpoint()?.Metadata.GetMetadata<ComponentTypeMetadata>() != null;
             var isBlazorJs = Request.Path.Equals("/_blazor", StringComparison.OrdinalIgnoreCase);
-            var isLogout = !Request.Cookies.Any(x => x.Key.StartsWith(".AspNetCore.Cookies"));
-            if (isLogout)
+            
+            var hasAuthCookie = Request.Cookies.Any(x => x.Key.StartsWith(".AspNetCore.Cookies"));
+            if (!hasAuthCookie)
             {
-                return AuthenticateResult.Fail($"Not authenticated - {DateTime.Now}");
+                Logger.LogDebug("No authentication cookie found at {Path}", Request.Path);
+                return AuthenticateResult.Fail("Not authenticated - missing cookie");
             }
+
             if (!(isBlazorComponent || isBlazorJs))
+            {
                 return AuthenticateResult.NoResult();
+            }
+
             try
             {
-                var userInfo = await httpClient.GetFromJsonAsync<List<ClaimDto>>("user", new JsonSerializerOptions
+                var userInfoClaims = await httpClient.GetFromJsonAsync<List<ClaimDto>>("user", new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (userInfo != null)
+                if (userInfoClaims is { Count: > 0 })
                 {
-                    var claims = userInfo.Select(ClaimDto.ConvertToClaim).ToList();
+                    var claims = userInfoClaims.Select(ClaimDto.ConvertToClaim).ToList();
                     var identity = new ClaimsIdentity(claims, ReverseProxyAuthenticationSchemeConstants.AuthenticationType);
                     var principal = new ClaimsPrincipal(identity);
-                    InnerLogger.LogError($"{Request.Path} - User authenticated - {DateTime.Now}");
+                    
+                    Logger.LogInformation("User authenticated successfully at {Path}", Request.Path);
                     return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
                 }
+
+                Logger.LogWarning("User info is empty at {Path}", Request.Path);
+                return AuthenticateResult.Fail("User info is empty");
             }
-            catch (Exception e)
+            catch (HttpRequestException ex)
             {
-                InnerLogger.LogError(e, $"Authentication failed - {Request.Path} - {DateTime.Now}");
-                return AuthenticateResult.Fail($"Not authenticated - {DateTime.Now}");
+                Logger.LogError(ex, "HTTP request failed during authentication at {Path}", Request.Path);
+                return AuthenticateResult.Fail($"Authentication service unavailable: {ex.Message}");
             }
-
-            InnerLogger.LogWarning($"Cannot get user - {Request.Path} - {DateTime.Now}");
-            return AuthenticateResult.Fail($"Not authenticated - {DateTime.Now}");
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Authentication failed at {Path}", Request.Path);
+                return AuthenticateResult.Fail($"Authentication error: {ex.Message}");
+            }
         }
-
 
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
         {
-            var innerLogger = _logger.CreateLogger(typeof(ReverseProxyAuthenticationHandler));
             if (Context.User.Identity is { IsAuthenticated: true })
             {
-                innerLogger.LogWarning($"Challenge ok - {DateTime.Now}");
+                Logger.LogDebug("User already authenticated, no challenge needed");
                 return Task.CompletedTask;
-
             }
-            var challengeUrl = $"{Path.Combine(Options.ReverseProxyBaseUrl, "login")}?returnUrl={properties.RedirectUri}";
-            innerLogger.LogWarning($"Challenge to {challengeUrl}");
+
+            var returnUrl = properties.RedirectUri ?? Request.Path.ToString();
+            var challengeUrl = $"{Options.ReverseProxyBaseUrl.TrimEnd('/')}/login?returnUrl={Uri.EscapeDataString(returnUrl)}";
+            
+            Logger.LogInformation("Redirecting to authentication challenge: {ChallengeUrl}", challengeUrl);
             Response.Redirect(challengeUrl);
             return Task.CompletedTask;
         }
 
         protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
         {
-            var innerLogger = _logger.CreateLogger(typeof(ReverseProxyAuthenticationHandler));
-
-            innerLogger.LogWarning($"Forbidden to {Options.AccessDeniedPath}");
-            Response.Redirect($"{Options.AccessDeniedPath}");
+            Logger.LogWarning("Access forbidden, redirecting to {AccessDeniedPath}", Options.AccessDeniedPath);
+            Response.Redirect(Options.AccessDeniedPath);
             return Task.CompletedTask;
         }
     }

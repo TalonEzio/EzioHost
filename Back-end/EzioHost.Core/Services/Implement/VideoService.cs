@@ -20,6 +20,9 @@ namespace EzioHost.Core.Services.Implement
 {
     public class VideoService(IVideoUnitOfWork videoUnitOfWork, IDirectoryProvider directoryProvider, IProtectService protectService, ISettingProvider settingProvider, IMapper mapper) : IVideoService
     {
+
+        public event Action<VideoStreamAddedEvent>? OnVideoStreamAdded;
+        public event Action<VideoProcessDoneEvent>? OnVideoProcessDone;
         private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
         private readonly string _webRootPath = directoryProvider.GetWebRootPath();
@@ -36,8 +39,6 @@ namespace EzioHost.Core.Services.Implement
             return _videoRepository.GetVideoToEncode();
         }
 
-        public event Action<VideoStreamAddedEvent>? OnVideoStreamAdded;
-        public event Action<VideoProcessDoneEvent>? OnVideoProcessDone;
 
         public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null, Expression<Func<Video, object>>[]? includes = null)
         {
@@ -92,11 +93,11 @@ namespace EzioHost.Core.Services.Implement
                     _videoStreamRepository.Create(newVideoStream);
                     inputVideo.VideoStreams.Add(newVideoStream);
 
-                    //OnVideoStreamAdded?.Invoke(new VideoStreamAddedEvent()
-                    //{
-                    //    VideoId = inputVideo.Id,
-                    //    VideoStream = mapper.Map<VideoStreamDto>(newVideoStream)
-                    //});
+                    OnVideoStreamAdded?.Invoke(new VideoStreamAddedEvent()
+                    {
+                        VideoId = inputVideo.Id,
+                        VideoStream = mapper.Map<VideoStreamDto>(newVideoStream)
+                    });
                 }
 
                 var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
@@ -194,7 +195,7 @@ namespace EzioHost.Core.Services.Implement
                 VideoId = inputVideo.Id,
                 Video = inputVideo,
                 Key = protectService.GenerateRandomKey(), // 🔑 Random key
-                Iv = protectService.GenerateRandomIv(),   // 🔄 Random IV
+                IV = protectService.GenerateRandomIv(),   // 🔄 Random IV
                 M3U8Location = Path.GetRelativePath(_webRootPath, absoluteVideoStreamM3U8Location)
             };
 
@@ -220,7 +221,7 @@ namespace EzioHost.Core.Services.Implement
                         .WithCustomArgument("-hls_playlist_type vod")
                         .WithCustomArgument("-hls_enc 1")
                         .WithCustomArgument($"-hls_enc_key \"{videoStream.Key}\"")
-                        .WithCustomArgument($"-hls_enc_iv \"{videoStream.Iv}\"")
+                        .WithCustomArgument($"-hls_enc_iv \"{videoStream.IV}\"")
                         .WithFastStart()
                 );
 

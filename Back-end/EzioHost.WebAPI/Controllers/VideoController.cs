@@ -20,6 +20,7 @@ namespace EzioHost.WebAPI.Controllers
         IOnnxModelService modelService, IDirectoryProvider directoryProvider) : ControllerBase
     {
         private string WebRootPath => directoryProvider.GetWebRootPath();
+
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetVideos()

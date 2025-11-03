@@ -1,0 +1,145 @@
+<div class="mobile-nav d-lg-none">
+    <!-- Bottom Navigation for Mobile -->
+    <nav class="navbar fixed-bottom bg-white border-top shadow-sm">
+        <div class="container-fluid">
+            <div class="row w-100">
+                <div class="col-3 text-center">
+                    <a href="/" class="nav-link @(IsActivePage("/") ? "active" : "")">
+                        <i class="bi bi-house-door d-block mb-1"></i>
+                        <small>Trang chủ</small>
+                    </a>
+                </div>
+                <div class="col-3 text-center">
+                    <AuthorizeView>
+                        <Authorized>
+                            <a href="/video" class="nav-link @(IsActivePage("/video") ? "active" : "")">
+                                <i class="bi bi-collection-play d-block mb-1"></i>
+                                <small>Video</small>
+                            </a>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/login" class="nav-link @(IsActivePage("/login") ? "active" : "")">
+                                <i class="bi bi-box-arrow-in-right d-block mb-1"></i>
+                                <small>Đăng nhập</small>
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+                <div class="col-3 text-center">
+                    <AuthorizeView>
+                        <Authorized>
+                            <a href="/upload-video" class="nav-link @(IsActivePage("/upload-video") ? "active" : "")">
+                                <i class="bi bi-cloud-upload d-block mb-1"></i>
+                                <small>Upload</small>
+                            </a>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/faq" class="nav-link @(IsActivePage("/faq") ? "active" : "")">
+                                <i class="bi bi-question-circle d-block mb-1"></i>
+                                <small>FAQ</small>
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+                <div class="col-3 text-center">
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="dropdown">
+                                <button class="btn btn-link nav-link dropdown-toggle" 
+                                        type="button" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle d-block mb-1"></i>
+                                    <small>Tài khoản</small>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="/profile">
+                                        <i class="bi bi-person me-2"></i>Hồ sơ
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/settings">
+                                        <i class="bi bi-gear me-2"></i>Cài đặt
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/logout">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/faq" class="nav-link @(IsActivePage("/faq") ? "active" : "")">
+                                <i class="bi bi-question-circle d-block mb-1"></i>
+                                <small>FAQ</small>
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<style>
+    .mobile-nav {
+        z-index: 1000;
+    }
+    
+    .mobile-nav .nav-link {
+        color: #6c757d;
+        text-decoration: none;
+        padding: 0.5rem 0.25rem;
+        border-radius: 0.375rem;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-nav .nav-link:hover {
+        color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    .mobile-nav .nav-link.active {
+        color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    .mobile-nav .nav-link i {
+        font-size: 1.25rem;
+    }
+    
+    .mobile-nav .nav-link small {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .mobile-nav .dropdown-menu {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Ensure content doesn't get hidden behind fixed bottom nav */
+    body {
+        padding-bottom: 80px;
+    }
+    
+    @@media (min-width: 992px) {
+        .mobile-nav {
+            display: none !important;
+        }
+        
+        body {
+            padding-bottom: 0;
+        }
+    }
+</style>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    
+    private string CurrentPath => Navigation.Uri.Replace(Navigation.BaseUri, "").TrimStart('/');
+    
+    private bool IsActivePage(string path)
+    {
+        if (path == "/" && CurrentPath == "")
+            return true;
+        
+        return CurrentPath.StartsWith(path.TrimStart('/'));
+    }
+}

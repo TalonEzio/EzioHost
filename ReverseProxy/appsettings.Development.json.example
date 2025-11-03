@@ -1,0 +1,24 @@
+{
+  "ConnectionStrings": {
+    "Redis": "localhost:6379,abortConnect=false"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "EzioHost.ReverseProxy.Services.RedisCacheTicketStore": "Debug"
+    }
+  },
+  "AppSettings": {
+    "OpenIdConnect": {
+      "Authority": "https://localhost:5001",
+      "ClientId": "eziohost-client",
+      "ClientSecret": "your-secret",
+      "UserNameClaimType": "preferred_username",
+      "WebApiScope": "eziohost-api"
+    }
+  }
+}
+
+
+

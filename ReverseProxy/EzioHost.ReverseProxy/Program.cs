@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using EzioHost.Aspire.ServiceDefaults;
 using Serilog;
 using Yarp.ReverseProxy.Transforms;
 
@@ -38,6 +39,15 @@ namespace EzioHost.ReverseProxy
                 {
                     cfg.LoginPath = "/login"; //Map login from AuthController
                     cfg.LogoutPath = "/logout"; //Map logout from AuthController
+
+                    // Cookie persistence settings - quan trọng để cookie tồn tại sau khi đóng browser
+                    cfg.ExpireTimeSpan = TimeSpan.FromDays(30); // Cookie có hiệu lực 30 ngày
+                    cfg.SlidingExpiration = true; // Tự động gia hạn cookie khi user active
+                    cfg.Cookie.MaxAge = TimeSpan.FromDays(30); // Max age của cookie
+                    cfg.Cookie.HttpOnly = true; // Bảo mật
+                    cfg.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // HTTPS only khi có thể
+                    cfg.Cookie.SameSite = SameSiteMode.Lax; // CSRF protection
+                    cfg.Cookie.IsEssential = true; // Luôn lưu cookie kể cả khi user không consent
                 })
                 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
                 {
@@ -64,12 +74,18 @@ namespace EzioHost.ReverseProxy
 
                             if (user is { Identity.IsAuthenticated: true })
                             {
+                                // Đảm bảo authentication properties persist cookie
+                                if (context.Properties != null)
+                                {
+                                    context.Properties.IsPersistent = true;
+                                    context.Properties.AllowRefresh = true;
+                                }
+
                                 using var scope = context.HttpContext.RequestServices.CreateScope();
                                 var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
 
                                 var token = context.TokenEndpointResponse?.AccessToken;
-                                httpClient.DefaultRequestHeaders.Authorization =
-                                    new AuthenticationHeaderValue("Bearer", token);
+                                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                                 var identity = (ClaimsIdentity)user.Identity!;
                                 var id = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
@@ -78,7 +94,7 @@ namespace EzioHost.ReverseProxy
                                 var lastName = identity.FindFirst(ClaimTypes.Surname)?.Value ?? string.Empty;
                                 var userName = identity.FindFirst(settings.OpenIdConnect.UserNameClaimType)?.Value ?? string.Empty;
 
-                                var body = new UserCreateUpdateRequestDto
+                                var userCreateUpdateRequestDto = new UserCreateUpdateRequestDto
                                 {
                                     Id = Guid.Parse(id),
                                     Email = email,
@@ -88,7 +104,7 @@ namespace EzioHost.ReverseProxy
                                 };
                                 try
                                 {
-                                    var response = await httpClient.PostAsJsonAsync("api/User", body);
+                                    var response = await httpClient.PostAsJsonAsync("api/User", userCreateUpdateRequestDto);
                                     response.EnsureSuccessStatusCode();
 
                                     var userDto = await response.Content.ReadFromJsonAsync<UserCreateUpdateResponseDto>();
@@ -100,7 +116,8 @@ namespace EzioHost.ReverseProxy
                                 }
                                 catch (Exception e)
                                 {
-                                    Console.WriteLine(e);
+                                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                                    logger.LogError(e, "Error creating/updating user in database");
                                 }
 
                                 context.Principal = new ClaimsPrincipal(identity);
@@ -111,15 +128,17 @@ namespace EzioHost.ReverseProxy
 
                 });
             builder.Services.AddHttpClient(nameof(EzioHost),
-                cfg => { cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl); });
+                cfg => { cfg.BaseAddress = new Uri(BaseUrlCommon.WebApiUrl); });
 
             builder.Services.AddScoped(serviceProvider =>
                 serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 
+            // Cấu hình refresh token trước khi token expired 10 phút
+            // Điều này đảm bảo token luôn được refresh tự động khi user mở lại browser
             builder.Services.ConfigureCookieOidcRefresh(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 OpenIdConnectDefaults.AuthenticationScheme,
-                TimeSpan.FromMinutes(5));
+                TimeSpan.FromMinutes(10));
 
             builder.Services.AddAuthorization();
 
@@ -139,15 +158,15 @@ namespace EzioHost.ReverseProxy
                                 var accessToken = await transformContext.HttpContext.GetTokenAsync(OpenIdConnectParameterNames.IdToken);
                                 transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-                                var subClaimValue = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                                //var subClaimValue = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-                                if (!string.IsNullOrEmpty(subClaimValue))
-                                {
-                                    if (!transformContext.ProxyRequest.Headers.Contains("X-USER-ID"))
-                                    {
-                                        transformContext.ProxyRequest.Headers.Add("X-USER-ID", subClaimValue);
-                                    }
-                                }
+                                //if (!string.IsNullOrEmpty(subClaimValue))
+                                //{
+                                //    if (!transformContext.ProxyRequest.Headers.Contains("X-USER-ID"))
+                                //    {
+                                //        transformContext.ProxyRequest.Headers.Add("X-USER-ID", subClaimValue);
+                                //    }
+                                //}
                             }
                         }
                     });
@@ -164,11 +183,11 @@ namespace EzioHost.ReverseProxy
             });
 
 
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(builder.Configuration)
-                .CreateLogger();
+            //Log.Logger = new LoggerConfiguration()
+            //    .ReadFrom.Configuration(builder.Configuration)
+            //    .CreateLogger();
 
-            builder.Host.UseSerilog();
+            //builder.Host.UseSerilog();
 
             var app = builder.Build();
 
@@ -184,10 +203,10 @@ namespace EzioHost.ReverseProxy
 
             app.UseCors(nameof(EzioHost));
 
-            app.UseSerilogRequestLogging(opts =>
-            {
-                opts.IncludeQueryInRequestPath = true;
-            });
+            //app.UseSerilogRequestLogging(opts =>
+            //{
+            //    opts.IncludeQueryInRequestPath = true;
+            //});
 
             app.UseAuthentication();
             app.UseAuthorization();

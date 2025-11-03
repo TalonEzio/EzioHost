@@ -12,7 +12,7 @@ namespace EzioHost.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class OnnxModelController(IDirectoryProvider directoryProvider, IOnnxModelService onnxModelService, IUpscaleService upscaleService, IMapper mapper) : ControllerBase
     {
         public string WebRootPath = directoryProvider.GetWebRootPath();
@@ -31,8 +31,6 @@ namespace EzioHost.WebAPI.Controllers
             var onnxModelDtos = mapper.Map<List<OnnxModelDto>>(models);
             return Ok(onnxModelDtos);
         }
-
-
 
         [HttpPut]
         public async Task<IActionResult> AddNewOnnxModel([FromForm] OnnxModelCreateDto model, [FromForm] IFormFile modelFile)
@@ -65,7 +63,6 @@ namespace EzioHost.WebAPI.Controllers
         }
 
         [HttpPost("demo-reset/{modelId:guid}")]
-        [Authorize]
         public async Task<IActionResult> ResetDemo([FromRoute] Guid modelId)
         {
             var model = await onnxModelService.GetOnnxModelById(modelId);
@@ -83,7 +80,6 @@ namespace EzioHost.WebAPI.Controllers
 
 
         [HttpPost("demo/{modelId:guid}")]
-        //[Authorize]
         public async Task<IActionResult> DemoUpscale([FromRoute] Guid modelId, [FromForm] IFormFile imageFile)
         {
             var model = await onnxModelService.GetOnnxModelById(modelId);
