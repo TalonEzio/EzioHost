@@ -1,8 +1,8 @@
 ﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using EzioHost.Shared.Common;
 using EzioHost.Shared.Models;
+using EzioHost.Shared.Private.Endpoints;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Endpoints;
 using Microsoft.Extensions.Options;
@@ -17,7 +17,7 @@ namespace EzioHost.WebApp.Handlers
     public class ReverseProxyAuthenticationSchemeOptions : AuthenticationSchemeOptions
     {
         public string AccessDeniedPath { get; set; } = "/access-denied";//blazor page
-        public string ReverseProxyBaseUrl { get; set; } = BaseUrlCommon.ReverseProxyUrl;
+        public string ReverseProxyBaseUrl { get; set; } = BaseUrl.ReverseProxyUrl;
     }
 
     public class ReverseProxyAuthenticationHandler(

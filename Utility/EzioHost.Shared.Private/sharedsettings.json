@@ -2,5 +2,5 @@
   "ReverseProxyUrl": "https://localhost:18109",
   "WebApiUrl": "https://localhost:18089",
   "FrontendUrl": "https://localhost:18099",
-  "WebApiPrefixStaticFile": "static"
+  "WebApiPrefixStaticFile": "/static"
 }

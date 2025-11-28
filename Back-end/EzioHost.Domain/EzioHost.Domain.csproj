@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Utility\EzioHost.Shared\EzioHost.Shared.csproj" />
+    <ProjectReference Include="..\..\Utility\EzioHost.Shared.Private\EzioHost.Shared.Private.csproj" />
   </ItemGroup>
 
 </Project>

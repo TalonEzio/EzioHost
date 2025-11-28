@@ -4,39 +4,42 @@ namespace EzioHost.WebApp.Client.Extensions
 {
     public static class JsRuntimeExtension
     {
-        public static ValueTask<string> GetOrigin(this IJSRuntime jsRuntime)
+        extension(IJSRuntime jsRuntime)
         {
-            return jsRuntime.InvokeAsync<string>("eval", "window.location.origin");
+            public ValueTask<string> GetOrigin()
+            {
+                return jsRuntime.InvokeAsync<string>("eval", "window.location.origin");
+            }
+
+            public ValueTask<string> GetCurrentUrl()
+            {
+                return jsRuntime.InvokeAsync<string>("eval", "window.location.href");
+            }
+
+            public ValueTask ShowToast(string type, string message)
+                => jsRuntime.InvokeVoidAsync("showToast", type, message);
+
+            public ValueTask ShowSuccessToast(string message)
+                => jsRuntime.ShowToast("success", message);
+
+            public ValueTask ShowErrorToast(string message)
+                => jsRuntime.ShowToast("error", message);
+
+            public ValueTask ShowInfoToast(string message)
+                => jsRuntime.ShowToast("info", message);
+
+            public ValueTask ShowWarningToast(string message)
+                => jsRuntime.ShowToast("warning", message);
+
+            public ValueTask NavigateToAsync(string url)
+            {
+                return jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';");
+            }
+
+            public void NavigateTo(string url)
+            {
+                jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';").GetAwaiter().GetResult();
+            }
         }
-
-        public static ValueTask<string> GetCurrentUrl(this IJSRuntime jsRuntime)
-        {
-            return jsRuntime.InvokeAsync<string>("eval", "window.location.href");
-        }
-
-        public static ValueTask ShowToast(this IJSRuntime js, string type, string message)
-            => js.InvokeVoidAsync("showToast", type, message);
-
-        public static ValueTask ShowSuccessToast(this IJSRuntime js, string message)
-            => js.ShowToast("success", message);
-
-        public static ValueTask ShowErrorToast(this IJSRuntime js, string message)
-            => js.ShowToast("error", message);
-
-        public static ValueTask ShowInfoToast(this IJSRuntime js, string message)
-            => js.ShowToast("info", message);
-
-        public static ValueTask ShowWarningToast(this IJSRuntime js, string message)
-            => js.ShowToast("warning", message);
-
-        public static ValueTask NavigateToAsync(this IJSRuntime jsRuntime, string url)
-        {
-            return jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';");
-        }
-        public static void NavigateTo(this IJSRuntime jsRuntime, string url)
-        {
-            jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';").GetAwaiter().GetResult();
-        }
-
     }
 }

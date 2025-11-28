@@ -1,4 +1,4 @@
-﻿using EzioHost.Shared.Hubs;
+﻿using EzioHost.Shared.HubActions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 

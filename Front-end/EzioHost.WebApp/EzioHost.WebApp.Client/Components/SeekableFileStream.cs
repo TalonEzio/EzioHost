@@ -2,9 +2,11 @@
 
 namespace EzioHost.WebApp.Client.Components;
 
-internal sealed class SeekableFileStream : Stream
+internal sealed class SeekableFileStream : Stream, IAsyncDisposable
 {
     private readonly IJSRuntime _jsRuntime;
+    private IJSObjectReference? _jsModule;
+    private readonly Lazy<Task<IJSObjectReference>> _jsModuleTask;
     private long _position;
     private byte[] _buffer;
     private int _bufferOffset;
@@ -17,6 +19,8 @@ internal sealed class SeekableFileStream : Stream
     public SeekableFileStream(IJSRuntime jsRuntime, string inputFileId, int fileIndex, long size)
     {
         _jsRuntime = jsRuntime;
+        _jsModuleTask = new Lazy<Task<IJSObjectReference>>(() => 
+            jsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/SeekableFileStream.js").AsTask());
         _position = 0;
         _buffer = [];
         _bufferOffset = 0;
@@ -96,7 +100,8 @@ internal sealed class SeekableFileStream : Stream
         }
         _receiveFileSliceCompletionSource = new TaskCompletionSource<int>();
 
-        await _jsRuntime.InvokeVoidAsync("readFileSlice", cancellationToken, _inputFileId, _fileIndex, _position, bytesToRead, _dotNetReference);
+        _jsModule ??= await _jsModuleTask.Value;
+        await _jsModule.InvokeVoidAsync("readFileSlice", cancellationToken, _inputFileId, _fileIndex, _position, bytesToRead, _dotNetReference);
         // Wait for the JavaScript callback to populate the buffer
         await _receiveFileSliceCompletionSource.Task;
         _receiveFileSliceCompletionSource = null; // Reset for the next read
@@ -137,6 +142,16 @@ internal sealed class SeekableFileStream : Stream
     public override void Write(byte[] buffer, int offset, int count)
     {
         throw new NotSupportedException();
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        _dotNetReference.Dispose();
+        if (_jsModuleTask.IsValueCreated && _jsModule != null)
+        {
+            await _jsModule.DisposeAsync();
+        }
+        await base.DisposeAsync();
     }
 
     protected override void Dispose(bool disposing)

@@ -5,7 +5,7 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
-using EzioHost.Infrastructure.SqlServer.DataContext;
+using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
 using EzioHost.WebAPI.Hubs;

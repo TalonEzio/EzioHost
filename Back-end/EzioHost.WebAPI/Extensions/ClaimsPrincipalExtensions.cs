@@ -5,24 +5,19 @@ namespace EzioHost.WebAPI.Extensions
     public static class ClaimsPrincipalExtensions
     {
 
-        public static Guid GetUserId(this ClaimsPrincipal user, string claimTypes)
+        extension(ClaimsPrincipal user)
         {
-            if (user.Identity?.IsAuthenticated != true)
-                return Guid.Empty;
+            public Guid GetUserId(string claimTypes)
+            {
+                if (user.Identity?.IsAuthenticated != true)
+                    return Guid.Empty;
 
-            var userId = user.Claims.FirstOrDefault(x => x.Type == claimTypes)?.Value;
-            var parse = Guid.TryParse(userId, out var result);
-            return parse ? result : Guid.Empty;
-        }
+                var userId = user.Claims.FirstOrDefault(x => x.Type == claimTypes)?.Value;
+                var canGetUserId = Guid.TryParse(userId, out var result);
+                return canGetUserId ? result : Guid.Empty;
+            }
 
-        public static Guid GetUserId(this ClaimsPrincipal user)
-        {
-            return GetUserId(user, ClaimTypes.NameIdentifier);
-        }
-
-        public static string GetUserIdString(this ClaimsPrincipal user)
-        {
-            return GetUserId(user, ClaimTypes.NameIdentifier).ToString();
+            public Guid UserId => GetUserId(user, ClaimTypes.NameIdentifier);
         }
     }
 }

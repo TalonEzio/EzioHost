@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using EzioHost.Domain.Entities;
-using EzioHost.Shared.Common;
 using EzioHost.Shared.Models;
+using EzioHost.Shared.Private.Endpoints;
 
 namespace EzioHost.Core.Mappers
 {

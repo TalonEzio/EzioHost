@@ -1,30 +1,6 @@
 ﻿
 @page "/video-share/{VideoId:guid}"
 @layout NullLayout
+@implements IAsyncDisposable
 
 <div id="player"></div>
-
-<script>
-    async function loadVideo(videoId) {
-        try {
-            let response = await fetch(`/api/video/${videoId}`);
-            let videoData = await response.json();
-            if (videoData && videoData.m3U8Location) {
-                window.playVideo("player", videoData.m3U8Location);
-            }
-        } catch (error) {
-            console.error("Failed to load video", error);
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const videoId = "@VideoId";
-        console.log(videoId);
-        loadVideo(videoId);
-    });
-</script>
-
-@code
-{
-    [Parameter] public Guid VideoId { get; set; }
-}

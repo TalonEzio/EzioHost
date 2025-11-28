@@ -1,5 +1,5 @@
 using EzioHost.Aspire.ServiceDefaults;
-using EzioHost.Shared.Common;
+using EzioHost.Shared.Private.Endpoints;
 using EzioHost.WebApp.Components;
 using EzioHost.WebApp.Handlers;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -48,19 +48,18 @@ public class Program
                 ReverseProxyAuthenticationSchemeConstants.AuthenticationScheme,
                 cfg =>
                 {
-                    cfg.ReverseProxyBaseUrl = BaseUrlCommon.ReverseProxyUrl;
+                    cfg.ReverseProxyBaseUrl = BaseUrl.ReverseProxyUrl;
                 });
         builder.Services.AddAuthorization();
 
-        // Add HttpClient
+        // Add HttpClient Factory
         builder.Services.AddTransient<RequestCookieHandler>();
         builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
         {
-            cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl);
+            cfg.BaseAddress = new Uri(BaseUrl.ReverseProxyUrl);
         })
             .AddHttpMessageHandler<RequestCookieHandler>();
 
-        builder.Services.AddScoped(serviceProvider => serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.Configure<KestrelServerOptions>(options =>

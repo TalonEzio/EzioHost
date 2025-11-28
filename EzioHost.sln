@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11109.219 d18.0-oob
+VisualStudioVersion = 18.0.11109.219
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Front-end", "Front-end", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		Readme.md = Readme.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Shared.Private", "Utility\EzioHost.Shared.Private\EzioHost.Shared.Private.csproj", "{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -138,6 +140,14 @@ Global
 		{744AC434-04C2-4AAB-A6AF-8257359083F1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{744AC434-04C2-4AAB-A6AF-8257359083F1}.Release|x64.ActiveCfg = Release|Any CPU
 		{744AC434-04C2-4AAB-A6AF-8257359083F1}.Release|x64.Build.0 = Release|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Debug|x64.Build.0 = Debug|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Release|x64.ActiveCfg = Release|Any CPU
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -154,6 +164,7 @@ Global
 		{575E916E-3C55-499E-BECA-D0D8315894B9} = {0A7495F9-FC2C-4BA8-BA2D-01B687A77904}
 		{F23B9B20-3152-4F41-A240-C996D0CBD6C2} = {0A7495F9-FC2C-4BA8-BA2D-01B687A77904}
 		{744AC434-04C2-4AAB-A6AF-8257359083F1} = {3149BC39-C379-454D-B22E-62C78FD28A7B}
+		{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6} = {3BD2862C-D2C7-4014-96ED-3859B4307809}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0C5F85D0-1C30-4A9B-A26F-8FD430AE3601}

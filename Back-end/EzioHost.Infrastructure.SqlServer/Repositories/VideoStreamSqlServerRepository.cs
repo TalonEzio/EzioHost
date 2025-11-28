@@ -1,6 +1,6 @@
 ﻿using EzioHost.Core.Repositories;
 using EzioHost.Domain.Entities;
-using EzioHost.Infrastructure.SqlServer.DataContext;
+using EzioHost.Infrastructure.SqlServer.DataContexts;
 
 namespace EzioHost.Infrastructure.SqlServer.Repositories
 {

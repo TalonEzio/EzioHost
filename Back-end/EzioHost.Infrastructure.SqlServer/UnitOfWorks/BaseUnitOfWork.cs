@@ -1,5 +1,5 @@
 ﻿using EzioHost.Core.UnitOfWorks;
-using EzioHost.Infrastructure.SqlServer.DataContext;
+using EzioHost.Infrastructure.SqlServer.DataContexts;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EzioHost.Infrastructure.SqlServer.UnitOfWorks

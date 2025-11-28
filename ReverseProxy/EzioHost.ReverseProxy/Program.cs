@@ -1,14 +1,13 @@
 ﻿using EzioHost.ReverseProxy.Extensions;
-using EzioHost.Shared.Common;
 using EzioHost.Shared.Models;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using EzioHost.Aspire.ServiceDefaults;
-using Serilog;
+using EzioHost.Shared.Private.Endpoints;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Yarp.ReverseProxy.Transforms;
 
 namespace EzioHost.ReverseProxy
@@ -30,13 +29,13 @@ namespace EzioHost.ReverseProxy
             builder.Configuration.Bind(nameof(AppSettings), settings);
 
             builder.Services.AddAuthentication(options =>
-                {
-                    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-                })
-                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, cfg =>
-                {
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, cfg =>
+            {
                     cfg.LoginPath = "/login"; //Map login from AuthController
                     cfg.LogoutPath = "/logout"; //Map logout from AuthController
 
@@ -74,13 +73,6 @@ namespace EzioHost.ReverseProxy
 
                             if (user is { Identity.IsAuthenticated: true })
                             {
-                                // Đảm bảo authentication properties persist cookie
-                                if (context.Properties != null)
-                                {
-                                    context.Properties.IsPersistent = true;
-                                    context.Properties.AllowRefresh = true;
-                                }
-
                                 using var scope = context.HttpContext.RequestServices.CreateScope();
                                 var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
 
@@ -119,16 +111,13 @@ namespace EzioHost.ReverseProxy
                                     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                                     logger.LogError(e, "Error creating/updating user in database");
                                 }
-
                                 context.Principal = new ClaimsPrincipal(identity);
                             }
                         }
                     };
-
-
                 });
             builder.Services.AddHttpClient(nameof(EzioHost),
-                cfg => { cfg.BaseAddress = new Uri(BaseUrlCommon.WebApiUrl); });
+                cfg => { cfg.BaseAddress = new Uri(BaseUrl.WebApiUrl); });
 
             builder.Services.AddScoped(serviceProvider =>
                 serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
@@ -141,7 +130,6 @@ namespace EzioHost.ReverseProxy
                 TimeSpan.FromMinutes(10));
 
             builder.Services.AddAuthorization();
-
 
             builder.Services.AddReverseProxy()
                 .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
@@ -212,12 +200,9 @@ namespace EzioHost.ReverseProxy
             app.UseAuthorization();
             app.UseAntiforgery();
 
-            //Forward to frontend
-            app.MapForwarder("{**rest}", BaseUrlCommon.FrontendUrl);
-
-            app.MapReverseProxy();
-
             app.MapControllers();
+            
+            app.MapReverseProxy();
 
             app.Run();
         }

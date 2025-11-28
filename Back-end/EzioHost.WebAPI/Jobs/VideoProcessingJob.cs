@@ -1,11 +1,11 @@
 ﻿using AsyncAwaitBestPractices;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Shared.Events;
-using EzioHost.Shared.Hubs;
 using EzioHost.WebAPI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Quartz;
 using System.Diagnostics;
+using EzioHost.Shared.HubActions;
 
 namespace EzioHost.WebAPI.Jobs
 {

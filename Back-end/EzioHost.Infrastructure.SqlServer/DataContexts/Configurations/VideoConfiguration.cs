@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace EzioHost.Infrastructure.SqlServer.DataContext.Configurations
+namespace EzioHost.Infrastructure.SqlServer.DataContexts.Configurations
 {
     internal class VideoConfiguration : IEntityTypeConfiguration<Video>
     {

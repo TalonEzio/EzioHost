@@ -28,6 +28,8 @@
 	<script src="playerjs.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script src="js/image-compare-helper.js"></script>
+	<!-- HLS.js for .m3u8 video playback -->
+	<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 	<script>
 
 		const Toast = Swal.mixin({
@@ -49,102 +51,6 @@
 			});
 		};
 
-		// File handling functions
-		window.clickFileInput = function (fileInput) {
-			fileInput.click();
-		};
-
-		window.getSelectedFiles = function (fileInput) {
-			return Array.from(fileInput.files).map(file => ({
-				name: file.name,
-				size: file.size,
-				type: file.type,
-				lastModified: file.lastModified
-			}));
-		};
-
-		window.getDroppedFiles = function (dragEvent) {
-			return Array.from(dragEvent.dataTransfer.files).map(file => ({
-				name: file.name,
-				size: file.size,
-				type: file.type,
-				lastModified: file.lastModified
-			}));
-		};
-
-		// Video player functions
-		window.initializeVideoPlayer = function (videoId) {
-			const video = document.getElementById(videoId);
-			if (video) {
-				video.addEventListener('loadstart', () => {
-					console.log('Video loading started');
-				});
-				video.addEventListener('canplay', () => {
-					console.log('Video can start playing');
-				});
-			}
-		};
-
-		window.toggleVideoFullscreen = function (videoId) {
-			const video = document.getElementById(videoId);
-			if (video) {
-				if (video.requestFullscreen) {
-					video.requestFullscreen();
-				} else if (video.webkitRequestFullscreen) {
-					video.webkitRequestFullscreen();
-				} else if (video.msRequestFullscreen) {
-					video.msRequestFullscreen();
-				}
-			}
-		};
-
-		window.toggleVideoMute = function (videoId, muted) {
-			const video = document.getElementById(videoId);
-			if (video) {
-				video.muted = muted;
-			}
-		};
-
-		window.setVideoQuality = function (videoId, quality) {
-			const video = document.getElementById(videoId);
-			if (video) {
-				// This would typically involve switching video sources
-				console.log(`Setting video quality to ${quality}`);
-			}
-		};
-
-		window.readFileSlice = function (inputFileId, fileIndex, offset, count, dotNetReference) {
-			return new Promise((resolve, reject) => {
-				const inputFile = document.getElementById(inputFileId);
-				if (!inputFile || !inputFile.files || inputFile.files.length <= fileIndex) {
-					reject("File not found.");
-					return;
-				}
-
-				const file = inputFile.files[fileIndex];
-				const slice = file.slice(offset, offset + count);
-
-				const reader = new FileReader();
-				reader.onload = function (event) {
-					const byteArray = new Uint8Array(event.target.result);
-					dotNetReference.invokeMethodAsync('ReceiveFileSlice', offset, byteArray);
-					resolve();
-				};
-				reader.onerror = function (event) {
-					reject(event.target.error);
-				};
-				reader.readAsArrayBuffer(slice);
-				console.log(slice);
-			});
-		};
-		window.playVideo = function(id, videoUrl) {
-			console.log(videoUrl);
-			const player = new window.Playerjs({
-				id: id,
-				file: videoUrl,
-				hls:1
-			});
-		}
 
 	</script>
 

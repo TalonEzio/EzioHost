@@ -1,7 +1,7 @@
-﻿using static EzioHost.Shared.Common.Configuration;
-namespace EzioHost.Shared.Common
+﻿using static EzioHost.Shared.Private.Endpoints.Configuration;
+namespace EzioHost.Shared.Private.Endpoints
 {
-    public static class BaseUrlCommon
+    public static class BaseUrl
     {
         public static string ReverseProxyUrl => Root[nameof(ReverseProxyUrl)]!;
         public static string WebApiUrl => Root[nameof(WebApiUrl)]!;

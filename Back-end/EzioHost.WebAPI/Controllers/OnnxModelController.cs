@@ -55,7 +55,7 @@ namespace EzioHost.WebAPI.Controllers
                 Precision = model.Precision,
                 MustInputWidth = model.MustInputWidth,
                 MustInputHeight = model.MustInputHeight,
-                CreatedBy = User.GetUserId(),
+                CreatedBy = User.UserId,
                 FileLocation = Path.GetRelativePath(WebRootPath, onnxFilePath)
             };
             await onnxModelService.AddOnnxModel(newModel);
@@ -68,7 +68,7 @@ namespace EzioHost.WebAPI.Controllers
             var model = await onnxModelService.GetOnnxModelById(modelId);
             if (model == null) return NotFound();
 
-            if (model.CreatedBy != User.GetUserId())
+            if (model.CreatedBy != User.UserId)
             {
                 return Unauthorized();
             }
@@ -85,7 +85,7 @@ namespace EzioHost.WebAPI.Controllers
             var model = await onnxModelService.GetOnnxModelById(modelId);
             if (model == null) return NotFound();
 
-            //if (model.CreatedBy != User.GetUserId())
+            //if (model.CreatedBy != User.UserId)
             //{
             //    return Unauthorized();
             //}

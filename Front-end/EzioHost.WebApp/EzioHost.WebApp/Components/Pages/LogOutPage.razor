@@ -4,13 +4,14 @@
 @code {
     [Inject] IHttpContextAccessor HttpContextAccessor { get; set; } = null!;
     [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
-    [Inject] public HttpClient HttpClient { get; set; } = null!;
+    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
 
     [Inject] public NavigationManager NavigationManager { get; set; } = null!;
     protected override async Task OnInitializedAsync()
     {
         ReturnUrl ??= "/";
-        await HttpClient.GetAsync("/logout");
+        using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+        await httpClient.GetAsync("/logout");
         NavigationManager.NavigateTo(ReturnUrl, true);
     }
 

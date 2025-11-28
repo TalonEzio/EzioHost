@@ -1,7 +1,7 @@
 ﻿using EzioHost.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace EzioHost.Infrastructure.SqlServer.DataContext
+namespace EzioHost.Infrastructure.SqlServer.DataContexts
 {
     public class EzioHostDbContext(DbContextOptions<EzioHostDbContext> options) : DbContext(options)
     {

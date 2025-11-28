@@ -1,4 +1,3 @@
-using EzioHost.Shared.Common;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 namespace EzioHost.WebApp.Client;
@@ -15,11 +14,12 @@ internal class Program
 
         builder.Services.AddAuthorizationCore();
 
+        // Use BaseAddress from HostEnvironment (automatically gets from browser location.origin)
+        // This works with reverse proxy - the client will use the same origin it's loaded from
         builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
         {
-            cfg.BaseAddress = new Uri(BaseUrlCommon.ReverseProxyUrl);
+            cfg.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
         });
-        builder.Services.AddScoped(provider => provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EzioHost)));
 
 
         await builder.Build().RunAsync();

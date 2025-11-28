@@ -1,511 +1,99 @@
-@inject IJSRuntime JS
 @rendermode InteractiveAuto
 
 <div class="pure-image-compare-container">
-    <!-- Control Panel -->
-    <div class="compare-controls">
-        <div class="controls-row">
-            <div class="control-group">
-                <label>
-                    <i class="bi bi-sliders"></i> Position: <strong>@SliderPosition%</strong>
-                    </label>
-                <input type="range" 
-                       class="form-range" 
-                       min="0" 
-                       max="100" 
-                       step="1" 
-                       value="@SliderPosition" 
-                       @oninput="OnSliderInput" />
-                </div>
+	<!-- Control Panel -->
+	<div class="compare-controls">
+		<div class="controls-row">
+			<div class="control-group">
+				<label>
+					<i class="bi bi-sliders"></i> Position: <strong>@SliderPosition%</strong>
+				</label>
+				<input type="range"
+					   class="form-range"
+					   min="0"
+					   max="100"
+					   step="1"
+					   value="@SliderPosition"
+					   @oninput="OnSliderInput" />
+			</div>
 
-            <div class="control-group">
-                <label>
-                    <i class="bi bi-arrow-clockwise"></i> Angle: <strong>@HandleAngle°</strong>
-                    </label>
-                <div class="angle-control">
-                    <input type="range" 
-                           class="form-range" 
-                           min="-45" 
-                           max="45" 
-                           step="1" 
-                           value="@HandleAngle" 
-                           @oninput="OnAngleInput" />
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAngle">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                </div>
-            </div>
-                </div>
+			<div class="control-group">
+				<label>
+					<i class="bi bi-arrow-clockwise"></i> Angle: <strong>@HandleAngle°</strong>
+				</label>
+				<div class="angle-control">
+					<input type="range"
+						   class="form-range"
+						   min="-45"
+						   max="45"
+						   step="1"
+						   value="@HandleAngle"
+						   @oninput="OnAngleInput" />
+					<button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAngle">
+						<i class="bi bi-arrow-counterclockwise"></i>
+					</button>
+				</div>
+			</div>
+		</div>
 
-        <div class="controls-row">
-            <div class="control-buttons">
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(0)">
-                            <i class="bi bi-arrow-bar-left"></i> Before
-                        </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => SetPosition(50)">
-                            <i class="bi bi-dash-circle"></i> 50/50
-                        </button>
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(100)">
-                            After <i class="bi bi-arrow-bar-right"></i>
-                        </button>
-            </div>
-            
-            <div class="control-buttons">
-                <button type="button" class="btn btn-sm btn-outline-info" @onclick="ToggleOrientation">
-                    <i class="bi bi-arrow-down-up"></i> @(_isVertical ? "Vertical" : "Horizontal")
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="ToggleDirection">
-                    <i class="bi bi-arrow-left-right"></i> @(_isReversed ? "Reversed" : "Normal")
-                        </button>
-                <button type="button" class="btn btn-sm btn-outline-success" @onclick="SwapImages">
-                    <i class="bi bi-arrow-repeat"></i> Swap
-                        </button>
-            </div>
-        </div>
-    </div>
+		<div class="controls-row">
+			<div class="control-buttons">
+				<button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(0)">
+					<i class="bi bi-arrow-bar-left"></i> Before
+				</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => SetPosition(50)">
+					<i class="bi bi-dash-circle"></i> 50/50
+				</button>
+				<button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(100)">
+					After <i class="bi bi-arrow-bar-right"></i>
+				</button>
+			</div>
 
-    <!-- Image Comparison -->
-    <div class="compare-wrapper" 
-         @ref="_compareElement"
-         @onmousedown="StartDrag" 
-         @onmousemove="OnDrag" 
-         @onmouseup="EndDrag"
-         @onmouseleave="EndDrag"
-         @ontouchstart="StartDrag"
-         @ontouchmove="OnDragTouch"
-         @ontouchend="EndDrag">
-        
-        <!-- Before Image (Full) -->
-        <div class="compare-before">
-            <img src="@CurrentBeforeImage" alt="Before" draggable="false" />
-            <div class="compare-label compare-label-left">@BeforeLabel</div>
-        </div>
+			<div class="control-buttons">
+				<button type="button" class="btn btn-sm btn-outline-info" @onclick="ToggleOrientation">
+					<i class="bi bi-arrow-down-up"></i> @(_isVertical ? "Vertical" : "Horizontal")
+				</button>
+				<button type="button" class="btn btn-sm btn-outline-warning" @onclick="ToggleDirection">
+					<i class="bi bi-arrow-left-right"></i> @(_isReversed ? "Reversed" : "Normal")
+				</button>
+				<button type="button" class="btn btn-sm btn-outline-success" @onclick="SwapImages">
+					<i class="bi bi-arrow-repeat"></i> Swap
+				</button>
+			</div>
+		</div>
+	</div>
 
-        <!-- After Image (Clipped) -->
-        <div class="compare-after" style="clip-path: @GetClipPath();">
-            <img src="@CurrentAfterImage" alt="After" draggable="false" />
-            <div class="compare-label compare-label-right">@AfterLabel</div>
-        </div>
+	<!-- Image Comparison -->
+	<div class="compare-wrapper"
+		 @ref="_compareElement"
+		 @onmousedown="StartDrag"
+		 @onmousemove="OnDrag"
+		 @onmouseup="EndDrag"
+		 @onmouseleave="EndDrag"
+		 @ontouchstart="StartDrag"
+		 @ontouchmove="OnDragTouch"
+		 @ontouchend="EndDrag">
 
-        <!-- Slider Handle -->
-        <div class="compare-handle @(_isVertical ? "vertical" : "horizontal")" 
-             style="@GetHandlePosition(); transform: @GetHandleRotation();">
-            <div class="handle-line"></div>
-            <div class="handle-circle">
-                <i class="bi bi-arrows-expand"></i>
-            </div>
-        </div>
-    </div>
+		<!-- Before Image (Full) -->
+		<div class="compare-before">
+			<img src="@CurrentBeforeImage" alt="Before" draggable="false" />
+			<div class="compare-label compare-label-left">@BeforeLabel</div>
+		</div>
+
+		<!-- After Image (Clipped) -->
+		<div class="compare-after" style="clip-path: @GetClipPath();">
+			<img src="@CurrentAfterImage" alt="After" draggable="false" />
+			<div class="compare-label compare-label-right">@AfterLabel</div>
+		</div>
+
+		<!-- Slider Handle -->
+		<div class="compare-handle @(_isVertical ? "vertical" : "horizontal")"
+			 style="@GetHandlePosition(); transform: @GetHandleRotation();">
+			<div class="handle-line"></div>
+			<div class="handle-circle">
+				<i class="bi bi-arrows-expand"></i>
+			</div>
+		</div>
+	</div>
 </div>
-
-<style>
-    .pure-image-compare-container {
-        width: 100%;
-        user-select: none;
-    }
-
-    .compare-controls {
-        background: white;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .controls-row {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .control-group {
-        flex: 1;
-        min-width: 200px;
-    }
-
-    .control-group label {
-        display: block;
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-        color: #495057;
-    }
-
-    .angle-control {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .angle-control .form-range {
-        flex: 1;
-    }
-
-    .control-buttons {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-
-    .compare-wrapper {
-        position: relative;
-        width: 100%;
-        overflow: hidden;
-        border-radius: 8px;
-        cursor: ew-resize;
-        background: #f8f9fa;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .compare-before,
-    .compare-after {
-        position: relative;
-        width: 100%;
-    }
-
-    .compare-after {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-    }
-
-    .compare-before img,
-    .compare-after img {
-        display: block;
-        width: 100%;
-        height: auto;
-        pointer-events: none;
-        user-select: none;
-    }
-
-    .compare-label {
-        position: absolute;
-        top: 1rem;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        font-weight: 500;
-        font-size: 0.875rem;
-        pointer-events: none;
-    }
-
-    .compare-label-left {
-        left: 1rem;
-    }
-
-    .compare-label-right {
-        right: 1rem;
-    }
-
-    .compare-handle {
-        position: absolute;
-        pointer-events: none;
-        z-index: 10;
-    }
-
-    .compare-handle.vertical {
-        top: 0;
-        bottom: 0;
-        width: 0;
-    }
-
-    .compare-handle.horizontal {
-        left: 0;
-        right: 0;
-        height: 0;
-    }
-
-    .handle-line {
-        position: absolute;
-        background: white;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    }
-
-    .compare-handle.vertical .handle-line {
-        top: 0;
-        bottom: 0;
-        left: 50%;
-        width: 3px;
-        transform: translateX(-50%);
-    }
-
-    .compare-handle.horizontal .handle-line {
-        left: 0;
-        right: 0;
-        top: 50%;
-        height: 3px;
-        transform: translateY(-50%);
-    }
-
-    .handle-circle {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 48px;
-        height: 48px;
-        background: white;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        font-size: 1.25rem;
-        color: #333;
-    }
-
-    .handle-circle i {
-        pointer-events: none;
-    }
-
-    /* Touch device improvements */
-    @@media (hover: none) {
-        .compare-wrapper {
-            cursor: grab;
-        }
-
-        .handle-circle {
-            width: 56px;
-            height: 56px;
-        }
-    }
-
-    /* Responsive */
-    @@media (max-width: 768px) {
-        .controls-row {
-            flex-direction: column;
-        }
-
-        .control-group {
-            width: 100%;
-        }
-
-        .control-buttons {
-            width: 100%;
-        }
-
-        .control-buttons button {
-            flex: 1;
-        }
-    }
-</style>
-
-@code {
-    [Parameter] public string BeforeImage { get; set; } = "";
-    [Parameter] public string AfterImage { get; set; } = "";
-    [Parameter] public string BeforeLabel { get; set; } = "Before";
-    [Parameter] public string AfterLabel { get; set; } = "After";
-    [Parameter] public int InitialPosition { get; set; } = 50;
-    [Parameter] public int InitialAngle { get; set; } = 0;
-
-    private ElementReference _compareElement;
-    private string CurrentBeforeImage { get; set; } = "";
-    private string CurrentAfterImage { get; set; } = "";
-    private int SliderPosition { get; set; } = 50;
-    private int HandleAngle { get; set; } = 0;
-    private bool _isDragging = false;
-    private bool _isSwapped = false;
-    private bool _isVertical = true;  // true = TOP-BOTTOM, false = LEFT-RIGHT
-    private bool _isReversed = false;
-
-    protected override void OnInitialized()
-    {
-        CurrentBeforeImage = BeforeImage;
-        CurrentAfterImage = AfterImage;
-        SliderPosition = InitialPosition;
-        HandleAngle = InitialAngle;
-    }
-
-    private void OnSliderInput(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var value))
-        {
-            SliderPosition = Math.Clamp(value, 0, 100);
-        }
-    }
-
-    private void OnAngleInput(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var value))
-        {
-            HandleAngle = Math.Clamp(value, -45, 45);
-        }
-    }
-
-    private void SetPosition(int position)
-    {
-        SliderPosition = Math.Clamp(position, 0, 100);
-    }
-
-    private void SwapImages()
-    {
-        _isSwapped = !_isSwapped;
-        (CurrentBeforeImage, CurrentAfterImage) = (CurrentAfterImage, CurrentBeforeImage);
-        SliderPosition = 50;
-    }
-
-    private void ToggleOrientation()
-    {
-        _isVertical = !_isVertical;
-        SliderPosition = 50;
-        HandleAngle = 0;
-    }
-
-    private void ToggleDirection()
-    {
-        _isReversed = !_isReversed;
-    }
-
-    private void ResetAngle()
-    {
-        HandleAngle = 0;
-    }
-
-    private string GetClipPath()
-    {
-        double pos = SliderPosition;
-        
-        if (HandleAngle == 0)
-        {
-            // Straight cut
-            if (_isVertical)
-            {
-                return _isReversed 
-                    ? $"inset(0 0 0 {pos}%)"
-                    : $"inset(0 {100 - pos}% 0 0)";
-            }
-            else
-            {
-                return _isReversed
-                    ? $"inset(0 0 {pos}% 0)"
-                    : $"inset({pos}% 0 0 0)";
-            }
-        }
-        
-        // Angled cut with polygon
-        double angleRad = HandleAngle * Math.PI / 180.0;
-        double tanAngle = Math.Tan(angleRad);
-        
-        if (_isVertical)
-        {
-            // Vertical orientation (left-right cut)
-            // Flip offset để line nghiêng đúng chiều
-            double offset = tanAngle * 50;
-            double topX = Math.Clamp(pos + offset, 0, 100);      // Đảo dấu
-            double bottomX = Math.Clamp(pos - offset, 0, 100);   // Đảo dấu
-            
-            if (_isReversed)
-            {
-                return $"polygon(0 0, {topX}% 0, {bottomX}% 100%, 0 100%)";
-            }
-            else
-            {
-                return $"polygon({topX}% 0, 100% 0, 100% 100%, {bottomX}% 100%)";
-            }
-        }
-        else
-        {
-            // Horizontal orientation (top-bottom cut)
-            // Flip offset để line nghiêng đúng chiều
-            double offset = tanAngle * 50;
-            double leftY = Math.Clamp(pos + offset, 0, 100);     // Đảo dấu
-            double rightY = Math.Clamp(pos - offset, 0, 100);    // Đảo dấu
-            
-            if (_isReversed)
-            {
-                return $"polygon(0 0, 100% 0, 100% {rightY}%, 0 {leftY}%)";
-            }
-            else
-            {
-                return $"polygon(0 {leftY}%, 100% {rightY}%, 100% 100%, 0 100%)";
-            }
-        }
-    }
-
-    private string GetHandlePosition()
-    {
-        return _isVertical ? $"left: {SliderPosition}%" : $"top: {SliderPosition}%";
-    }
-
-    private string GetHandleRotation()
-    {
-        if (_isVertical)
-        {
-            return $"translateX(-50%) rotate({HandleAngle}deg)";
-        }
-        else
-        {
-            return $"translateY(-50%) rotate({90 + HandleAngle}deg)";
-        }
-    }
-
-    private void StartDrag(MouseEventArgs e)
-    {
-        _isDragging = true;
-        UpdatePositionFromMouse(e);
-    }
-
-    private void StartDrag(TouchEventArgs e)
-    {
-        _isDragging = true;
-    }
-
-    private async void OnDrag(MouseEventArgs e)
-    {
-        if (_isDragging)
-        {
-            UpdatePositionFromMouse(e);
-        }
-    }
-
-    private async void OnDragTouch(TouchEventArgs e)
-    {
-        if (_isDragging && e.Touches.Length > 0)
-        {
-	        try
-	        {
-		        var position = await JS.InvokeAsync<int>("getPercentagePosition", _compareElement, e.Touches[0].ClientX);
-		        SliderPosition = Math.Clamp(position, 0, 100);
-		        StateHasChanged();
-	        }
-	        catch
-	        {
-                //ignore
-	        }
-        }
-    }
-
-    private void EndDrag(MouseEventArgs e)
-    {
-        _isDragging = false;
-    }
-
-    private void EndDrag(TouchEventArgs e)
-    {
-        _isDragging = false;
-    }
-
-    private async void UpdatePositionFromMouse(MouseEventArgs e)
-    {
-        try
-        {
-            var position = await JS.InvokeAsync<int>("getPercentagePosition", _compareElement, e.ClientX);
-            SliderPosition = Math.Clamp(position, 0, 100);
-            StateHasChanged();
-        }
-        catch { }
-    }
-
-    public void UpdateImages(string beforeImage, string afterImage)
-    {
-        BeforeImage = beforeImage;
-        AfterImage = afterImage;
-        CurrentBeforeImage = _isSwapped ? afterImage : beforeImage;
-        CurrentAfterImage = _isSwapped ? beforeImage : afterImage;
-        SliderPosition = 50;
-        StateHasChanged();
-    }
-}
 

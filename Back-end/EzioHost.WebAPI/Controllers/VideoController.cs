@@ -25,7 +25,7 @@ namespace EzioHost.WebAPI.Controllers
         [Authorize]
         public async Task<IActionResult> GetVideos()
         {
-            var userId = User.GetUserId();
+            var userId = User.UserId;
             var videos = (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams, x => x.VideoUpscales])).ToList();
 
             var videoDtos = mapper.Map<List<VideoDto>>(videos);
@@ -118,7 +118,7 @@ namespace EzioHost.WebAPI.Controllers
                     return BadRequest();
 
                 case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
-                    if (video.CreatedBy == User.GetUserId())
+                    if (video.CreatedBy == User.UserId)
                     {
                         return Ok(videoDto);
                     }
@@ -144,7 +144,7 @@ namespace EzioHost.WebAPI.Controllers
                 video.Title = videoDto.Title;
                 video.ShareType = videoDto.ShareType;
                 video.Type = videoDto.Type;
-                video.ModifiedBy = User.GetUserId();
+                video.ModifiedBy = User.UserId;
 
                 await videoService.UpdateVideo(video);
 
@@ -201,11 +201,10 @@ namespace EzioHost.WebAPI.Controllers
                     return BadRequest();
 
                 case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
-                    if (video.CreatedBy == User.GetUserId())
+                    if (video.CreatedBy == User.UserId)
                     {
                         return Content(contentKey);
                     }
-
                     break;
             }
 

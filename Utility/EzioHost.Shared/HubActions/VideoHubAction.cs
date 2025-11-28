@@ -1,6 +1,6 @@
 ﻿using EzioHost.Shared.Events;
 
-namespace EzioHost.Shared.Hubs
+namespace EzioHost.Shared.HubActions
 {
     public interface IVideoHubAction
     {

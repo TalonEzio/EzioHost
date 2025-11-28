@@ -7,7 +7,7 @@ namespace EzioHost.WebAPI.Hubs
     {
         public string GetUserId(HubConnectionContext connection)
         {
-            var id = connection.User.GetUserId();
+            var id = connection.User.UserId;
             return id.ToString();
         }
     }
