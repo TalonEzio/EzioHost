@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.Shared.Events;
 using EzioHost.Shared.HubActions;
@@ -246,8 +244,15 @@ public partial class VideoPage : IAsyncDisposable
 
 	public async ValueTask DisposeAsync()
 	{
-		if (_hubConnection != null) await _hubConnection.DisposeAsync();
-		if (_jsObjectReference != null) await _jsObjectReference.DisposeAsync();
+        try
+        {
+            if (_hubConnection != null) await _hubConnection.DisposeAsync();
+            if (_jsObjectReference != null) await _jsObjectReference.DisposeAsync();
+        }
+        catch
+        {
+			//ignore
+        }
 	}
 }
 

@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace EzioHost.ReverseProxy
+namespace EzioHost.ReverseProxy.Startup
 {
     public class AppSettings
     {

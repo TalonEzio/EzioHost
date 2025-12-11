@@ -1,5 +1,6 @@
 ﻿using EzioHost.Core.Providers;
 using EzioHost.Domain.Settings;
+using EzioHost.WebAPI.Startup;
 using Microsoft.Extensions.Options;
 
 namespace EzioHost.WebAPI.Providers

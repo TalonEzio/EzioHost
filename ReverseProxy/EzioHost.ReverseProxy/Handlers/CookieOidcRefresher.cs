@@ -9,7 +9,7 @@ using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace EzioHost.ReverseProxy.Handler;
+namespace EzioHost.ReverseProxy.Handlers;
 
 // https://github.com/dotnet/aspnetcore/issues/8175
 internal sealed class CookieOidcRefresher(

@@ -23,7 +23,7 @@ namespace EzioHost.WebApp.Handlers
     public class ReverseProxyAuthenticationHandler(
         IOptionsMonitor<ReverseProxyAuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         UrlEncoder encoder)
         : AuthenticationHandler<ReverseProxyAuthenticationSchemeOptions>(options, logger, encoder)
     {
@@ -46,6 +46,8 @@ namespace EzioHost.WebApp.Handlers
 
             try
             {
+                var httpClient = httpClientFactory.CreateClient(nameof(EzioHost));
+
                 var userInfoClaims = await httpClient.GetFromJsonAsync<List<ClaimDto>>("user", new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true

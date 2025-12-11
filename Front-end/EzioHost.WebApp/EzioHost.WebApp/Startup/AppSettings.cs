@@ -1,4 +1,4 @@
-﻿namespace EzioHost.WebApp
+﻿namespace EzioHost.WebApp.Startup
 {
     public class AppSettings
     {

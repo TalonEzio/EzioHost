@@ -1,6 +1,6 @@
 ﻿using EzioHost.Domain.Settings;
 
-namespace EzioHost.WebAPI
+namespace EzioHost.WebAPI.Startup
 {
     public class AppSettings
     {

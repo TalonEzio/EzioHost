@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
-using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.WebApp.Client.Extensions;
 using System.Net.Http.Json;

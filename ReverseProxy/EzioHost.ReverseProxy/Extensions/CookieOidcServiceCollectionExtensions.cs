@@ -1,4 +1,4 @@
-﻿using EzioHost.ReverseProxy.Handler;
+﻿using EzioHost.ReverseProxy.Handlers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;

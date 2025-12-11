@@ -1,8 +1,8 @@
 ﻿var builder = DistributedApplication.CreateBuilder(args);
 
-// var keycloak = builder
-//         .AddKeycloak("keycloak", 18080)
-//         .WithLifetime(ContainerLifetime.Persistent);
+var keycloak = builder
+        .AddKeycloak("keycloak", 18080)
+        .WithLifetime(ContainerLifetime.Persistent);
 
 // var mssql = builder.AddSqlServer("mssql")
 //     .WithLifetime(ContainerLifetime.Persistent);
@@ -11,7 +11,7 @@ var garnet = builder.AddGarnet("garnet", 18119)
     .WithLifetime(ContainerLifetime.Persistent);
 
 var webApi = builder.AddProject<Projects.EzioHost_WebAPI>("WebApi")
-    // .WaitFor(keycloak)
+    .WaitFor(keycloak)
     // .WaitFor(mssql)
     .WaitFor(garnet)
     ;
