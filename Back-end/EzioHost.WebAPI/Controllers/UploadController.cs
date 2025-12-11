@@ -35,8 +35,6 @@ namespace EzioHost.WebAPI.Controllers
                 FileSize = fileInfo.FileSize,
                 ContentType = fileInfo.ContentType,
                 Checksum = fileInfo.Checksum,
-                UploadedBytes = 0,
-                Type = fileInfo.Type,
                 CreatedBy = fileInfo.UserId
             };
 

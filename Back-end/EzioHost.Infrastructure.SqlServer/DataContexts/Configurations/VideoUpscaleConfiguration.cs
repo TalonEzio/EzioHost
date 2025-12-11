@@ -10,6 +10,16 @@ namespace EzioHost.Infrastructure.SqlServer.DataContexts.Configurations
         {
             builder.Property(x => x.Scale).HasDefaultValue(1);
             builder.Property(x => x.OutputLocation).HasMaxLength(200).IsUnicode();
+
+            builder.HasOne(x => x.Model)
+                .WithMany(x => x.VideoUpscales)
+                .HasForeignKey(x => x.ModelId)
+                .IsRequired(true);
+
+            builder.HasOne(x => x.Video)
+                .WithMany(x => x.VideoUpscales)
+                .HasForeignKey(x => x.VideoId)
+                .IsRequired(true);
         }
     }
 }

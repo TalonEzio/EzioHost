@@ -51,7 +51,7 @@ namespace EzioHost.Core.Services.Implement
             var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
             var videoHeight = mediaInfo.VideoStreams[0].Height;
 
-            newVideo.UpdateResolution(videoHeight);
+            newVideo.Height = videoHeight;
 
             await _videoRepository.AddNewVideo(newVideo);
 

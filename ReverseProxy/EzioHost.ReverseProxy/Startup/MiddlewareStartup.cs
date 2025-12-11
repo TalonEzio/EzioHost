@@ -21,8 +21,6 @@ namespace EzioHost.ReverseProxy.Startup
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseAntiforgery();
-
             app.MapControllers();
 
             app.MapReverseProxy();

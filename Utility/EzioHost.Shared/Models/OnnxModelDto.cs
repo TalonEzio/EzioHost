@@ -13,7 +13,6 @@ namespace EzioHost.Shared.Models
         public int Scale { get; set; }
         public int MustInputWidth { get; set; }
         public int MustInputHeight { get; set; }
-        public VideoEnum.VideoType SupportVideoType { get; set; } = VideoEnum.VideoType.Anime | VideoEnum.VideoType.Movie;
         public OnnxModelPrecision Precision { get; set; }
         public bool CanPreview => !string.IsNullOrEmpty(DemoInput) && !string.IsNullOrEmpty(DemoOutput);
     }

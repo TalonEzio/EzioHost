@@ -52,7 +52,6 @@ namespace EzioHost.ReverseProxy.Startup
                     options.SaveTokens = true;
                     //options.GetClaimsFromUserInfoEndpoint = true;
 
-                    options.Scope.Add(OpenIdConnectScope.Email);
                     options.Scope.Add(OpenIdConnectScope.OfflineAccess); //need for refresh token if provider not set default
                     options.Scope.Add(settings.OpenIdConnect.WebApiScope); //custom scope from OIDC server
 

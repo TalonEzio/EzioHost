@@ -75,7 +75,6 @@ namespace EzioHost.Core.Services.Implement
 
             if (fileInfo.Length < fileUpload.FileSize)
             {
-                fileUpload.UploadedBytes = fileInfo.Length;
                 fileUpload.Status = VideoEnum.FileUploadStatus.InProgress;
                 await fileUploadRepository.UpdateFileUpload(fileUpload);
 
@@ -94,7 +93,6 @@ namespace EzioHost.Core.Services.Implement
 
             File.Move(tempFilePath, videoFinalPath, true);
 
-            fileUpload.UploadedBytes = fileInfo.Length;
             fileUpload.Status = VideoEnum.FileUploadStatus.Completed;
             await UpdateFileUpload(fileUpload);
 
@@ -107,7 +105,6 @@ namespace EzioHost.Core.Services.Implement
                 M3U8Location = Path.ChangeExtension(Path.GetRelativePath(BaseWebRootFolder, videoFinalPath), ".m3u8"),
                 CreatedBy = fileUpload.CreatedBy,
                 Status = VideoEnum.VideoStatus.Queue,
-                Type = fileUpload.Type
             };
 
             await videoService.AddNewVideo(newVideo);

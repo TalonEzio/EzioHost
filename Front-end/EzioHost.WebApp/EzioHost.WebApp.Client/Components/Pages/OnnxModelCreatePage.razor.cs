@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
+using EzioHost.Shared.Constants;
 using EzioHost.WebApp.Client.Extensions;
 using Microsoft.JSInterop;
 
@@ -24,16 +24,7 @@ public partial class OnnxModelCreatePage
 		{
 			await JsRuntime.InvokeAsync<IJSObjectReference>("import", "https://cdn.jsdelivr.net/npm/tom-select");
 			_jsObjectReference = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/Pages/OnnxModelCreatePage.razor.js");
-			await _jsObjectReference.InvokeVoidAsync("initTomSelect", "videoTypeSelect");
 		}
-	}
-
-	private async Task<List<VideoEnum.VideoType>> GetSelectedVideoTypes()
-	{
-		if (_jsObjectReference == null) return [];
-		var selectedValues = await _jsObjectReference.InvokeAsync<int[]>("getSelectedValues", "videoTypeSelect");
-		var selectedTypes = selectedValues.Select(v => (VideoEnum.VideoType)v).ToList();
-		return selectedTypes;
 	}
 
 	private async Task CreateNewOnnxModelSubmit()
@@ -49,21 +40,18 @@ public partial class OnnxModelCreatePage
 
 		try
 		{
-			var selected = await GetSelectedVideoTypes();
-			Onnx.SupportVideoType = selected.Aggregate(VideoEnum.VideoType.None, (current, type) => current | type);
 
 			var formData = new MultipartFormDataContent();
 
-			formData.Add(new StringContent(Onnx.Name), "Name");
-			formData.Add(new StringContent(Onnx.Scale.ToString()), "Scale");
-			formData.Add(new StringContent(Onnx.MustInputWidth.ToString()), "MustInputWidth");
-			formData.Add(new StringContent(Onnx.MustInputHeight.ToString()), "MustInputHeight");
-			formData.Add(new StringContent(Onnx.SupportVideoType.ToString()), "SupportVideoType");
-			formData.Add(new StringContent(Onnx.Precision.ToString()), "Precision");
+			formData.Add(new StringContent(Onnx.Name), nameof(OnnxModelCreateDto.Name));
+			formData.Add(new StringContent(Onnx.Scale.ToString()), nameof(OnnxModelCreateDto.Scale));
+			formData.Add(new StringContent(Onnx.MustInputWidth.ToString()), nameof(OnnxModelCreateDto.MustInputWidth));
+			formData.Add(new StringContent(Onnx.MustInputHeight.ToString()), nameof(OnnxModelCreateDto.MustInputHeight));
+			formData.Add(new StringContent(Onnx.Precision.ToString()), nameof(OnnxModelCreateDto.Precision));
 
 			using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
 			var fileContent = new StreamContent(_file.OpenReadStream(_file.Size));
-			formData.Add(fileContent, "modelFile", _file.Name);
+			formData.Add(fileContent, FormFieldNames.ModelFile, _file.Name);
 
 			var response = await httpClient.PutAsync("/api/OnnxModel", formData);
 			response.EnsureSuccessStatusCode();
@@ -90,7 +78,7 @@ public partial class OnnxModelCreatePage
 
 	private string FormatFileSize(long bytes)
 	{
-		string[] sizes = { "B", "KB", "MB", "GB" };
+		string[] sizes = ["B", "KB", "MB", "GB"];
 		double len = bytes;
 		int order = 0;
 		while (len >= 1024 && order < sizes.Length - 1)

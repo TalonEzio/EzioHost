@@ -12,28 +12,40 @@ namespace EzioHost.Domain.Entities
         public string M3U8Location { get; set; } = string.Empty;
         public VideoEnum.VideoResolution Resolution { get; set; }
         public VideoEnum.VideoStatus Status { get; set; }
-        public VideoEnum.VideoType Type { get; set; }
         public VideoEnum.VideoShareType ShareType { get; set; } = VideoEnum.VideoShareType.Private;
         public ICollection<VideoStream> VideoStreams { get; set; } = [];
 
-        public void UpdateResolution(int height)
+        public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
+
+        /// <summary>
+        /// Sets Resolution based on video height using tolerance calculation
+        /// </summary>
+        [NotMapped]
+        public int Height
         {
-            Resolution = height switch
-            {
-                >= 340 and <= 380 => VideoEnum.VideoResolution._360p,
-                >= 460 and <= 500 => VideoEnum.VideoResolution._480p,
-                >= 680 and <= 720 => VideoEnum.VideoResolution._720p,
-                >= 1060 and <= 1100 => VideoEnum.VideoResolution._1080p,
-                >= 1420 and <= 1460 => VideoEnum.VideoResolution._1440p,
-                >= 2140 and <= 2180 => VideoEnum.VideoResolution._2160p,
-                _ => VideoEnum.VideoResolution._720p
-            };
+            set => UpdateResolution(value);
         }
 
-        public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
-        [NotMapped] public bool IsReady => Status == VideoEnum.VideoStatus.Ready;
+        private void UpdateResolution(int height)
+        {
+            var resolutions = Enum.GetValues<VideoEnum.VideoResolution>()
+                .Select(r => new { Resolution = r, Value = (int)r })
+                .Where(r => r.Value > 0)
+                .OrderBy(r => Math.Abs(height - r.Value))
+                .ToList();
 
-        [NotMapped] public bool IsValid => !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(RawLocation);
+            if (resolutions.Any())
+            {
+                var nearest = resolutions.First();
+                var tolerance = nearest.Value * 0.1;
+                if (Math.Abs(height - nearest.Value) <= tolerance)
+                {
+                    Resolution = nearest.Resolution;
+                    return;
+                }
+            }
+            Resolution = VideoEnum.VideoResolution._720p;
+        }
     }
 
 

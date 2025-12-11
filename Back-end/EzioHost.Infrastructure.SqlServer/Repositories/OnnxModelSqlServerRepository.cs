@@ -7,9 +7,9 @@ namespace EzioHost.Infrastructure.SqlServer.Repositories
 {
     public class OnnxModelSqlServerRepository(EzioHostDbContext dbContext) : IOnnxModelRepository
     {
-        public Task<IEnumerable<OnnxModel>> GetOnnxModels()
+        public async Task<IEnumerable<OnnxModel>> GetOnnxModels()
         {
-            return Task.FromResult(dbContext.OnnxModels.AsEnumerable());
+            return await dbContext.OnnxModels.ToListAsync();
         }
 
         public Task<OnnxModel?> GetOnnxModelById(Guid id)

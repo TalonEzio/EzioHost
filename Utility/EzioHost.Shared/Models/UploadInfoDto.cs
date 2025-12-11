@@ -11,7 +11,6 @@ namespace EzioHost.Shared.Models
         public long UploadedBytes { get; set; } = 0;
         public string? Checksum { get; set; }
         public Guid UserId { get; set; }
-        public VideoEnum.VideoType Type { get; set; } = VideoEnum.VideoType.Other;
         public bool IsCompleted => FileSize == UploadedBytes;
     }
 

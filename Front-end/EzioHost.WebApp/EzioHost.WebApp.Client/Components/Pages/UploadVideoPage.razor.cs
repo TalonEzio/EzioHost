@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
+using EzioHost.Shared.Constants;
 using EzioHost.WebApp.Client.Extensions;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -32,13 +33,11 @@ public partial class UploadVideoPage
     private string VideoTitle { get; set; } = "";
     private string VideoDescription { get; set; } = "";
     private string TargetQuality { get; set; } = "1080p";
-    private int SelectedVideoType { get; set; } = (int)VideoEnum.VideoType.Other;
 
     private IJSObjectReference? _jsObjectReference;
     private DotNetObjectReference<UploadVideoPage>? _dotNetRef;
 
     private const int CHUNK_SIZE = 1024 * 1024; // 1MB chunks
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -209,7 +208,6 @@ public partial class UploadVideoPage
             ContentType = file.ContentType,
             Checksum = checksum,
             UserId = userId,
-            Type = (VideoEnum.VideoType)SelectedVideoType
         };
 
         var initResponse = await httpClient.PostAsJsonAsync("api/Upload/init", uploadInfo);
@@ -241,7 +239,7 @@ public partial class UploadVideoPage
             using var chunkStream = new MemoryStream(chunkData);
             using var chunkContent = new StreamContent(chunkStream);
             chunkContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
-            formData.Add(chunkContent, "chunkFile", file.Name);
+            formData.Add(chunkContent, FormFieldNames.ChunkFile, file.Name);
 
             var chunkResponse = await httpClient.PostAsync($"api/Upload/chunk/{uploadId}", formData);
 

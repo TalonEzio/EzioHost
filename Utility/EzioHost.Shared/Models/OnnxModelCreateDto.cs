@@ -15,7 +15,6 @@ namespace EzioHost.Shared.Models
         public int MustInputWidth { get; set; }
         [Range(0, 2160)]
         public int MustInputHeight { get; set; }
-        public VideoEnum.VideoType SupportVideoType { get; set; }
         public OnnxModelPrecision Precision { get; set; }
     }
 }

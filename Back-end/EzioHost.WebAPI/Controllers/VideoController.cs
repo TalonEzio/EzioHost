@@ -143,7 +143,6 @@ namespace EzioHost.WebAPI.Controllers
             {
                 video.Title = videoDto.Title;
                 video.ShareType = videoDto.ShareType;
-                video.Type = videoDto.Type;
                 video.ModifiedBy = User.UserId;
 
                 await videoService.UpdateVideo(video);

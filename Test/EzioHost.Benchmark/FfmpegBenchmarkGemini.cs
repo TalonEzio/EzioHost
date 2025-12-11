@@ -292,7 +292,7 @@ namespace EzioHost.Benchmark
                         sws = ffmpeg.sws_getContext(
                             vdec->width, vdec->height, vdec->pix_fmt,
                             venc->width, venc->height, venc->pix_fmt,
-                            ffmpeg.SWS_BILINEAR, null, null, null);
+                            (int)SwsFlags.SWS_BILINEAR, null, null, null);
 
                         yuv = ffmpeg.av_frame_alloc();
                         yuv->format = (int)venc->pix_fmt;

@@ -51,7 +51,6 @@ namespace EzioHost.WebAPI.Controllers
                 Id = id,
                 Name = model.Name,
                 Scale = model.Scale,
-                SupportVideoType = model.SupportVideoType,
                 Precision = model.Precision,
                 MustInputWidth = model.MustInputWidth,
                 MustInputHeight = model.MustInputHeight,

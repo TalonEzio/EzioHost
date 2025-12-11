@@ -81,6 +81,12 @@ namespace EzioHost.Core.Services.Implement
             var model = videoUpscale.Model;
             var video = videoUpscale.Video;
 
+            if (model == null)
+                throw new InvalidOperationException($"OnnxModel with Id {videoUpscale.ModelId} was not found or has been deleted.");
+
+            if (video == null)
+                throw new InvalidOperationException($"Video with Id {videoUpscale.VideoId} was not found or has been deleted.");
+
             var resolutionValue = (int)video.Resolution * model.Scale;
 
             var resolutions = Enum.GetValues(typeof(VideoResolution))

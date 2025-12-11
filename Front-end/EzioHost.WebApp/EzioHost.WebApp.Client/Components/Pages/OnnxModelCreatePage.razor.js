@@ -1,11 +1,3 @@
-export function initTomSelect(selectId) {
-    new window.TomSelect(`#${selectId}`, {
-        plugins: ['remove_button'],
-        placeholder: 'Select video types...',
-        maxItems: null
-    });
-}
-
 export function getSelectedValues(selectId) {
     const select = document.getElementById(selectId);
     if (!select) return [];
