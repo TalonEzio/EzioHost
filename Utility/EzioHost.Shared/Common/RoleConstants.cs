@@ -1,9 +1,8 @@
-﻿namespace EzioHost.Shared.Common
+﻿namespace EzioHost.Shared.Common;
+
+public class RoleConstants
 {
-    public class RoleConstants
-    {
-        public const string Admin = nameof(Admin);
-        public const string User = nameof(User);
-        public const string VipUser = nameof(VipUser);
-    }
+    public const string Admin = nameof(Admin);
+    public const string User = nameof(User);
+    public const string VipUser = nameof(VipUser);
 }

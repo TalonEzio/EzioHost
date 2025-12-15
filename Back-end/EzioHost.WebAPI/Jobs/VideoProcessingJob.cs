@@ -1,60 +1,63 @@
-﻿using AsyncAwaitBestPractices;
+﻿using System.Diagnostics;
+using AsyncAwaitBestPractices;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Shared.Events;
+using EzioHost.Shared.HubActions;
 using EzioHost.WebAPI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Quartz;
-using System.Diagnostics;
-using EzioHost.Shared.HubActions;
 
-namespace EzioHost.WebAPI.Jobs
+namespace EzioHost.WebAPI.Jobs;
+
+[DisallowConcurrentExecution]
+public class VideoProcessingJob(
+    IVideoService videoService,
+    ILogger<VideoProcessingJob> logger,
+    IHubContext<VideoHub, IVideoHubAction> videoHub) : IJob, IDisposable
 {
-    [DisallowConcurrentExecution]
-    public class VideoProcessingJob(IVideoService videoService, ILogger<VideoProcessingJob> logger, IHubContext<VideoHub, IVideoHubAction> videoHub) : IJob, IDisposable
+    public void Dispose()
     {
-        public async Task Execute(IJobExecutionContext context)
-        {
-            videoService.OnVideoStreamAdded += VideoServiceOnOnVideoStreamAdded;
-            videoService.OnVideoProcessDone += VideoServiceOnOnVideoProcessDone;
+        videoService.OnVideoStreamAdded -= VideoServiceOnOnVideoStreamAdded;
+        videoService.OnVideoProcessDone -= VideoServiceOnOnVideoProcessDone;
+    }
 
-            var stopwatch = Stopwatch.StartNew();
-            try
+    public async Task Execute(IJobExecutionContext context)
+    {
+        videoService.OnVideoStreamAdded += VideoServiceOnOnVideoStreamAdded;
+        videoService.OnVideoProcessDone += VideoServiceOnOnVideoProcessDone;
+
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            var videoToEncode = await videoService.GetVideoToEncode();
+            if (videoToEncode != null)
             {
-                var videoToEncode = await videoService.GetVideoToEncode();
-                if (videoToEncode != null)
-                {
-                    logger.LogInformation($"[VideoProcessingJob] Encoding video ID: {videoToEncode.Id}");
-                    await videoService.EncodeVideo(videoToEncode);
-                }
-                else
-                {
-                    logger.LogInformation("[VideoProcessingJob] No videos to encode.");
-                }
+                logger.LogInformation($"[VideoProcessingJob] Encoding video ID: {videoToEncode.Id}");
+                await videoService.EncodeVideo(videoToEncode);
             }
-            catch (Exception ex)
+            else
             {
-                logger.LogError(ex, "[VideoProcessingJob] Error during video processing.");
-            }
-            finally
-            {
-                stopwatch.Stop();
-                logger.LogInformation($"[VideoProcessingJob] Finished in {stopwatch.ElapsedMilliseconds} ms");
+                logger.LogInformation("[VideoProcessingJob] No videos to encode.");
             }
         }
-
-        private void VideoServiceOnOnVideoProcessDone(VideoProcessDoneEvent obj)
+        catch (Exception ex)
         {
-            videoHub.Clients.All.ReceiveVideoProcessingDone(obj).SafeFireAndForget();
+            logger.LogError(ex, "[VideoProcessingJob] Error during video processing.");
         }
-
-        private void VideoServiceOnOnVideoStreamAdded(VideoStreamAddedEvent obj)
+        finally
         {
-            videoHub.Clients.All.ReceiveNewVideoStream(obj).SafeFireAndForget();
+            stopwatch.Stop();
+            logger.LogInformation($"[VideoProcessingJob] Finished in {stopwatch.ElapsedMilliseconds} ms");
         }
+    }
 
-        public void Dispose()
-        {
-            videoService.OnVideoStreamAdded -= VideoServiceOnOnVideoStreamAdded;
-        }
+    private void VideoServiceOnOnVideoProcessDone(VideoProcessDoneEvent obj)
+    {
+        videoHub.Clients.All.ReceiveVideoProcessingDone(obj).SafeFireAndForget();
+    }
+
+    private void VideoServiceOnOnVideoStreamAdded(VideoStreamAddedEvent obj)
+    {
+        videoHub.Clients.All.ReceiveNewVideoStream(obj).SafeFireAndForget();
     }
 }

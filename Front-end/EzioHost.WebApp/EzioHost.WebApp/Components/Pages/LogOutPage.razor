@@ -2,17 +2,18 @@
 
 
 @code {
-    [Inject] IHttpContextAccessor HttpContextAccessor { get; set; } = null!;
-    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
-    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
+	[Inject] IHttpContextAccessor HttpContextAccessor { get; set; } = null!;
+	[SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+	[Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
 
-    [Inject] public NavigationManager NavigationManager { get; set; } = null!;
-    protected override async Task OnInitializedAsync()
-    {
-        ReturnUrl ??= "/";
-        using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-        await httpClient.GetAsync("/logout");
-        NavigationManager.NavigateTo(ReturnUrl, true);
-    }
+	[Inject] public NavigationManager NavigationManager { get; set; } = null!;
+
+	protected override async Task OnInitializedAsync()
+	{
+		ReturnUrl ??= "/";
+		using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+		await httpClient.GetAsync("/logout");
+		NavigationManager.NavigateTo(ReturnUrl, true);
+	}
 
 }

@@ -1,12 +1,13 @@
-﻿using EzioHost.Domain.Entities;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using EzioHost.Domain.Entities;
 
-namespace EzioHost.Core.Repositories
+namespace EzioHost.Core.Repositories;
+
+public interface IUserRepository
 {
-    public interface IUserRepository
-    {
-        Task<User?> GetUserByCondition(Expression<Func<User, bool>> expression, Expression<Func<User, object>>[]? includes = null);
-        Task<User> CreateNew(User newUser);
-        Task<User> UpdateUser(User updateUser);
-    }
+    Task<User?> GetUserByCondition(Expression<Func<User, bool>> expression,
+        Expression<Func<User, object>>[]? includes = null);
+
+    Task<User> CreateNew(User newUser);
+    Task<User> UpdateUser(User updateUser);
 }

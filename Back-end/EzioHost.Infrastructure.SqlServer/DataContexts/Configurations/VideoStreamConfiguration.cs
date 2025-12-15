@@ -2,22 +2,24 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace EzioHost.Infrastructure.SqlServer.DataContexts.Configurations
+namespace EzioHost.Infrastructure.SqlServer.DataContexts.Configurations;
+
+internal class VideoStreamConfiguration : IEntityTypeConfiguration<VideoStream>
 {
-    internal class VideoStreamConfiguration : IEntityTypeConfiguration<VideoStream>
+    public void Configure(EntityTypeBuilder<VideoStream> builder)
     {
-        public void Configure(EntityTypeBuilder<VideoStream> builder)
-        {
-            builder.Property(x => x.M3U8Location).HasMaxLength(500).IsUnicode();
+        builder.Property(x => x.M3U8Location)
+            .HasMaxLength(500)
+            .IsUnicode()
+            .UsePropertyAccessMode(PropertyAccessMode.Property);
 
-            builder.Property(x => x.Key).IsRequired().HasMaxLength(32).IsUnicode(false);
-            builder.Property(x => x.IV).IsRequired().HasMaxLength(32).IsUnicode(false);
+        builder.Property(x => x.Key).IsRequired().HasMaxLength(32).IsUnicode(false);
+        builder.Property(x => x.IV).IsRequired().HasMaxLength(32).IsUnicode(false);
 
-            // Make Video navigation optional to avoid issues with global query filter
-            builder.HasOne(x => x.Video)
-                .WithMany(x => x.VideoStreams)
-                .HasForeignKey(x => x.VideoId)
-                .IsRequired(false);
-        }
+        // Make Video navigation optional to avoid issues with global query filter
+        builder.HasOne(x => x.Video)
+            .WithMany(x => x.VideoStreams)
+            .HasForeignKey(x => x.VideoId)
+            .IsRequired(false);
     }
 }

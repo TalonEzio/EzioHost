@@ -3,35 +3,34 @@
 @attribute [Authorize]
 <PageTitle>Upscale Video</PageTitle>
 <HeadContent>
-    <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
+	<link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
 </HeadContent>
 <h2 class="h2">Upscale Page</h2>
 @if (RendererInfo.IsInteractive)
 {
-    <p>Please select Model to upscale</p>
+	<p>Please select Model to upscale</p>
 
-    <select @onchange="OnOnnxModelChange" class="form-select">
-        @foreach (var model in OnnxModels)
-        {
-            <option value="@model.Id">@model.Name</option>
-        }
-    </select>
+	<select @onchange="OnOnnxModelChange" class="form-select">
+		@foreach (var model in OnnxModels)
+		{
+			<option value="@model.Id">@model.Name</option>
+		}
+	</select>
 
-    <div class="row d-flex mt-2">
-        <div class="col-md-6">
-            @if (_selectedModel != null)
-            {
-                <h4>Selected model info:</h4>
-                <p>Name: @_selectedModel.Name</p>
-                <p>Scale: @_selectedModel.Scale</p>
-                <ImageCompare @ref="ImageCompareComponent" BeforeImage="@_selectedModel.DemoInput" AfterImage="@_selectedModel.DemoOutput" />
-                <button class="btn btn-primary" @onclick=@(RequestUpscaleVideo)>Upscale</button>
-            }
-        </div>
-    </div>
+	<div class="row d-flex mt-2">
+		<div class="col-md-6">
+			@if (_selectedModel != null)
+			{
+				<h4>Selected model info:</h4>
+				<p>Name: @_selectedModel.Name</p>
+				<p>Scale: @_selectedModel.Scale</p>
+				<ImageCompare @ref="ImageCompareComponent" BeforeImage="@_selectedModel.DemoInput" AfterImage="@_selectedModel.DemoOutput"/>
+				<button class="btn btn-primary" @onclick=@(RequestUpscaleVideo)>Upscale</button>
+			}
+		</div>
+	</div>
 }
 else
 {
-    <p>Waiting...</p>
+	<p>Waiting...</p>
 }
-

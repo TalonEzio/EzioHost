@@ -6,4 +6,3 @@ export function playVideo(id, videoUrl) {
         hls: 1
     });
 }
-

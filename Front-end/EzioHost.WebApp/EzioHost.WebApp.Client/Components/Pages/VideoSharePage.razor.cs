@@ -1,30 +1,28 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using EzioHost.Shared.Models;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 
 namespace EzioHost.WebApp.Client.Components.Pages;
 
-public partial class VideoSharePage : IAsyncDisposable
+public partial class VideoSharePage
 {
-	[Parameter] public Guid VideoId { get; set; }
-	[Inject] public IJSRuntime JsRuntime { get; set; } = null!;
+    private string _videoJsonData = string.Empty;
+    [Parameter] public Guid VideoId { get; set; }
 
-	private IJSObjectReference? _jsObjectReference;
+    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
 
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (firstRender)
-		{
-			_jsObjectReference = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/Pages/VideoSharePage.razor.js");
-			await _jsObjectReference.InvokeVoidAsync("loadVideo", VideoId.ToString());
-		}
-	}
+    public VideoDto? Video { get; set; }
 
-	public async ValueTask DisposeAsync()
-	{
-		if (_jsObjectReference != null)
-		{
-			await _jsObjectReference.DisposeAsync();
-		}
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+
+        Video ??= await httpClient.GetFromJsonAsync<VideoDto>($"/api/video/{VideoId}");
+
+        if (Video != null)
+            _videoJsonData = JsonSerializer.Serialize(Video);
+        else
+            throw new Exception("Video not found");
+    }
 }
-

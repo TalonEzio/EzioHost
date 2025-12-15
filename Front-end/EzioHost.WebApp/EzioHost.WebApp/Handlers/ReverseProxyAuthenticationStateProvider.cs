@@ -1,17 +1,17 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 
-namespace EzioHost.WebApp.Handlers
-{
-    public class ReverseProxyAuthenticationStateProvider(ILoggerFactory loggerFactory)
-        : RevalidatingServerAuthenticationStateProvider(loggerFactory)
-    {
-        protected override Task<bool> ValidateAuthenticationStateAsync(AuthenticationState authenticationState, CancellationToken cancellationToken)
-        {
-            //implement later
-            return Task.FromResult(true);
-        }
+namespace EzioHost.WebApp.Handlers;
 
-        protected override TimeSpan RevalidationInterval { get; } = TimeSpan.FromMinutes(1);
+public class ReverseProxyAuthenticationStateProvider(ILoggerFactory loggerFactory)
+    : RevalidatingServerAuthenticationStateProvider(loggerFactory)
+{
+    protected override TimeSpan RevalidationInterval { get; } = TimeSpan.FromMinutes(1);
+
+    protected override Task<bool> ValidateAuthenticationStateAsync(AuthenticationState authenticationState,
+        CancellationToken cancellationToken)
+    {
+        //implement later
+        return Task.FromResult(true);
     }
 }

@@ -2,14 +2,13 @@
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 
-namespace EzioHost.Infrastructure.SqlServer.UnitOfWorks
+namespace EzioHost.Infrastructure.SqlServer.UnitOfWorks;
+
+public class VideoUnitOfWork(
+    EzioHostDbContext dbContext,
+    IVideoRepository videoRepository,
+    IVideoStreamRepository videoStreamRepository) : BaseUnitOfWork(dbContext), IVideoUnitOfWork
 {
-    public class VideoUnitOfWork(
-        EzioHostDbContext dbContext,
-        IVideoRepository videoRepository,
-        IVideoStreamRepository videoStreamRepository) : BaseUnitOfWork(dbContext), IVideoUnitOfWork
-    {
-        public IVideoRepository VideoRepository { get; set; } = videoRepository;
-        public IVideoStreamRepository VideoStreamRepository { get; set; } = videoStreamRepository;
-    }
+    public IVideoRepository VideoRepository { get; set; } = videoRepository;
+    public IVideoStreamRepository VideoStreamRepository { get; set; } = videoStreamRepository;
 }

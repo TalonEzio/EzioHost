@@ -1,32 +1,27 @@
 using EzioHost.Aspire.ServiceDefaults;
 
-namespace EzioHost.ReverseProxy.Startup
+namespace EzioHost.ReverseProxy.Startup;
+
+public static class MiddlewareStartup
 {
-    public static class MiddlewareStartup
+    public static WebApplication ConfigureMiddleware(this WebApplication app)
     {
-        public static WebApplication ConfigureMiddleware(this WebApplication app)
-        {
-            app.MapDefaultEndpoints();
+        app.MapDefaultEndpoints();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
-            app.UseHttpsRedirection();
+        app.UseHttpsRedirection();
 
-            app.UseCors(nameof(EzioHost));
+        app.UseCors(nameof(EzioHost));
 
-            app.UseAuthentication();
-            app.UseAuthorization();
+        app.UseAuthentication();
+        app.UseAuthorization();
 
-            app.MapControllers();
+        app.MapControllers();
 
-            app.MapReverseProxy();
+        app.MapReverseProxy();
 
-            return app;
-        }
+        return app;
     }
 }
-

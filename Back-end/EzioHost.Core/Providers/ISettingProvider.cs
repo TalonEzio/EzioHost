@@ -1,9 +1,8 @@
 ﻿using EzioHost.Domain.Settings;
 
-namespace EzioHost.Core.Providers
+namespace EzioHost.Core.Providers;
+
+public interface ISettingProvider
 {
-    public interface ISettingProvider
-    {
-        VideoEncodeSetting GetVideoEncodeSetting();
-    }
+    VideoEncodeSetting GetVideoEncodeSetting();
 }

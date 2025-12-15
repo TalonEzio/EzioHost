@@ -16,10 +16,8 @@ internal class Program
 
         // Use BaseAddress from HostEnvironment (automatically gets from browser location.origin)
         // This works with reverse proxy - the client will use the same origin it's loaded from
-        builder.Services.AddHttpClient(nameof(EzioHost), cfg =>
-        {
-            cfg.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
-        });
+        builder.Services.AddHttpClient(nameof(EzioHost),
+            cfg => { cfg.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress); });
 
 
         await builder.Build().RunAsync();

@@ -1,20 +1,25 @@
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using Microsoft.EntityFrameworkCore;
 
-namespace EzioHost.WebAPI.Startup
+namespace EzioHost.WebAPI.Startup;
+
+public static class DatabaseStartup
 {
-    public static class DbContextStartup
+    extension(WebApplicationBuilder builder)
     {
-        public static WebApplicationBuilder ConfigureDbContext(this WebApplicationBuilder builder)
+        public WebApplicationBuilder ConfigureDatabase(AppSettings appSettings)
+        {
+            return builder.ConfigureEfCore(appSettings);
+        }
+
+        private WebApplicationBuilder ConfigureEfCore(AppSettings appSettings)
         {
             builder.Services.AddDbContext<EzioHostDbContext>(cfg =>
             {
                 cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));
                 cfg.EnableServiceProviderCaching();
             });
-
             return builder;
         }
     }
 }
-

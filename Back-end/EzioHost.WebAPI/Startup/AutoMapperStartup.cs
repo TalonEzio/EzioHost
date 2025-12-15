@@ -1,18 +1,13 @@
 using EzioHost.Core.Mappers;
 
-namespace EzioHost.WebAPI.Startup
-{
-    public static class AutoMapperStartup
-    {
-        public static WebApplicationBuilder ConfigureAutoMapper(this WebApplicationBuilder builder)
-        {
-            builder.Services.AddAutoMapper(cfg =>
-            {
-                cfg.AddMaps(typeof(MapperClass));
-            });
+namespace EzioHost.WebAPI.Startup;
 
-            return builder;
-        }
+public static class AutoMapperStartup
+{
+    public static WebApplicationBuilder ConfigureAutoMapper(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddAutoMapper(cfg => { cfg.AddMaps(typeof(MapperClass)); });
+
+        return builder;
     }
 }
-

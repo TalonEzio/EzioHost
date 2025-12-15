@@ -1,85 +1,64 @@
 ﻿using System.ComponentModel;
 
-namespace EzioHost.Shared.Enums
+namespace EzioHost.Shared.Enums;
+
+public class VideoEnum
 {
-    public class VideoEnum
+    public enum FileUploadStatus : byte
     {
-        public enum VideoResolution
-        {
-            [Description("360p")]
-            _360p = 360,
+        [Description("Chờ xử lý")] Pending,
 
-            [Description("480p")]
-            _480p = 480,
+        [Description("Đang tải lên")] InProgress,
 
-            [Description("720p")]
-            _720p = 720,
+        [Description("Hoàn tất")] Completed,
 
-            [Description("960p")]
-            _960p = 960,
+        [Description("Thất bại")] Failed,
 
-            [Description("1080p")]
-            _1080p = 1080,
+        [Description("Đã hủy")] Canceled
+    }
 
-            [Description("1440p")]
-            _1440p = 1440,
+    public enum VideoResolution
+    {
+        [Description("360p")] _360p = 360,
 
-            [Description("1920p")]
-            _1920p = 1920,
+        [Description("480p")] _480p = 480,
 
-            [Description("2160p")]
-            _2160p = 2160,
+        [Description("720p")] _720p = 720,
 
-        }
+        [Description("960p")] _960p = 960,
 
-        public enum VideoStatus : byte
-        {
-            [Description("Chờ xử lý")]
-            Queue,
+        [Description("1080p")] _1080p = 1080,
 
-            [Description("Đang mã hóa")]
-            Encoding,
+        [Description("1440p")] _1440p = 1440,
 
-            [Description("Sẵn sàng")]
-            Ready,
+        [Description("1920p")] _1920p = 1920,
 
-            [Description("Đã xóa")]
-            Deleted,
-        }
+        [Description("2160p")] _2160p = 2160
+    }
 
-        public enum VideoShareType : byte
-        {
+    public enum VideoShareType : byte
+    {
+        [Description("Riêng tư")] Private,
 
-            [Description("Riêng tư")]
-            Private,
-            [Description("Nội bộ (đăng nhập mới xem được)")]
-            Internal,
-            [Description("Công khai")]
-            Public,
-        }
+        [Description("Nội bộ (đăng nhập mới xem được)")]
+        Internal,
+        [Description("Công khai")] Public
+    }
 
-        public enum FileUploadStatus : byte
-        {
-            [Description("Chờ xử lý")]
-            Pending,
+    public enum VideoStatus : byte
+    {
+        [Description("Chờ xử lý")] Queue,
 
-            [Description("Đang tải lên")]
-            InProgress,
+        [Description("Đang mã hóa")] Encoding,
 
-            [Description("Hoàn tất")]
-            Completed,
+        [Description("Sẵn sàng")] Ready,
 
-            [Description("Thất bại")]
-            Failed,
+        [Description("Đã xóa")] Deleted
+    }
 
-            [Description("Đã hủy")]
-            Canceled
-        }
-
-        public enum VideoUpscaleStatus : byte
-        {
-            Queue = 0,
-            Ready = 1
-        }
+    public enum VideoUpscaleStatus : byte
+    {
+        Queue = 0,
+        Ready = 1
     }
 }

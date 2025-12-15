@@ -6,6 +6,11 @@ namespace EzioHost.WebApp.Client.Components;
 
 public partial class ImageCompare
 {
+    private ElementReference _compareElement;
+    private bool _isDragging;
+    private bool _isReversed;
+    private bool _isSwapped;
+    private bool _isVertical = true; // true = TOP-BOTTOM, false = LEFT-RIGHT
     [Inject] public IJSRuntime JS { get; set; } = null!;
 
     [Parameter] public string BeforeImage { get; set; } = "";
@@ -13,17 +18,11 @@ public partial class ImageCompare
     [Parameter] public string BeforeLabel { get; set; } = "Before";
     [Parameter] public string AfterLabel { get; set; } = "After";
     [Parameter] public int InitialPosition { get; set; } = 50;
-    [Parameter] public int InitialAngle { get; set; } = 0;
-
-    private ElementReference _compareElement;
+    [Parameter] public int InitialAngle { get; set; }
     private string CurrentBeforeImage { get; set; } = "";
     private string CurrentAfterImage { get; set; } = "";
     private int SliderPosition { get; set; } = 50;
-    private int HandleAngle { get; set; } = 0;
-    private bool _isDragging = false;
-    private bool _isSwapped = false;
-    private bool _isVertical = true;  // true = TOP-BOTTOM, false = LEFT-RIGHT
-    private bool _isReversed = false;
+    private int HandleAngle { get; set; }
 
     protected override void OnInitialized()
     {
@@ -35,18 +34,12 @@ public partial class ImageCompare
 
     private void OnSliderInput(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out var value))
-        {
-            SliderPosition = Math.Clamp(value, 0, 100);
-        }
+        if (int.TryParse(e.Value?.ToString(), out var value)) SliderPosition = Math.Clamp(value, 0, 100);
     }
 
     private void OnAngleInput(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out var value))
-        {
-            HandleAngle = Math.Clamp(value, -45, 45);
-        }
+        if (int.TryParse(e.Value?.ToString(), out var value)) HandleAngle = Math.Clamp(value, -45, 45);
     }
 
     private void SetPosition(int position)
@@ -86,56 +79,42 @@ public partial class ImageCompare
         {
             // Straight cut
             if (_isVertical)
-            {
                 return _isReversed
                     ? $"inset(0 0 0 {pos}%)"
                     : $"inset(0 {100 - pos}% 0 0)";
-            }
-            else
-            {
-                return _isReversed
-                    ? $"inset(0 0 {pos}% 0)"
-                    : $"inset({pos}% 0 0 0)";
-            }
+
+            return _isReversed
+                ? $"inset(0 0 {pos}% 0)"
+                : $"inset({pos}% 0 0 0)";
         }
 
         // Angled cut with polygon
-        double angleRad = HandleAngle * Math.PI / 180.0;
-        double tanAngle = Math.Tan(angleRad);
+        var angleRad = HandleAngle * Math.PI / 180.0;
+        var tanAngle = Math.Tan(angleRad);
 
         if (_isVertical)
         {
             // Vertical orientation (left-right cut)
             // Flip offset để line nghiêng đúng chiều
-            double offset = tanAngle * 50;
-            double topX = Math.Clamp(pos + offset, 0, 100);      // Đảo dấu
-            double bottomX = Math.Clamp(pos - offset, 0, 100);   // Đảo dấu
+            var offset = tanAngle * 50;
+            var topX = Math.Clamp(pos + offset, 0, 100); // Đảo dấu
+            var bottomX = Math.Clamp(pos - offset, 0, 100); // Đảo dấu
 
-            if (_isReversed)
-            {
-                return $"polygon(0 0, {topX}% 0, {bottomX}% 100%, 0 100%)";
-            }
-            else
-            {
-                return $"polygon({topX}% 0, 100% 0, 100% 100%, {bottomX}% 100%)";
-            }
+            if (_isReversed) return $"polygon(0 0, {topX}% 0, {bottomX}% 100%, 0 100%)";
+
+            return $"polygon({topX}% 0, 100% 0, 100% 100%, {bottomX}% 100%)";
         }
         else
         {
             // Horizontal orientation (top-bottom cut)
             // Flip offset để line nghiêng đúng chiều
-            double offset = tanAngle * 50;
-            double leftY = Math.Clamp(pos + offset, 0, 100);     // Đảo dấu
-            double rightY = Math.Clamp(pos - offset, 0, 100);    // Đảo dấu
+            var offset = tanAngle * 50;
+            var leftY = Math.Clamp(pos + offset, 0, 100); // Đảo dấu
+            var rightY = Math.Clamp(pos - offset, 0, 100); // Đảo dấu
 
-            if (_isReversed)
-            {
-                return $"polygon(0 0, 100% 0, 100% {rightY}%, 0 {leftY}%)";
-            }
-            else
-            {
-                return $"polygon(0 {leftY}%, 100% {rightY}%, 100% 100%, 0 100%)";
-            }
+            if (_isReversed) return $"polygon(0 0, 100% 0, 100% {rightY}%, 0 {leftY}%)";
+
+            return $"polygon(0 {leftY}%, 100% {rightY}%, 100% 100%, 0 100%)";
         }
     }
 
@@ -146,14 +125,9 @@ public partial class ImageCompare
 
     private string GetHandleRotation()
     {
-        if (_isVertical)
-        {
-            return $"translateX(-50%) rotate({HandleAngle}deg)";
-        }
-        else
-        {
-            return $"translateY(-50%) rotate({90 + HandleAngle}deg)";
-        }
+        if (_isVertical) return $"translateX(-50%) rotate({HandleAngle}deg)";
+
+        return $"translateY(-50%) rotate({90 + HandleAngle}deg)";
     }
 
     private async Task StartDrag(MouseEventArgs e)
@@ -169,20 +143,16 @@ public partial class ImageCompare
 
     private async Task OnDrag(MouseEventArgs e)
     {
-        if (_isDragging)
-        {
-            await UpdatePositionFromMouse(e);
-        }
+        if (_isDragging) await UpdatePositionFromMouse(e);
     }
 
     private async Task OnDragTouch(TouchEventArgs e)
     {
-
         if (_isDragging && e.Touches.Length > 0)
-        {
             try
             {
-                var position = await JS.InvokeAsync<int>("getPercentagePosition", _compareElement, e.Touches[0].ClientX);
+                var position =
+                    await JS.InvokeAsync<int>("getPercentagePosition", _compareElement, e.Touches[0].ClientX);
                 SliderPosition = Math.Clamp(position, 0, 100);
                 StateHasChanged();
             }
@@ -190,7 +160,6 @@ public partial class ImageCompare
             {
                 //ignore
             }
-        }
     }
 
     private void EndDrag(MouseEventArgs e)
@@ -227,4 +196,3 @@ public partial class ImageCompare
         StateHasChanged();
     }
 }
-

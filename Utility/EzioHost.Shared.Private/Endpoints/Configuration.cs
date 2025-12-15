@@ -1,21 +1,20 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 
-namespace EzioHost.Shared.Private.Endpoints
-{
-    public static class Configuration
-    {
-        private static readonly Lazy<IConfigurationRoot> LazyRoot = new(() =>
-        {
-            var builder = new ConfigurationBuilder()
-                .Add(new JsonConfigurationSource
-                {
-                    Path = "sharedsettings.json",
-                    ReloadOnChange = true
-                });
-            return builder.Build();
-        });
+namespace EzioHost.Shared.Private.Endpoints;
 
-        public static IConfigurationRoot Root => LazyRoot.Value;
-    }
+public static class Configuration
+{
+    private static readonly Lazy<IConfigurationRoot> LazyRoot = new(() =>
+    {
+        var builder = new ConfigurationBuilder()
+            .Add(new JsonConfigurationSource
+            {
+                Path = "sharedsettings.json",
+                ReloadOnChange = true
+            });
+        return builder.Build();
+    });
+
+    public static IConfigurationRoot Root => LazyRoot.Value;
 }

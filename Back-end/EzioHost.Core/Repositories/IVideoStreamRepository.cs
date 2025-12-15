@@ -1,10 +1,9 @@
 ﻿using EzioHost.Domain.Entities;
 
-namespace EzioHost.Core.Repositories
+namespace EzioHost.Core.Repositories;
+
+public interface IVideoStreamRepository
 {
-    public interface IVideoStreamRepository
-    {
-        void AddRange(IEnumerable<VideoStream> videoStreams);
-        void Create(VideoStream videoStream);
-    }
+    void AddRange(IEnumerable<VideoStream> videoStreams);
+    void Create(VideoStream videoStream);
 }

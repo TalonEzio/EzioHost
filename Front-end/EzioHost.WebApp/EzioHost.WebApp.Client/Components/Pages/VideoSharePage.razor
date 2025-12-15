@@ -1,6 +1,11 @@
-﻿
-@page "/video-share/{VideoId:guid}"
+﻿@page "/video-share/{VideoId:guid}"
+@using Microsoft.AspNetCore.Components.Sections
 @layout NullLayout
-@implements IAsyncDisposable
+<div id="player" width="100vw" height="100vh" data-video="@Video?.M3U8Location"></div>
 
-<div id="player"></div>
+<SectionContent SectionName="@SectionNames.FooterSection">
+	<script src="/Components/Pages/VideoSharePage.Razor.js">
+
+	</script>
+
+</SectionContent>

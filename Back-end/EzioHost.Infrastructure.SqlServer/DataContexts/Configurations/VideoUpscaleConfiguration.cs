@@ -2,24 +2,26 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace EzioHost.Infrastructure.SqlServer.DataContexts.Configurations
+namespace EzioHost.Infrastructure.SqlServer.DataContexts.Configurations;
+
+internal class VideoUpscaleConfiguration : IEntityTypeConfiguration<VideoUpscale>
 {
-    internal class VideoUpscaleConfiguration : IEntityTypeConfiguration<VideoUpscale>
+    public void Configure(EntityTypeBuilder<VideoUpscale> builder)
     {
-        public void Configure(EntityTypeBuilder<VideoUpscale> builder)
-        {
-            builder.Property(x => x.Scale).HasDefaultValue(1);
-            builder.Property(x => x.OutputLocation).HasMaxLength(200).IsUnicode();
+        builder.Property(x => x.Scale).HasDefaultValue(1);
+        builder.Property(x => x.OutputLocation)
+            .HasMaxLength(200)
+            .IsUnicode()
+            .UsePropertyAccessMode(PropertyAccessMode.Property);
 
-            builder.HasOne(x => x.Model)
-                .WithMany(x => x.VideoUpscales)
-                .HasForeignKey(x => x.ModelId)
-                .IsRequired(true);
+        builder.HasOne(x => x.Model)
+            .WithMany(x => x.VideoUpscales)
+            .HasForeignKey(x => x.ModelId)
+            .IsRequired();
 
-            builder.HasOne(x => x.Video)
-                .WithMany(x => x.VideoUpscales)
-                .HasForeignKey(x => x.VideoId)
-                .IsRequired(true);
-        }
+        builder.HasOne(x => x.Video)
+            .WithMany(x => x.VideoUpscales)
+            .HasForeignKey(x => x.VideoId)
+            .IsRequired();
     }
 }

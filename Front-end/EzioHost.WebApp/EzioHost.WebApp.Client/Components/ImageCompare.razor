@@ -9,12 +9,12 @@
 					<i class="bi bi-sliders"></i> Position: <strong>@SliderPosition%</strong>
 				</label>
 				<input type="range"
-					   class="form-range"
-					   min="0"
-					   max="100"
-					   step="1"
-					   value="@SliderPosition"
-					   @oninput="OnSliderInput" />
+				       class="form-range"
+				       min="0"
+				       max="100"
+				       step="1"
+				       value="@SliderPosition"
+				       @oninput="OnSliderInput"/>
 			</div>
 
 			<div class="control-group">
@@ -23,12 +23,12 @@
 				</label>
 				<div class="angle-control">
 					<input type="range"
-						   class="form-range"
-						   min="-45"
-						   max="45"
-						   step="1"
-						   value="@HandleAngle"
-						   @oninput="OnAngleInput" />
+					       class="form-range"
+					       min="-45"
+					       max="45"
+					       step="1"
+					       value="@HandleAngle"
+					       @oninput="OnAngleInput"/>
 					<button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAngle">
 						<i class="bi bi-arrow-counterclockwise"></i>
 					</button>
@@ -65,30 +65,30 @@
 
 	<!-- Image Comparison -->
 	<div class="compare-wrapper"
-		 @ref="_compareElement"
-		 @onmousedown="StartDrag"
-		 @onmousemove="OnDrag"
-		 @onmouseup="EndDrag"
-		 @onmouseleave="EndDrag"
-		 @ontouchstart="StartDrag"
-		 @ontouchmove="OnDragTouch"
-		 @ontouchend="EndDrag">
+	     @ref="_compareElement"
+	     @onmousedown="StartDrag"
+	     @onmousemove="OnDrag"
+	     @onmouseup="EndDrag"
+	     @onmouseleave="EndDrag"
+	     @ontouchstart="StartDrag"
+	     @ontouchmove="OnDragTouch"
+	     @ontouchend="EndDrag">
 
 		<!-- Before Image (Full) -->
 		<div class="compare-before">
-			<img src="@CurrentBeforeImage" alt="Before" draggable="false" />
+			<img src="@CurrentBeforeImage" alt="Before" draggable="false"/>
 			<div class="compare-label compare-label-left">@BeforeLabel</div>
 		</div>
 
 		<!-- After Image (Clipped) -->
 		<div class="compare-after" style="clip-path: @GetClipPath();">
-			<img src="@CurrentAfterImage" alt="After" draggable="false" />
+			<img src="@CurrentAfterImage" alt="After" draggable="false"/>
 			<div class="compare-label compare-label-right">@AfterLabel</div>
 		</div>
 
 		<!-- Slider Handle -->
 		<div class="compare-handle @(_isVertical ? "vertical" : "horizontal")"
-			 style="@GetHandlePosition(); transform: @GetHandleRotation();">
+		     style="@GetHandlePosition(); transform: @GetHandleRotation();">
 			<div class="handle-line"></div>
 			<div class="handle-circle">
 				<i class="bi bi-arrows-expand"></i>
@@ -96,4 +96,3 @@
 		</div>
 	</div>
 </div>
-

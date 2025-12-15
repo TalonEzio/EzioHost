@@ -1,22 +1,22 @@
-﻿using EzioHost.Domain.Entities;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using EzioHost.Domain.Entities;
 
-namespace EzioHost.Core.Repositories
+namespace EzioHost.Core.Repositories;
+
+public interface IVideoRepository
 {
-    public interface IVideoRepository
-    {
-        Task<Video> AddNewVideo(Video newVideo);
-        Task<Video?> GetVideoById(Guid id);
-        Task<Video> UpdateVideo(Video updateVideo);
-        Task<Video> UpdateVideoForUnitOfWork(Video updateVideo);
-        Task DeleteVideo(Video deleteVideo);
-        Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null, Expression<Func<Video, object>>[]? includes = null);
+    Task<Video> AddNewVideo(Video newVideo);
+    Task<Video?> GetVideoById(Guid id);
+    Task<Video> UpdateVideo(Video updateVideo);
+    Task<Video> UpdateVideoForUnitOfWork(Video updateVideo);
+    Task DeleteVideo(Video deleteVideo);
 
-        Task<Video?> GetVideoToEncode();
+    Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null,
+        Expression<Func<Video, object>>[]? includes = null);
 
-        Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
+    Task<Video?> GetVideoToEncode();
 
-        Task<Video?> GetVideoUpscaleById(Guid videoId);
+    Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
 
-    }
+    Task<Video?> GetVideoUpscaleById(Guid videoId);
 }

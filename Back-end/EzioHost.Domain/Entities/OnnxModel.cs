@@ -1,23 +1,32 @@
-﻿using EzioHost.Shared.Enums;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using EzioHost.Domain.Helpers;
+using EzioHost.Shared.Enums;
 
-namespace EzioHost.Domain.Entities
+namespace EzioHost.Domain.Entities;
+
+[Table("OnnxModels")]
+public class OnnxModel : BaseAuditableEntityWithUserId<Guid>
 {
-    [Table("OnnxModels")]
-    public class OnnxModel : BaseAuditableEntityWithUserId<Guid>
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string FileLocation { get; set; } = string.Empty;
+
+    public string DemoInput
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string FileLocation { get; set; } = string.Empty;
-        public string DemoInput { get; set; } = string.Empty;
-        public string DemoOutput { get; set; } = string.Empty;
-        public int Scale { get; set; }
-        public int MustInputWidth { get; set; }
-        public int MustInputHeight { get; set; }
-        public OnnxModelPrecision Precision { get; set; }
+        get;
+        set => field = UriPathHelper.NormalizeUriPath(value, nameof(DemoInput));
+    } = string.Empty;
 
-        public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
+    public string DemoOutput
+    {
+        get;
+        set => field = UriPathHelper.NormalizeUriPath(value, nameof(DemoOutput));
+    } = string.Empty;
 
-    }
+    public int Scale { get; set; }
+    public int MustInputWidth { get; set; }
+    public int MustInputHeight { get; set; }
+    public OnnxModelPrecision Precision { get; set; }
 
+    public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
 }

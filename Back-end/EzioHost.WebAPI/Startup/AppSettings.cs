@@ -1,18 +1,10 @@
 ﻿using EzioHost.Domain.Settings;
+using EzioHost.WebAPI.Settings;
 
-namespace EzioHost.WebAPI.Startup
+namespace EzioHost.WebAPI.Startup;
+
+public class AppSettings
 {
-    public class AppSettings
-    {
-        public JwtOidcSetting JwtOidc { get; set; } = new();
-        public VideoEncodeSetting VideoEncode { get; set; } = new();
-    }
-
-    public class JwtOidcSetting
-    {
-        public string Issuer { get; set; } = string.Empty;
-        public string Audience { get; set; } = string.Empty;
-        public string MetaDataAddress { get; set; } = string.Empty;
-    }
-
+    public JwtOidcSetting JwtOidc { get; set; } = new();
+    public VideoEncodeSetting VideoEncode { get; set; } = new();
 }

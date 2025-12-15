@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace EzioHost.ReverseProxy.Handlers;
 
@@ -20,10 +20,11 @@ internal sealed class CookieOidcRefresher(
     {
         // We no longer have the original nonce cookie which is deleted at the end of the authorization code flow having served its purpose.
         // Even if we had the nonce, it's likely expired. It's not intended for refresh requests. Otherwise, we'd use oidcOptions.ProtocolValidator.
-        RequireNonce = false,
+        RequireNonce = false
     };
 
-    public async Task ValidateOrRefreshCookieAsync(CookieValidatePrincipalContext validateContext, string oidcScheme, TimeSpan refreshTimeSpan)
+    public async Task ValidateOrRefreshCookieAsync(CookieValidatePrincipalContext validateContext, string oidcScheme,
+        TimeSpan refreshTimeSpan)
     {
         var accessTokenExpirationText = validateContext.Properties.GetTokenValue("expires_at");
         var refreshToken = validateContext.Properties.GetTokenValue("refresh_token");
@@ -50,7 +51,8 @@ internal sealed class CookieOidcRefresher(
         // Kiểm tra nếu token đã expired hoặc sắp expired (trong khoảng refreshTimeSpan)
         if (now >= accessTokenExpiration || now + refreshTimeSpan >= accessTokenExpiration)
         {
-            logger.LogInformation("Token expired or expiring soon, refreshing token. Expires at: {ExpiresAt}, Current time: {Now}", 
+            logger.LogInformation(
+                "Token expired or expiring soon, refreshing token. Expires at: {ExpiresAt}, Current time: {Now}",
                 accessTokenExpiration, now);
             await RefreshTokensAsync(validateContext, oidcScheme, refreshToken);
             return;
@@ -60,12 +62,15 @@ internal sealed class CookieOidcRefresher(
         logger.LogDebug("Token still valid, expires at: {ExpiresAt}", accessTokenExpiration);
     }
 
-    private async Task RefreshTokensAsync(CookieValidatePrincipalContext validateContext, string oidcScheme, string refreshToken)
+    private async Task RefreshTokensAsync(CookieValidatePrincipalContext validateContext, string oidcScheme,
+        string refreshToken)
     {
         try
         {
             var oidcOptions = oidcOptionsMonitor.Get(oidcScheme);
-            var oidcConfiguration = await oidcOptions.ConfigurationManager!.GetConfigurationAsync(validateContext.HttpContext.RequestAborted);
+            var oidcConfiguration =
+                await oidcOptions.ConfigurationManager!.GetConfigurationAsync(
+                    validateContext.HttpContext.RequestAborted);
             var tokenEndpoint = oidcConfiguration.TokenEndpoint;
 
             if (string.IsNullOrEmpty(tokenEndpoint))
@@ -81,7 +86,7 @@ internal sealed class CookieOidcRefresher(
                 ["client_id"] = oidcOptions.ClientId,
                 ["client_secret"] = oidcOptions.ClientSecret,
                 ["scope"] = string.Join(" ", oidcOptions.Scope),
-                ["refresh_token"] = refreshToken,
+                ["refresh_token"] = refreshToken
             };
 
             logger.LogDebug("Attempting to refresh token with endpoint: {TokenEndpoint}", tokenEndpoint);
@@ -94,7 +99,7 @@ internal sealed class CookieOidcRefresher(
             if (!refreshResponse.IsSuccessStatusCode)
             {
                 var errorContent = await refreshResponse.Content.ReadAsStringAsync();
-                logger.LogError("Token refresh failed with status {StatusCode}. Response: {Response}", 
+                logger.LogError("Token refresh failed with status {StatusCode}. Response: {Response}",
                     refreshResponse.StatusCode, errorContent);
                 validateContext.RejectPrincipal();
                 return;
@@ -115,7 +120,8 @@ internal sealed class CookieOidcRefresher(
                 validationParameters.IssuerSigningKeys = oidcConfiguration.SigningKeys;
             }
 
-            var validationResult = await oidcOptions.TokenHandler.ValidateTokenAsync(message.IdToken, validationParameters);
+            var validationResult =
+                await oidcOptions.TokenHandler.ValidateTokenAsync(message.IdToken, validationParameters);
 
             if (!validationResult.IsValid)
             {
@@ -126,12 +132,12 @@ internal sealed class CookieOidcRefresher(
 
             var validatedIdToken = JwtSecurityTokenConverter.Convert(validationResult.SecurityToken as JsonWebToken);
             validatedIdToken.Payload["nonce"] = null;
-            
+
             _oidcTokenValidator.ValidateTokenResponse(new OpenIdConnectProtocolValidationContext
             {
                 ProtocolMessage = message,
                 ClientId = oidcOptions.ClientId,
-                ValidatedIdToken = validatedIdToken,
+                ValidatedIdToken = validatedIdToken
             });
 
             // Update the principal and tokens
@@ -143,8 +149,8 @@ internal sealed class CookieOidcRefresher(
             var expiresAt = now + TimeSpan.FromSeconds(expiresIn);
 
             // Preserve the refresh token if not provided in response
-            var newRefreshToken = !string.IsNullOrEmpty(message.RefreshToken) 
-                ? message.RefreshToken 
+            var newRefreshToken = !string.IsNullOrEmpty(message.RefreshToken)
+                ? message.RefreshToken
                 : refreshToken;
 
             validateContext.Properties.StoreTokens([
@@ -152,7 +158,8 @@ internal sealed class CookieOidcRefresher(
                 new AuthenticationToken { Name = "id_token", Value = message.IdToken },
                 new AuthenticationToken { Name = "refresh_token", Value = newRefreshToken },
                 new AuthenticationToken { Name = "token_type", Value = message.TokenType },
-                new AuthenticationToken { Name = "expires_at", Value = expiresAt.ToString("o", CultureInfo.InvariantCulture) },
+                new AuthenticationToken
+                    { Name = "expires_at", Value = expiresAt.ToString("o", CultureInfo.InvariantCulture) }
             ]);
 
             // Đảm bảo cookie được persist

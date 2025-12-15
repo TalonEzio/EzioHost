@@ -1,16 +1,20 @@
-export async function loadVideo(videoId) {
+(function() {
     try {
-        const response = await fetch(`/api/video/${videoId}`);
-        const videoData = await response.json();
-        if (videoData && videoData.m3U8Location) {
+        const playerElementId = "player";
+        const playerElement = document.getElementById(playerElementId);
+        const videoData = playerElement.getAttribute("data-video");
+
+        if (videoData) {
+            console.log("Load video ok");
+            console.log(videoData);
+
             const player = new window.Playerjs({
-                id: "player",
-                file: videoData.m3U8Location,
+                id: playerElementId,
+                file: videoData,
                 hls: 1
             });
         }
     } catch (error) {
         console.error("Failed to load video", error);
     }
-}
-
+})();

@@ -1,48 +1,46 @@
 using EzioHost.WebAPI.Jobs;
 using Quartz;
 
-namespace EzioHost.WebAPI.Startup
+namespace EzioHost.WebAPI.Startup;
+
+public static class QuartzStartup
 {
-    public static class QuartzStartup
+    public static WebApplicationBuilder ConfigureQuartz(this WebApplicationBuilder builder)
     {
-        public static WebApplicationBuilder ConfigureQuartz(this WebApplicationBuilder builder)
+        builder.Services.AddQuartz(quartz =>
         {
-            builder.Services.AddQuartz(quartz =>
-            {
-                var videoProcessingJobKey = new JobKey(nameof(VideoProcessingJob));
-                quartz.AddJob<VideoProcessingJob>(opts => opts.WithIdentity(videoProcessingJobKey).StoreDurably());
+            var videoProcessingJobKey = new JobKey(nameof(VideoProcessingJob));
+            quartz.AddJob<VideoProcessingJob>(opts => opts.WithIdentity(videoProcessingJobKey).StoreDurably());
 
-                quartz.AddTrigger(cfg => cfg
-                    .WithIdentity(nameof(VideoProcessingJob))
-                    .ForJob(videoProcessingJobKey)
-                    .StartNow()
-                    .WithSimpleSchedule(schedule => schedule
-                        .WithIntervalInSeconds(10)
-                        .RepeatForever()
-                    )
-                );
+            quartz.AddTrigger(cfg => cfg
+                .WithIdentity(nameof(VideoProcessingJob))
+                .ForJob(videoProcessingJobKey)
+                .StartNow()
+                .WithSimpleSchedule(schedule => schedule
+                    .WithIntervalInSeconds(10)
+                    .RepeatForever()
+                )
+            );
 
-                var videoUpscaleJobKey = new JobKey(nameof(VideoUpscaleJob));
-                quartz.AddJob<VideoUpscaleJob>(opts => opts.WithIdentity(videoUpscaleJobKey).StoreDurably());
+            var videoUpscaleJobKey = new JobKey(nameof(VideoUpscaleJob));
+            quartz.AddJob<VideoUpscaleJob>(opts => opts.WithIdentity(videoUpscaleJobKey).StoreDurably());
 
-                quartz.AddTrigger(cfg => cfg
-                    .WithIdentity(nameof(VideoUpscaleJob))
-                    .ForJob(videoUpscaleJobKey)
-                    .StartNow()
-                    .WithSimpleSchedule(schedule => schedule
-                        .WithIntervalInSeconds(10)
-                        .RepeatForever()
-                    )
-                );
-            });
-            builder.Services.AddQuartzHostedService(cfg =>
-            {
-                cfg.AwaitApplicationStarted = true;
-                cfg.WaitForJobsToComplete = true;
-            });
+            quartz.AddTrigger(cfg => cfg
+                .WithIdentity(nameof(VideoUpscaleJob))
+                .ForJob(videoUpscaleJobKey)
+                .StartNow()
+                .WithSimpleSchedule(schedule => schedule
+                    .WithIntervalInSeconds(10)
+                    .RepeatForever()
+                )
+            );
+        });
+        builder.Services.AddQuartzHostedService(cfg =>
+        {
+            cfg.AwaitApplicationStarted = true;
+            cfg.WaitForJobsToComplete = true;
+        });
 
-            return builder;
-        }
+        return builder;
     }
 }
-

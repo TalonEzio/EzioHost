@@ -1,29 +1,24 @@
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 
-namespace EzioHost.WebAPI.Startup
+namespace EzioHost.WebAPI.Startup;
+
+public static class StaticFilesStartup
 {
-    public static class StaticFilesStartup
+    public static WebApplication ConfigureStaticFiles(this WebApplication app)
     {
-        public static WebApplication ConfigureStaticFiles(this WebApplication app)
+        var wwwrootDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+        if (!Directory.Exists(wwwrootDirectory)) Directory.CreateDirectory(wwwrootDirectory);
+
+        app.UseStaticFiles(new StaticFileOptions
         {
-            var wwwrootDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-            if (!Directory.Exists(wwwrootDirectory))
+            ContentTypeProvider = new FileExtensionContentTypeProvider
             {
-                Directory.CreateDirectory(wwwrootDirectory);
-            }
+                Mappings = { [".m3u8"] = "application/x-mpegURL" }
+            },
+            FileProvider = new PhysicalFileProvider(wwwrootDirectory)
+        });
 
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                ContentTypeProvider = new FileExtensionContentTypeProvider
-                {
-                    Mappings = { [".m3u8"] = "application/x-mpegURL" }
-                },
-                FileProvider = new PhysicalFileProvider(wwwrootDirectory),
-            });
-
-            return app;
-        }
+        return app;
     }
 }
-

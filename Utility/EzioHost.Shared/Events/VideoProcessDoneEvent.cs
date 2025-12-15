@@ -1,9 +1,8 @@
 ﻿using EzioHost.Shared.Models;
 
-namespace EzioHost.Shared.Events
+namespace EzioHost.Shared.Events;
+
+public class VideoProcessDoneEvent
 {
-    public class VideoProcessDoneEvent
-    {
-        public required VideoDto Video { get; set; }
-    }
+    public required VideoDto Video { get; set; }
 }

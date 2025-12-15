@@ -1,249 +1,42 @@
+using System.Net.Http.Json;
+using EzioHost.Shared.Events;
+using EzioHost.Shared.Extensions;
+using EzioHost.Shared.HubActions;
+using EzioHost.Shared.Models;
+using EzioHost.WebApp.Client.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using EzioHost.Shared.Models;
-using EzioHost.Shared.Events;
-using EzioHost.Shared.HubActions;
-using EzioHost.Shared.Extensions;
-using EzioHost.WebApp.Client.Extensions;
-using System.Net.Http.Json;
 
 namespace EzioHost.WebApp.Client.Components.Pages;
 
 public partial class VideoPage : IAsyncDisposable
 {
-	[Inject] public IJSRuntime JsRuntime { get; set; } = null!;
-	[Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
-	[Inject] private PersistentComponentState State { get; set; } = null!;
+    private HubConnection? _hubConnection;
 
-	private List<VideoDto> Videos { get; set; } = [];
-	private List<VideoDto> FilteredVideos { get; set; } = [];
-	private HubConnection? _hubConnection;
-	private IJSObjectReference? _jsObjectReference;
+    // Prevent re-entrant operations
+    private bool _isDeleting;
+    private bool _isUpdating;
+    private IJSObjectReference? _jsObjectReference;
+    [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
+    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
+    [Inject] public NavigationManager NavigationManager { get; set; } = null!;
+    private List<VideoDto> Videos { get; set; } = [];
+    private List<VideoDto> FilteredVideos { get; set; } = [];
 
-	// UI State
-	private bool IsLoading { get; set; } = true;
-	private bool IsGridView { get; set; } = true;
-	private VideoDto? SelectedVideo { get; set; }
-	private VideoDto? EditingVideo { get; set; }
+    // UI State
+    private bool IsLoading { get; set; } = true;
+    private bool IsGridView { get; set; } = true;
+    private VideoDto? SelectedVideo { get; set; }
+    private VideoDto? EditingVideo { get; set; }
 
-	// Filter and Search
-	private string SearchTerm { get; set; } = "";
-	private string SelectedShareType { get; set; } = "";
-	private string SortBy { get; set; } = "created_desc";
+    // Filter and Search
+    private string SearchTerm { get; set; } = "";
+    private string SelectedShareType { get; set; } = "";
+    private string SortBy { get; set; } = "created_desc";
 
-	// Prevent re-entrant operations
-	private bool _isDeleting = false;
-	private bool _isUpdating = false;
-
-	private void ApplyFilters()
-	{
-		var filtered = Videos.AsEnumerable();
-
-		// Search filter
-		if (!string.IsNullOrEmpty(SearchTerm))
-		{
-			filtered = filtered.Where(v =>
-				v.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
-		}
-
-		// Share type filter
-		if (!string.IsNullOrEmpty(SelectedShareType) && int.TryParse(SelectedShareType, out var shareType))
-		{
-			filtered = filtered.Where(v => (int)v.ShareType == shareType);
-		}
-
-		// Sort
-		filtered = SortBy switch
-		{
-			"created_desc" => filtered.OrderByDescending(v => v.CreatedAt),
-			"created_asc" => filtered.OrderBy(v => v.CreatedAt),
-			"title_asc" => filtered.OrderBy(v => v.Title),
-			"title_desc" => filtered.OrderByDescending(v => v.Title),
-			_ => filtered.OrderByDescending(v => v.CreatedAt)
-		};
-
-		FilteredVideos = filtered.ToList();
-	}
-
-	private void OnFilterChanged()
-	{
-		ApplyFilters();
-	}
-
-	private void ToggleViewMode()
-	{
-		IsGridView = !IsGridView;
-	}
-
-	private string GetThumbnail(VideoDto video)
-	{
-		// Placeholder thumbnail - có thể thay bằng actual thumbnail URL từ video
-		return $"https://via.placeholder.com/320x180/0d6efd/ffffff?text={Uri.EscapeDataString(video.Title)}";
-	}
-
-	private void ShowEditModal(VideoDto video)
-	{
-		EditingVideo = video;
-	}
-
-	private void CloseEditModal()
-	{
-		EditingVideo = null;
-	}
-
-	private void ClosePlayer()
-	{
-		SelectedVideo = null;
-	}
-
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (firstRender)
-		{
-			_jsObjectReference ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/Pages/VideoPage.razor.js");
-
-			var url = await JsRuntime.GetOrigin();
-
-			var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
-
-			_hubConnection = new HubConnectionBuilder()
-				.WithUrl(hubUrl, options =>
-				{
-					options.AccessTokenProvider = async () =>
-					{
-						using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-						return await httpClient.GetStringAsync("/access-token");
-					};
-				})
-				.Build();
-
-			_hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage), async (message) =>
-			{
-				await JsRuntime.ShowSuccessToast(message);
-			});
-
-			_hubConnection.On<VideoStreamAddedEvent>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
-			{
-				var video = Videos.FirstOrDefault(x => x.Id == args.VideoId);
-				if (video == null) return;
-
-				var videoStream = args.VideoStream;
-				video.VideoStreams.Add(videoStream);
-				video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
-
-				ApplyFilters();
-				await InvokeAsync(StateHasChanged);
-
-				await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong {videoStream.Resolution.GetDescription()}");
-			});
-
-			_hubConnection.On<VideoProcessDoneEvent>(nameof(IVideoHubAction.ReceiveVideoProcessingDone), async args =>
-			{
-				var video = Videos.FirstOrDefault(x => x.Id == args.Video.Id);
-				if (video == null)
-				{
-					Videos.Add(args.Video);
-					ApplyFilters();
-					await InvokeAsync(StateHasChanged);
-					await JsRuntime.ShowSuccessToast($"Video {args.Video.Title} đã xử lý xong");
-					return;
-				}
-
-				video.VideoStreams.Clear();
-				video.VideoStreams.AddRange(args.Video.VideoStreams);
-				video.Status = args.Video.Status;
-				video.M3U8Location = args.Video.M3U8Location;
-
-				video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
-
-				ApplyFilters();
-				await InvokeAsync(StateHasChanged);
-				await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong");
-			});
-			try
-			{
-				await _hubConnection.StartAsync();
-			}
-			catch (Exception e)
-			{
-				await JsRuntime.ShowErrorToast($"Lỗi kết nối đến server: {e.Message}");
-			}
-
-			using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-			Videos = await httpClient.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
-			ApplyFilters();
-			IsLoading = false;
-			StateHasChanged();
-		}
-	}
-
-	private async Task PlayVideo(VideoDto video)
-	{
-		SelectedVideo = video;
-		StateHasChanged();
-		await Task.Delay(100); // Wait for modal to render
-		
-		if (_jsObjectReference != null)
-		{
-			await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.M3U8Location);
-		}
-	}
-
-	private async Task UpdateVideo(VideoDto video)
-	{
-		if (_isUpdating) return;
-		_isUpdating = true;
-
-		try
-		{
-			using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-			var result = await httpClient.PostAsJsonAsync("api/Video", video);
-			result.EnsureSuccessStatusCode();
-			await JsRuntime.ShowSuccessToast($"Cập nhật thành công");
-			CloseEditModal();
-			ApplyFilters();
-		}
-		catch (Exception e)
-		{
-			await JsRuntime.ShowErrorToast($"Cập nhật lỗi: {e.Message}.");
-		}
-		finally
-		{
-			_isUpdating = false;
-		}
-	}
-
-	private async Task DeleteVideo(VideoDto video)
-	{
-		if (_isDeleting) return;
-		_isDeleting = true;
-
-		try
-		{
-			var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa video '{video.Title}'?");
-			if (!confirmed) return;
-
-			using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-			var result = await httpClient.DeleteAsync($"api/Video/{video.Id}");
-			result.EnsureSuccessStatusCode();
-
-			Videos.Remove(video);
-			ApplyFilters();
-			await JsRuntime.ShowSuccessToast($"Video đã xóa thành công");
-		}
-		catch (Exception e)
-		{
-			await JsRuntime.ShowErrorToast($"Xóa video lỗi: {e.Message}");
-		}
-		finally
-		{
-			_isDeleting = false;
-		}
-	}
-
-	public async ValueTask DisposeAsync()
-	{
+    public async ValueTask DisposeAsync()
+    {
         try
         {
             if (_hubConnection != null) await _hubConnection.DisposeAsync();
@@ -251,8 +44,215 @@ public partial class VideoPage : IAsyncDisposable
         }
         catch
         {
-			//ignore
+            //ignore
         }
-	}
-}
+    }
 
+    private void ApplyFilters()
+    {
+        var filtered = Videos.AsEnumerable();
+
+        // Search filter
+        if (!string.IsNullOrEmpty(SearchTerm))
+            filtered = filtered.Where(v =>
+                v.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+
+        // Share type filter
+        if (!string.IsNullOrEmpty(SelectedShareType) && int.TryParse(SelectedShareType, out var shareType))
+            filtered = filtered.Where(v => (int)v.ShareType == shareType);
+
+        // Sort
+        filtered = SortBy switch
+        {
+            "created_desc" => filtered.OrderByDescending(v => v.CreatedAt),
+            "created_asc" => filtered.OrderBy(v => v.CreatedAt),
+            "title_asc" => filtered.OrderBy(v => v.Title),
+            "title_desc" => filtered.OrderByDescending(v => v.Title),
+            _ => filtered.OrderByDescending(v => v.CreatedAt)
+        };
+
+        FilteredVideos = filtered.ToList();
+    }
+
+    private void OnFilterChanged()
+    {
+        ApplyFilters();
+    }
+
+    private void ToggleViewMode()
+    {
+        IsGridView = !IsGridView;
+    }
+
+    private string GetThumbnail(VideoDto video)
+    {
+        // Placeholder thumbnail - có thể thay bằng actual thumbnail URL từ video
+        return $"https://via.placeholder.com/320x180/0d6efd/ffffff?text={Uri.EscapeDataString(video.Title)}";
+    }
+
+    private void ShowEditModal(VideoDto video)
+    {
+        EditingVideo = video;
+    }
+
+    private void CloseEditModal()
+    {
+        EditingVideo = null;
+    }
+
+    private void ClosePlayer()
+    {
+        SelectedVideo = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _jsObjectReference ??=
+                await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/Pages/VideoPage.razor.js");
+
+            var url = await JsRuntime.GetOrigin();
+
+            var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl, options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+                        return await httpClient.GetStringAsync("/access-token");
+                    };
+                })
+                .Build();
+
+            _hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage),
+                async message => { await JsRuntime.ShowSuccessToast(message); });
+
+            _hubConnection.On<VideoStreamAddedEvent>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
+            {
+                var video = Videos.FirstOrDefault(x => x.Id == args.VideoId);
+                if (video == null) return;
+
+                var videoStream = args.VideoStream;
+                video.VideoStreams.Add(videoStream);
+                video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
+
+                ApplyFilters();
+                await InvokeAsync(StateHasChanged);
+
+                await JsRuntime.ShowSuccessToast(
+                    $"Video {video.Title} đã xử lý xong {videoStream.Resolution.GetDescription()}");
+            });
+
+            _hubConnection.On<VideoProcessDoneEvent>(nameof(IVideoHubAction.ReceiveVideoProcessingDone), async args =>
+            {
+                var video = Videos.FirstOrDefault(x => x.Id == args.Video.Id);
+                if (video == null)
+                {
+                    Videos.Add(args.Video);
+                    ApplyFilters();
+                    await InvokeAsync(StateHasChanged);
+                    await JsRuntime.ShowSuccessToast($"Video {args.Video.Title} đã xử lý xong");
+                    return;
+                }
+
+                video.VideoStreams.Clear();
+                video.VideoStreams.AddRange(args.Video.VideoStreams);
+                video.Status = args.Video.Status;
+                video.M3U8Location = args.Video.M3U8Location;
+
+                video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
+
+                ApplyFilters();
+                await InvokeAsync(StateHasChanged);
+                await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong");
+            });
+            try
+            {
+                await _hubConnection.StartAsync();
+            }
+            catch (Exception e)
+            {
+                await JsRuntime.ShowErrorToast($"Lỗi kết nối đến server: {e.Message}");
+            }
+
+            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+            Videos = await httpClient.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+            ApplyFilters();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PlayVideo(VideoDto video)
+    {
+        var origin = NavigationManager.BaseUri;
+
+        SelectedVideo = video;
+        StateHasChanged();
+        await Task.Delay(100);
+
+        if (_jsObjectReference != null)
+        {
+            //var videoUrl = new Uri(new Uri(origin), video.M3U8Location).AbsoluteUri;
+
+            var videoUrl = video.M3U8Location;
+            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", videoUrl);
+        }
+    }
+
+    private async Task UpdateVideo(VideoDto video)
+    {
+        if (_isUpdating) return;
+        _isUpdating = true;
+
+        try
+        {
+            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+            var result = await httpClient.PostAsJsonAsync("api/Video", video);
+            result.EnsureSuccessStatusCode();
+            await JsRuntime.ShowSuccessToast("Cập nhật thành công");
+            CloseEditModal();
+            ApplyFilters();
+        }
+        catch (Exception e)
+        {
+            await JsRuntime.ShowErrorToast($"Cập nhật lỗi: {e.Message}.");
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
+    private async Task DeleteVideo(VideoDto video)
+    {
+        if (_isDeleting) return;
+        _isDeleting = true;
+
+        try
+        {
+            var confirmed =
+                await JsRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa video '{video.Title}'?");
+            if (!confirmed) return;
+
+            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
+            var result = await httpClient.DeleteAsync($"api/Video/{video.Id}");
+            result.EnsureSuccessStatusCode();
+
+            Videos.Remove(video);
+            ApplyFilters();
+            await JsRuntime.ShowSuccessToast("Video đã xóa thành công");
+        }
+        catch (Exception e)
+        {
+            await JsRuntime.ShowErrorToast($"Xóa video lỗi: {e.Message}");
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
+    }
+}

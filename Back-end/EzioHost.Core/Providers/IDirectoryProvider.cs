@@ -1,14 +1,13 @@
-﻿namespace EzioHost.Core.Providers
+﻿namespace EzioHost.Core.Providers;
+
+public interface IDirectoryProvider
 {
-    public interface IDirectoryProvider
-    {
-        public string GetWebRootPath();
-        public string GetBaseUploadFolder();
-        public string GetBaseVideoFolder();
-        public string GetOrCreateSubFolder(string folderName);
+    public string GetWebRootPath();
+    public string GetBaseUploadFolder();
+    public string GetBaseVideoFolder();
+    public string GetOrCreateSubFolder(string folderName);
 
-        public string GetOnnxModelFolder();
+    public string GetOnnxModelFolder();
 
-        public string GetTempPath();
-    }
+    public string GetTempPath();
 }

@@ -1,8 +1,7 @@
-﻿namespace EzioHost.Core.Services.Interface
+﻿namespace EzioHost.Core.Services.Interface;
+
+public interface IProtectService
 {
-    public interface IProtectService
-    {
-        string GenerateRandomKey();
-        string GenerateRandomIv();
-    }
+    string GenerateRandomKey();
+    string GenerateRandomIv();
 }

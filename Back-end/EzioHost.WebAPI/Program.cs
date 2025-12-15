@@ -1,37 +1,34 @@
 ﻿using EzioHost.Aspire.ServiceDefaults;
-using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.WebAPI.Startup;
-using Microsoft.EntityFrameworkCore;
 
-namespace EzioHost.WebAPI
+namespace EzioHost.WebAPI;
+
+public class Program
 {
-    public class Program
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-            
-            builder.AddServiceDefaults();
+        var builder = WebApplication.CreateBuilder(args);
 
-            builder.ConfigureAppSettings(out var appSettings);
+        builder.AddServiceDefaults();
 
-            builder.Services.AddControllers();
-            builder.Services.AddOpenApi();
-            builder.Services.AddProblemDetails();
+        builder.ConfigureAppSettings(out var appSettings);
 
-            builder.ConfigureAuthentication(appSettings);
-            builder.ConfigureDbContext();
-            builder.ConfigureServices();
-            builder.ConfigureQuartz();
-            builder.ConfigureAutoMapper();
-            builder.ConfigureSignalR();
+        builder.Services.AddControllers();
+        builder.Services.AddOpenApi();
+        builder.Services.AddProblemDetails();
 
-            var app = builder.Build();
+        builder.ConfigureAuthentication(appSettings);
+        builder.ConfigureDatabase(appSettings);
+        builder.ConfigureServices();
+        builder.ConfigureQuartz();
+        builder.ConfigureAutoMapper();
+        builder.ConfigureSignalR();
 
-            app.ConfigureStaticFiles();
-            app.ConfigureMiddleware();
+        var app = builder.Build();
 
-            await app.RunAsync();
-        }
+        app.ConfigureStaticFiles();
+        app.ConfigureMiddleware();
+
+        await app.RunAsync();
     }
 }

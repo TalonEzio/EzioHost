@@ -1,15 +1,14 @@
-﻿namespace EzioHost.WebApp.Startup
+﻿namespace EzioHost.WebApp.Startup;
+
+public class AppSettings
 {
-    public class AppSettings
-    {
-        public PaypalSettings Paypal { get; set; } = new PaypalSettings();
-    }
+    public PaypalSettings Paypal { get; set; } = new();
+}
 
-    public class PaypalSettings
-    {
-        public string ClientId { get; set; } = string.Empty;
-        public string ClientSecret { get; set; } = string.Empty;
+public class PaypalSettings
+{
+    public string ClientId { get; set; } = string.Empty;
+    public string ClientSecret { get; set; } = string.Empty;
 
-        public string SdkUrl => $"https://www.sandbox.paypal.com/sdk/js?client-id={ClientId}";
-    }
+    public string SdkUrl => $"https://www.sandbox.paypal.com/sdk/js?client-id={ClientId}";
 }

@@ -1,4 +1,3 @@
-using EzioHost.Core.Mappers;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
@@ -8,39 +7,37 @@ using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
 using EzioHost.WebAPI.Providers;
 
-namespace EzioHost.WebAPI.Startup
+namespace EzioHost.WebAPI.Startup;
+
+public static class ServicesStartup
 {
-    public static class ServicesStartup
+    public static WebApplicationBuilder ConfigureServices(this WebApplicationBuilder builder)
     {
-        public static WebApplicationBuilder ConfigureServices(this WebApplicationBuilder builder)
-        {
-            builder.Services.AddScoped<IVideoRepository, VideoSqlServerRepository>();
-            builder.Services.AddScoped<IVideoStreamRepository, VideoStreamSqlServerRepository>();
+        builder.Services.AddScoped<IVideoRepository, VideoSqlServerRepository>();
+        builder.Services.AddScoped<IVideoStreamRepository, VideoStreamSqlServerRepository>();
 
-            builder.Services.AddScoped<IBaseUnitOfWork, BaseUnitOfWork>();
-            builder.Services.AddScoped<IVideoUnitOfWork, VideoUnitOfWork>();
+        builder.Services.AddScoped<IBaseUnitOfWork, BaseUnitOfWork>();
+        builder.Services.AddScoped<IVideoUnitOfWork, VideoUnitOfWork>();
 
-            builder.Services.AddScoped<IDirectoryProvider, DirectoryProvider>();
-            builder.Services.AddScoped<ISettingProvider, SettingProvider>();
+        builder.Services.AddScoped<IDirectoryProvider, DirectoryProvider>();
+        builder.Services.AddScoped<ISettingProvider, SettingProvider>();
 
-            builder.Services.AddScoped<IVideoService, VideoService>();
+        builder.Services.AddScoped<IVideoService, VideoService>();
 
-            builder.Services.AddScoped<IUserRepository, UserSqlServerRepository>();
-            builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IUserRepository, UserSqlServerRepository>();
+        builder.Services.AddScoped<IUserService, UserService>();
 
-            builder.Services.AddScoped<IFileUploadRepository, FileUploadSqlServerRepository>();
-            builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+        builder.Services.AddScoped<IFileUploadRepository, FileUploadSqlServerRepository>();
+        builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 
-            builder.Services.AddScoped<IProtectService, ProtectService>();
+        builder.Services.AddScoped<IProtectService, ProtectService>();
 
-            builder.Services.AddScoped<IOnnxModelRepository, OnnxModelSqlServerRepository>();
-            builder.Services.AddScoped<IOnnxModelService, OnnxModelService>();
+        builder.Services.AddScoped<IOnnxModelRepository, OnnxModelSqlServerRepository>();
+        builder.Services.AddScoped<IOnnxModelService, OnnxModelService>();
 
-            builder.Services.AddScoped<IUpscaleRepository, UpscaleSqlServerRepository>();
-            builder.Services.AddScoped<IUpscaleService, UpscaleService>();
+        builder.Services.AddScoped<IUpscaleRepository, UpscaleSqlServerRepository>();
+        builder.Services.AddScoped<IUpscaleService, UpscaleService>();
 
-            return builder;
-        }
+        return builder;
     }
 }
-

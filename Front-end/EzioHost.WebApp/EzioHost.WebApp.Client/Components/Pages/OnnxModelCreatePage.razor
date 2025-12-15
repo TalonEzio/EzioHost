@@ -1,6 +1,7 @@
 ﻿@page "/onnx-create"
 @rendermode InteractiveServer
 
+
 <PageTitle>Create ONNX Model</PageTitle>
 <HeadContent>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css">
@@ -34,7 +35,7 @@
 				<div class="card shadow-sm">
 					<div class="card-body p-4">
 						<EditForm Model="Onnx" Enhance="true" FormName="FrmCreateOnnx" OnValidSubmit="CreateNewOnnxModelSubmit">
-							<DataAnnotationsValidator />
+							<DataAnnotationsValidator/>
 
 							@if (_isSubmitting)
 							{
@@ -47,7 +48,7 @@
 							}
 
 							<div class="alert alert-danger" role="alert" style="display: none;">
-								<ValidationSummary />
+								<ValidationSummary/>
 							</div>
 
 							<div class="row mb-4">
@@ -55,7 +56,7 @@
 									<i class="bi bi-tag me-2"></i>Model Name <span class="text-danger">*</span>
 								</label>
 								<div class="col-md-9">
-									<InputText @bind-Value="Onnx.Name" class="form-control" placeholder="e.g., RealESRGAN x4" />
+									<InputText @bind-Value="Onnx.Name" class="form-control" placeholder="e.g., RealESRGAN x4"/>
 									<small class="text-muted">A descriptive name for your model</small>
 								</div>
 							</div>
@@ -65,7 +66,7 @@
 									<i class="bi bi-arrow-up-circle me-2"></i>Scale Factor <span class="text-danger">*</span>
 								</label>
 								<div class="col-md-9">
-									<InputNumber @bind-Value="Onnx.Scale" class="form-control" min="1" max="8" />
+									<InputNumber @bind-Value="Onnx.Scale" class="form-control" min="1" max="8"/>
 									<small class="text-muted">Output resolution multiplier (1x - 8x)</small>
 								</div>
 							</div>
@@ -80,17 +81,17 @@
 									<div class="row g-3">
 										<div class="col-sm-6">
 											<label class="form-label text-muted small">Width (px)</label>
-											<InputNumber @bind-Value="Onnx.MustInputWidth" class="form-control" placeholder="e.g., 1920" />
+											<InputNumber @bind-Value="Onnx.MustInputWidth" class="form-control" placeholder="e.g., 1920"/>
 										</div>
 										<div class="col-sm-6">
 											<label class="form-label text-muted small">Height (px)</label>
-											<InputNumber @bind-Value="Onnx.MustInputHeight" class="form-control" placeholder="e.g., 1080" />
+											<InputNumber @bind-Value="Onnx.MustInputHeight" class="form-control" placeholder="e.g., 1080"/>
 										</div>
 									</div>
 									<small class="text-muted">Required input dimensions for the model</small>
 								</div>
 							</div>
-							
+
 							<div class="row mb-4">
 								<label class="col-md-3 col-form-label fw-semibold">
 									<i class="bi bi-speedometer2 me-2"></i>Precision <span class="text-danger">*</span>
@@ -111,7 +112,7 @@
 									<i class="bi bi-file-earmark-binary me-2"></i>Model File <span class="text-danger">*</span>
 								</label>
 								<div class="col-md-9">
-									<InputFile class="form-control" accept=".onnx" OnChange="OnFileChanged" />
+									<InputFile class="form-control" accept=".onnx" OnChange="OnFileChanged"/>
 									<small class="text-muted">Upload your .onnx model file</small>
 									@if (_file != null)
 									{
@@ -123,7 +124,7 @@
 								</div>
 							</div>
 
-							<hr class="my-4" />
+							<hr class="my-4"/>
 
 							<div class="row">
 								<div class="col-md-9 offset-md-3">
@@ -155,7 +156,7 @@
 	else
 	{
 		<div class="text-center py-5">
-			<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+			<div class="spinner-border text-primary" role="status" style="height: 3rem; width: 3rem;">
 				<span class="visually-hidden">Loading...</span>
 			</div>
 			<p class="text-muted mt-3">Initializing form...</p>

@@ -10,15 +10,14 @@ export function readFileSlice(inputFileId, fileIndex, offset, count, dotNetRefer
         const slice = file.slice(offset, offset + count);
 
         const reader = new FileReader();
-        reader.onload = function (event) {
+        reader.onload = function(event) {
             const byteArray = new Uint8Array(event.target.result);
-            dotNetReference.invokeMethodAsync('ReceiveFileSlice', offset, byteArray);
+            dotNetReference.invokeMethodAsync("ReceiveFileSlice", offset, byteArray);
             resolve();
         };
-        reader.onerror = function (event) {
+        reader.onerror = function(event) {
             reject(event.target.error);
         };
         reader.readAsArrayBuffer(slice);
     });
 }
-

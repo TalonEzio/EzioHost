@@ -7,237 +7,196 @@ using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
-namespace EzioHost.WebAPI.Controllers
+namespace EzioHost.WebAPI.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class VideoController(
+    IVideoService videoService,
+    IMapper mapper,
+    IUpscaleService upscaleService,
+    IOnnxModelService modelService,
+    IDirectoryProvider directoryProvider) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class VideoController(
-        IVideoService videoService,
-        IMapper mapper,
-        IUpscaleService upscaleService,
-        IOnnxModelService modelService, IDirectoryProvider directoryProvider) : ControllerBase
+    private string WebRootPath => directoryProvider.GetWebRootPath();
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetVideos()
     {
-        private string WebRootPath => directoryProvider.GetWebRootPath();
+        var userId = User.UserId;
+        var videos =
+            (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams, x => x.VideoUpscales]))
+            .ToList();
 
-        [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> GetVideos()
+        var videoDtos = mapper.Map<List<VideoDto>>(videos);
+
+
+        return Ok(videoDtos);
+    }
+
+    [HttpGet("play/{videoId:guid}")]
+    public async Task<IActionResult> GetM3U8ById([FromRoute] Guid videoId)
+    {
+        var video = await videoService.GetVideoById(videoId);
+        if (video == null) return NotFound();
+
+        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+
+        var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
+        return File(fileContent, "application/x-mpegURL");
+    }
+
+    [HttpGet("download/{videoId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
+    {
+        var video = await videoService.GetVideoById(videoId);
+        if (video == null) return NotFound();
+        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+
+        var fileLocation = Path.Combine(WebRootPath, video.RawLocation);
+        var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
+        return File(fileContent, "application/octet-stream", $"{video.Title}");
+    }
+
+    [HttpGet("download-upscale/{videoId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DownloadVideoUpscale([FromRoute] Guid videoId)
+    {
+        var video = await videoService.GetVideoUpscaleById(videoId);
+        if (video == null || !video.VideoUpscales.Any()) return NotFound();
+        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+
+        var videoUpscale = video.VideoUpscales.First();
+        var fileLocation = Path.Combine(WebRootPath, videoUpscale.OutputLocation);
+
+        var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
+        return File(fileContent, "application/octet-stream", $"{Path.GetFileName(videoUpscale.OutputLocation)}");
+    }
+
+
+    [HttpGet("{videoId:guid}")]
+    public async Task<IActionResult> GetVideoById([FromRoute] Guid videoId)
+    {
+        var video = await videoService.GetVideoById(videoId);
+        if (video == null) return NotFound();
+
+        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+
+        var videoDto = mapper.Map<VideoDto>(video);
+
+        switch (video.ShareType)
         {
-            var userId = User.UserId;
-            var videos = (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams, x => x.VideoUpscales])).ToList();
+            case VideoEnum.VideoShareType.Public:
+            case VideoEnum.VideoShareType.Internal when User.Identity is { IsAuthenticated: true }:
+                return Ok(videoDto);
 
-            var videoDtos = mapper.Map<List<VideoDto>>(videos);
-
-
-            return Ok(videoDtos);
-        }
-
-        [HttpGet("play/{videoId:guid}")]
-        public async Task<IActionResult> GetM3U8ById([FromRoute] Guid videoId)
-        {
-            var video = await videoService.GetVideoById(videoId);
-            if (video == null)
-            {
-                return NotFound();
-            }
-
-            if (video.Status != VideoEnum.VideoStatus.Ready)
-            {
+            case VideoEnum.VideoShareType.Internal:
                 return BadRequest();
-            }
 
-            var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
-            return File(fileContent, "application/x-mpegURL");
+            case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
+                if (video.CreatedBy == User.UserId) return Ok(videoDto);
+
+                break;
         }
-        [HttpGet("download/{videoId:guid}")]
-        [Authorize]
-        public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
+
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> UpdateVideo([FromBody] VideoDto videoDto)
+    {
+        var video = await videoService.GetVideoById(videoDto.Id);
+        if (video == null) return NotFound();
+
+        try
         {
-            var video = await videoService.GetVideoById(videoId);
-            if (video == null)
-            {
-                return NotFound();
-            }
-            if (video.Status != VideoEnum.VideoStatus.Ready)
-            {
-                return BadRequest();
-            }
+            video.Title = videoDto.Title;
+            video.ShareType = videoDto.ShareType;
+            video.ModifiedBy = User.UserId;
 
-            var fileLocation = Path.Combine(WebRootPath, video.RawLocation);
-            var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
-            return File(fileContent, "application/octet-stream", $"{video.Title}");
+            await videoService.UpdateVideo(video);
+
+            return Ok();
         }
-
-        [HttpGet("download-upscale/{videoId:guid}")]
-        [Authorize]
-        public async Task<IActionResult> DownloadVideoUpscale([FromRoute] Guid videoId)
+        catch (Exception e)
         {
-            var video = await videoService.GetVideoUpscaleById(videoId);
-            if (video == null || !video.VideoUpscales.Any())
-            {
-                return NotFound();
-            }
-            if (video.Status != VideoEnum.VideoStatus.Ready)
-            {
-                return BadRequest();
-            }
-
-            var videoUpscale = video.VideoUpscales.First();
-            var fileLocation = Path.Combine(WebRootPath, videoUpscale.OutputLocation);
-
-            var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
-            return File(fileContent, "application/octet-stream", $"{Path.GetFileName(videoUpscale.OutputLocation)}");
+            return BadRequest(e.Message);
         }
+    }
 
+    [HttpDelete("{videoId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteVideo([FromRoute] Guid videoId)
+    {
+        var video = await videoService.GetVideoById(videoId);
+        if (video == null) return NotFound();
 
-        [HttpGet("{videoId:guid}")]
-        public async Task<IActionResult> GetVideoById([FromRoute] Guid videoId)
+        try
         {
-            var video = await videoService.GetVideoById(videoId);
-            if (video == null)
-            {
-                return NotFound();
-            }
-
-            if (video.Status != VideoEnum.VideoStatus.Ready)
-            {
-                return BadRequest();
-            }
-
-            var videoDto = mapper.Map<VideoDto>(video);
-
-            switch (video.ShareType)
-            {
-                case VideoEnum.VideoShareType.Public:
-                case VideoEnum.VideoShareType.Internal when User.Identity is { IsAuthenticated: true }:
-                    return Ok(videoDto);
-
-                case VideoEnum.VideoShareType.Internal:
-                    return BadRequest();
-
-                case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
-                    if (video.CreatedBy == User.UserId)
-                    {
-                        return Ok(videoDto);
-                    }
-
-                    break;
-            }
-
-            return BadRequest();
+            await videoService.DeleteVideo(video);
+            return Ok();
         }
-
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> UpdateVideo([FromBody] VideoDto videoDto)
+        catch (Exception e)
         {
-            var video = await videoService.GetVideoById(videoDto.Id);
-            if (video == null)
-            {
-                return NotFound();
-            }
-
-            try
-            {
-                video.Title = videoDto.Title;
-                video.ShareType = videoDto.ShareType;
-                video.ModifiedBy = User.UserId;
-
-                await videoService.UpdateVideo(video);
-
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            return BadRequest(e.Message);
         }
+    }
 
-        [HttpDelete("{videoId:guid}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteVideo([FromRoute] Guid videoId)
+
+    [HttpGet("DRM/{videoStreamId:guid}")]
+    public async Task<IActionResult> GetDrm([FromRoute] Guid videoStreamId)
+    {
+        var video = await videoService.GetVideoByVideoStreamId(videoStreamId);
+
+        if (video == null) return NotFound();
+
+        var contentKey = video.VideoStreams.First(x => x.Id == videoStreamId).Key;
+
+        contentKey = "d33e927a351edca2";
+
+
+        var contentBytes = Convert.FromHexString(contentKey);
+        switch (video.ShareType)
         {
-            var video = await videoService.GetVideoById(videoId);
-            if (video == null)
-            {
-                return NotFound();
-            }
+            case VideoEnum.VideoShareType.Public:
+            case VideoEnum.VideoShareType.Internal when User.Identity is { IsAuthenticated: true }:
+                return Content(contentKey);
 
-            try
-            {
-                await videoService.DeleteVideo(video);
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            case VideoEnum.VideoShareType.Internal:
+                break;
+            case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
+                if (video.CreatedBy == User.UserId) return Content(contentKey);
+                break;
         }
 
+        return BadRequest();
+    }
 
-        [HttpGet("DRM/{videoStreamId:guid}")]
-        public async Task<IActionResult> GetDrm([FromRoute] Guid videoStreamId)
+
+    [HttpPost("{videoId:guid}/upscale/{modelId:guid}")]
+    public async Task<IActionResult> UpscaleVideo([FromRoute] Guid videoId, [FromRoute] Guid modelId)
+    {
+        var video = await videoService.GetVideoById(videoId);
+        var model = await modelService.GetOnnxModelById(modelId);
+
+        if (video == null || model == null) return NotFound();
+
+        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+
+        var videoUpscale = new VideoUpscale
         {
-            var video = await videoService.GetVideoByVideoStreamId(videoStreamId);
+            Scale = model.Scale,
+            Video = video,
+            Model = model,
+            Status = VideoEnum.VideoUpscaleStatus.Queue
+        };
 
-            if (video == null)
-            {
-                return NotFound();
-            }
+        await upscaleService.AddNewVideoUpscale(videoUpscale);
 
-            var contentKey = video.VideoStreams.First(x => x.Id == videoStreamId).Key;
-            var userIdString = User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            switch (video.ShareType)
-            {
-                case VideoEnum.VideoShareType.Public:
-                case VideoEnum.VideoShareType.Internal when User.Identity is { IsAuthenticated: true }:
-                    return Content(contentKey);
-
-                case VideoEnum.VideoShareType.Internal:
-                    return BadRequest();
-
-                case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
-                    if (video.CreatedBy == User.UserId)
-                    {
-                        return Content(contentKey);
-                    }
-                    break;
-            }
-
-            return BadRequest();
-        }
-
-
-        [HttpPost("{videoId:guid}/upscale/{modelId:guid}")]
-        public async Task<IActionResult> UpscaleVideo([FromRoute] Guid videoId, [FromRoute] Guid modelId)
-        {
-            var video = await videoService.GetVideoById(videoId);
-            var model = await modelService.GetOnnxModelById(modelId);
-
-            if (video == null || model == null)
-            {
-                return NotFound();
-            }
-
-            if (video.Status != VideoEnum.VideoStatus.Ready)
-            {
-                return BadRequest();
-            }
-
-            var videoUpscale = new VideoUpscale()
-            {
-                Scale = model.Scale,
-                Video = video,
-                Model = model,
-                Status = VideoEnum.VideoUpscaleStatus.Queue
-            };
-
-            await upscaleService.AddNewVideoUpscale(videoUpscale);
-
-            return Created();
-        }
+        return Created();
     }
 }

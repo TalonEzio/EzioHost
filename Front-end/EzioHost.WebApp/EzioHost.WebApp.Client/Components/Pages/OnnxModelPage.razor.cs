@@ -1,30 +1,29 @@
+using System.Net.Http.Json;
+using EzioHost.Shared.Constants;
+using EzioHost.Shared.Models;
+using EzioHost.WebApp.Client.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
-using EzioHost.Shared.Models;
-using EzioHost.Shared.Constants;
-using EzioHost.WebApp.Client.Extensions;
-using System.Net.Http.Json;
 
 namespace EzioHost.WebApp.Client.Components.Pages;
 
 public partial class OnnxModelPage
 {
+    private string _afterImage = string.Empty;
+    private string _beforeImage = string.Empty;
+
+    private string _message = "Waiting for data...";
+    private IBrowserFile? _selectedDemoInputFile;
+
+    private OnnxModelDto? _selectedOnnxModelDto;
+
+    private bool _upscaling;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
     public ImageCompare? ImageCompare { get; set; }
 
-    [PersistentState]
-    public List<OnnxModelDto>? OnnxModels { get; set; }
-
-    private string _message = "Waiting for data...";
-    private string _beforeImage = string.Empty;
-    private string _afterImage = string.Empty;
-
-    bool _upscaling;
-
-    private OnnxModelDto? _selectedOnnxModelDto;
-    private IBrowserFile? _selectedDemoInputFile;
+    [PersistentState] public List<OnnxModelDto>? OnnxModels { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -36,13 +35,9 @@ public partial class OnnxModelPage
             var response = await httpClient.GetFromJsonAsync<List<OnnxModelDto>>("api/OnnxModel");
 
             if (response != null && response.Any())
-            {
                 OnnxModels.AddRange(response);
-            }
             else
-            {
                 _message = "No ONNX model!";
-            }
         }
     }
 
@@ -56,10 +51,7 @@ public partial class OnnxModelPage
             _beforeImage = onnxModel.DemoInput;
             _afterImage = onnxModel.DemoOutput;
 
-            if (ImageCompare != null)
-            {
-                ImageCompare.UpdateImages(_beforeImage, _afterImage);
-            }
+            if (ImageCompare != null) ImageCompare.UpdateImages(_beforeImage, _afterImage);
         }
         else
         {
@@ -129,7 +121,8 @@ public partial class OnnxModelPage
                 // Reset selected file sau khi upscale thành công
                 _selectedDemoInputFile = null;
 
-                await JsRuntime.ShowSuccessToast($"Upscale completed successfully! Time: {content.ElapsedMilliseconds}ms");
+                await JsRuntime.ShowSuccessToast(
+                    $"Upscale completed successfully! Time: {content.ElapsedMilliseconds}ms");
                 StateHasChanged();
             }
         }
@@ -164,4 +157,3 @@ public partial class OnnxModelPage
         }
     }
 }
-

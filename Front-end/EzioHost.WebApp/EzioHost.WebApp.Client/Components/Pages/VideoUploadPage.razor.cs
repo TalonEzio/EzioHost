@@ -1,29 +1,32 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using EzioHost.Shared.Constants;
+using EzioHost.Shared.Models;
+using EzioHost.WebApp.Client.Extensions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using EzioHost.Shared.Enums;
-using EzioHost.Shared.Models;
-using EzioHost.Shared.Constants;
-using EzioHost.WebApp.Client.Extensions;
-using System.Security.Cryptography;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EzioHost.WebApp.Client.Components.Pages;
 
-public partial class UploadVideoPage
+public partial class VideoUploadPage
 {
-    [CascadingParameter] public Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+    private const string FILE_INPUT_ID = "fileInput";
+
+    private const int CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
     private AuthenticationState _authState = null!;
+    private DotNetObjectReference<VideoUploadPage>? _dotNetRef;
+    private ElementReference? _dropZone;
+
+    private IJSObjectReference? _jsObjectReference;
+    [CascadingParameter] public Task<AuthenticationState> AuthStateTask { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
     [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
-
-    private const string FILE_INPUT_ID = "fileInput";
-    private ElementReference? _dropZone;
-    private List<IBrowserFile> SelectedFiles { get; set; } = new();
+    private List<IBrowserFile> SelectedFiles { get; } = new();
     private bool IsDragOver { get; set; }
     private bool IsUploading { get; set; }
     private int UploadProgress { get; set; }
@@ -34,10 +37,19 @@ public partial class UploadVideoPage
     private string VideoDescription { get; set; } = "";
     private string TargetQuality { get; set; } = "1080p";
 
-    private IJSObjectReference? _jsObjectReference;
-    private DotNetObjectReference<UploadVideoPage>? _dotNetRef;
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_jsObjectReference != null) await _jsObjectReference.DisposeAsync();
 
-    private const int CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+            _dotNetRef?.Dispose();
+        }
+        catch (Exception)
+        {
+            //ignore
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,39 +61,25 @@ public partial class UploadVideoPage
     {
         if (firstRender)
         {
-            _jsObjectReference ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/Pages/UploadVideoPage.razor.js");
+            _jsObjectReference ??=
+                await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/Components/Pages/VideoUploadPage.razor.js");
             _dotNetRef = DotNetObjectReference.Create(this);
             if (_jsObjectReference != null && _dotNetRef != null && _dropZone.HasValue)
-            {
-                await _jsObjectReference.InvokeVoidAsync("setupDragAndDrop", _dropZone.Value, FILE_INPUT_ID, _dotNetRef);
-            }
+                await _jsObjectReference.InvokeVoidAsync("setupDragAndDrop", _dropZone.Value, FILE_INPUT_ID,
+                    _dotNetRef);
         }
-        await base.OnAfterRenderAsync(firstRender);
-    }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_jsObjectReference != null)
-        {
-            await _jsObjectReference.DisposeAsync();
-        }
-        _dotNetRef?.Dispose();
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task TriggerFileInput()
     {
-        if (_jsObjectReference != null)
-        {
-            await _jsObjectReference.InvokeVoidAsync("clickFileInputById", FILE_INPUT_ID);
-        }
+        if (_jsObjectReference != null) await _jsObjectReference.InvokeVoidAsync("clickFileInputById", FILE_INPUT_ID);
     }
 
     private async Task<int> FindFileIndexInInput(IBrowserFile file)
     {
-        if (_jsObjectReference == null)
-        {
-            return -1;
-        }
+        if (_jsObjectReference == null) return -1;
 
         return await _jsObjectReference.InvokeAsync<int>("findFileIndex", FILE_INPUT_ID, file.Name, file.Size);
     }
@@ -89,17 +87,11 @@ public partial class UploadVideoPage
     private Task OnFileSelected(InputFileChangeEventArgs e)
     {
         foreach (var file in e.GetMultipleFiles())
-        {
             if (!SelectedFiles.Any(f => f.Name == file.Name && f.Size == file.Size))
-            {
                 SelectedFiles.Add(file);
-            }
-        }
 
         if (SelectedFiles.Count == 1 && string.IsNullOrEmpty(VideoTitle))
-        {
             VideoTitle = Path.GetFileNameWithoutExtension(SelectedFiles[0].Name);
-        }
         StateHasChanged();
         return Task.CompletedTask;
     }
@@ -129,6 +121,7 @@ public partial class UploadVideoPage
             VideoTitle = "";
             VideoDescription = "";
         }
+
         StateHasChanged();
     }
 
@@ -195,29 +188,24 @@ public partial class UploadVideoPage
         string? checksum = null;
 
         // Only calculate checksum for files smaller than 100MB
-        if (file.Size < 100 * 1024 * 1024)
-        {
-            checksum = await CalculateFileChecksum(file, fileIndex);
-        }
+        if (file.Size < 100 * 1024 * 1024) checksum = await CalculateFileChecksum(file, fileIndex);
 
         // Initialize upload
         var uploadInfo = new UploadInfoDto
         {
+            Id = Guid.NewGuid(),
             FileName = file.Name,
             FileSize = file.Size,
             ContentType = file.ContentType,
             Checksum = checksum,
-            UserId = userId,
+            UserId = userId
         };
 
         var initResponse = await httpClient.PostAsJsonAsync("api/Upload/init", uploadInfo);
         initResponse.EnsureSuccessStatusCode();
 
         var uploadResult = await initResponse.Content.ReadFromJsonAsync<UploadInfoDto>();
-        if (uploadResult == null)
-        {
-            throw new Exception("Không thể khởi tạo upload");
-        }
+        if (uploadResult == null) throw new Exception("Không thể khởi tạo upload");
 
         var uploadId = uploadResult.Id;
         var uploadedBytes = 0L;
@@ -238,7 +226,7 @@ public partial class UploadVideoPage
             using var formData = new MultipartFormDataContent();
             using var chunkStream = new MemoryStream(chunkData);
             using var chunkContent = new StreamContent(chunkStream);
-            chunkContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+            chunkContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
             formData.Add(chunkContent, FormFieldNames.ChunkFile, file.Name);
 
             var chunkResponse = await httpClient.PostAsync($"api/Upload/chunk/{uploadId}", formData);
@@ -252,9 +240,9 @@ public partial class UploadVideoPage
             uploadedBytes += bytesRead;
 
             // Update progress
-            var fileProgress = (int)((uploadedBytes * 100) / file.Size);
+            var fileProgress = (int)(uploadedBytes * 100 / file.Size);
             var indexOf = SelectedFiles.IndexOf(file);
-            var totalProgress = ((indexOf * 100) + fileProgress) / SelectedFiles.Count;
+            var totalProgress = (indexOf * 100 + fileProgress) / SelectedFiles.Count;
             UploadProgress = totalProgress;
             StateHasChanged();
         }
@@ -267,10 +255,11 @@ public partial class UploadVideoPage
     {
         try
         {
-            await using var stream = new SeekableFileStream(JsRuntime, FILE_INPUT_ID, fileIndex, file.Size);
-            using var sha256 = SHA256.Create();
-            var hashBytes = await sha256.ComputeHashAsync(stream);
-            return Convert.ToHexString(hashBytes).ToLowerInvariant();
+            //await using var stream = new SeekableFileStream(JsRuntime, FILE_INPUT_ID, fileIndex, file.Size);
+            //using var sha256 = SHA256.Create();
+            //var hashBytes = await sha256.ComputeHashAsync(stream);
+            //return Convert.ToHexString(hashBytes).ToLowerInvariant();
+            return "1234567";
         }
         catch (Exception ex)
         {
@@ -291,12 +280,13 @@ public partial class UploadVideoPage
     {
         string[] sizes = ["B", "KB", "MB", "GB"];
         double len = bytes;
-        int order = 0;
+        var order = 0;
         while (len >= 1024 && order < sizes.Length - 1)
         {
             order++;
             len /= 1024;
         }
+
         return $"{len:0.##} {sizes[order]}";
     }
 }

@@ -3,13 +3,12 @@ using EzioHost.Domain.Settings;
 using EzioHost.WebAPI.Startup;
 using Microsoft.Extensions.Options;
 
-namespace EzioHost.WebAPI.Providers
+namespace EzioHost.WebAPI.Providers;
+
+public class SettingProvider(IOptionsMonitor<AppSettings> appSettingsMonitor) : ISettingProvider
 {
-    public class SettingProvider(IOptionsMonitor<AppSettings> appSettingsMonitor) : ISettingProvider
+    public VideoEncodeSetting GetVideoEncodeSetting()
     {
-        public VideoEncodeSetting GetVideoEncodeSetting()
-        {
-            return appSettingsMonitor.CurrentValue.VideoEncode;
-        }
+        return appSettingsMonitor.CurrentValue.VideoEncode;
     }
 }
