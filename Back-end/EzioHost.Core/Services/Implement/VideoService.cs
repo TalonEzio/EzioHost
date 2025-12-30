@@ -34,9 +34,9 @@ public class VideoService(
     public event Action<VideoStreamAddedEvent>? OnVideoStreamAdded;
     public event Action<VideoProcessDoneEvent>? OnVideoProcessDone;
 
-    public Task<Video?> GetVideoUpscaleById(Guid videoId)
+    public Task<Video?> GetVideoWithReadyUpscale(Guid videoId)
     {
-        return _videoRepository.GetVideoUpscaleById(videoId);
+        return _videoRepository.GetVideoWithReadyUpscale(videoId);
     }
 
     public Task<Video?> GetVideoToEncode()
@@ -45,10 +45,13 @@ public class VideoService(
     }
 
 
-    public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null,
+    public Task<IEnumerable<Video>> GetVideos(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<Video, bool>>? expression = null,
         Expression<Func<Video, object>>[]? includes = null)
     {
-        return _videoRepository.GetVideos(expression, includes);
+        return _videoRepository.GetVideos(pageNumber, pageSize, expression, includes);
     }
 
     public async Task<Video> AddNewVideo(Video newVideo)
@@ -160,6 +163,7 @@ public class VideoService(
             "1440p" => 8000000,
             "1920p" => 8000000,
             "2160p" => 15000000,
+            "AI Upscaled" => 5000000,
             _ => 1000000
         };
     }
@@ -181,7 +185,7 @@ public class VideoService(
     }
 
     public async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
-        VideoResolution targetResolution)
+        VideoResolution targetResolution, int scale = 2)
     {
         var segmentFolder = Path.Combine(_webRootPath, Path.GetDirectoryName(inputVideo.M3U8Location)!,
             targetResolution.GetDescription());
@@ -201,9 +205,25 @@ public class VideoService(
             M3U8Location = Path.GetRelativePath(_webRootPath, absoluteVideoStreamM3U8Location)
         };
 
+        var videoInput = await FFProbe.AnalyseAsync(absoluteRawLocation);
+
+        var videoInputStream = videoInput.PrimaryVideoStream;
+        if (videoInputStream == null)
+            throw new InvalidOperationException("No video stream found in the input file.");
+
+        var videoRatio = 1.0 * videoInputStream.DisplayAspectRatio.Width / videoInputStream.DisplayAspectRatio.Height;
         var targetHeight = (int)targetResolution;
-        var targetWidth = (int)Math.Round(targetHeight * 16 / 9.0);
+        if (targetResolution == VideoResolution.Upscaled)
+        {
+            targetHeight = videoInputStream.Height;
+        }
+        var targetWidth = (int)Math.Round(targetHeight * videoRatio);
+
         if (targetWidth % 2 != 0) targetWidth++;
+        if (targetResolution == VideoResolution.Upscaled)
+        {
+            targetWidth = videoInputStream.Width;
+        }
 
         var resolutionSize = new Size(targetWidth, targetHeight);
 

@@ -37,7 +37,7 @@ public class VideoProcessingJob(
             }
             else
             {
-                logger.LogInformation("[VideoProcessingJob] No videos to encode.");
+                //logger.LogInformation("[VideoProcessingJob] No videos to encode.");
             }
         }
         catch (Exception ex)

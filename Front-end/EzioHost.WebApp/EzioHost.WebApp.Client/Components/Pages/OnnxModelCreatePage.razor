@@ -97,8 +97,8 @@
 									<i class="bi bi-speedometer2 me-2"></i>Precision <span class="text-danger">*</span>
 								</label>
 								<div class="col-md-9">
-									<InputSelect @bind-Value="Onnx.Precision" class="form-select">
-										@foreach (var value in Enum.GetValues<OnnxModelPrecision>())
+									<InputSelect @bind-Value="Onnx.ElementType" class="form-select">
+										@foreach (var value in Enum.GetValues<EzioHost.Shared.Enums.TensorElementType>())
 										{
 											<option value="@value">@value</option>
 										}
@@ -129,11 +129,16 @@
 							<div class="row">
 								<div class="col-md-9 offset-md-3">
 									<div class="d-flex gap-2">
-										<button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+										<button type="submit" class="btn btn-primary" disabled="@_isCheckingOnnxModel">
 											@if (_isSubmitting)
 											{
 												<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
 												<span>Creating...</span>
+											}
+											else if (_isCheckingOnnxModel)
+											{
+												<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+												<span>Checking model...</span>
 											}
 											else
 											{

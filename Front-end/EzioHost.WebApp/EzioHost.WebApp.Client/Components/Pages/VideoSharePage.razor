@@ -1,11 +1,11 @@
 ﻿@page "/video-share/{VideoId:guid}"
 @using Microsoft.AspNetCore.Components.Sections
 @layout NullLayout
-<div id="player" width="100vw" height="100vh" data-video="@Video?.M3U8Location"></div>
+<div id="player" width="100vw" height="100vh" data-video="@Video?.PlayerJsMetadata"></div>
 
 <SectionContent SectionName="@SectionNames.FooterSection">
-	<script src="/Components/Pages/VideoSharePage.Razor.js">
+    <script src="/Components/Pages/VideoSharePage.Razor.js">
 
-	</script>
+    </script>
 
 </SectionContent>

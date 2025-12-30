@@ -15,5 +15,5 @@ public class OnnxModelCreateDto
 
     [Range(0, 2160)] public int MustInputHeight { get; set; }
 
-    public OnnxModelPrecision Precision { get; set; }
+    public TensorElementType ElementType { get; set; }
 }

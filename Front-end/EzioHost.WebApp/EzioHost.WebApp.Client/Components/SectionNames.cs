@@ -2,5 +2,5 @@
 
 public class SectionNames
 {
-    public const string FooterSection = "FooterSection";
+    public const string FooterSection = nameof(FooterSection);
 }

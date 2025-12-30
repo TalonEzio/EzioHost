@@ -1,9 +1,10 @@
-using EzioHost.Shared.Constants;
 using EzioHost.Shared.Models;
 using EzioHost.WebApp.Client.Extensions;
+using EzioHost.WebApp.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
+using Refit;
 
 namespace EzioHost.WebApp.Client.Components.Pages;
 
@@ -11,11 +12,12 @@ public partial class OnnxModelCreatePage
 {
     private IBrowserFile? _file;
     private bool _isSubmitting;
+    private bool _isCheckingOnnxModel;
     private IJSObjectReference? _jsObjectReference;
-    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
+    [Inject] public IOnnxModelApi OnnxModelApi { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
 
-    [SupplyParameterFromForm] public OnnxModelCreateDto Onnx { get; set; } = null!;
+    public OnnxModelCreateDto Onnx { get; set; } = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -41,21 +43,16 @@ public partial class OnnxModelCreatePage
 
         try
         {
-            var formData = new MultipartFormDataContent();
+            var fileStream = _file.OpenReadStream(_file.Size);
+            var streamPart = new StreamPart(fileStream, _file.Name, _file.ContentType);
 
-            formData.Add(new StringContent(Onnx.Name), nameof(OnnxModelCreateDto.Name));
-            formData.Add(new StringContent(Onnx.Scale.ToString()), nameof(OnnxModelCreateDto.Scale));
-            formData.Add(new StringContent(Onnx.MustInputWidth.ToString()), nameof(OnnxModelCreateDto.MustInputWidth));
-            formData.Add(new StringContent(Onnx.MustInputHeight.ToString()),
-                nameof(OnnxModelCreateDto.MustInputHeight));
-            formData.Add(new StringContent(Onnx.Precision.ToString()), nameof(OnnxModelCreateDto.Precision));
-
-            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-            var fileContent = new StreamContent(_file.OpenReadStream(_file.Size));
-            formData.Add(fileContent, FormFieldNames.ModelFile, _file.Name);
-
-            var response = await httpClient.PutAsync("/api/OnnxModel", formData);
-            response.EnsureSuccessStatusCode();
+            await OnnxModelApi.AddOnnxModel(
+                Onnx.Name,
+                Onnx.Scale,
+                Onnx.MustInputWidth,
+                Onnx.MustInputHeight,
+                (int)Onnx.ElementType,
+                streamPart);
 
             await JsRuntime.ShowSuccessToast("ONNX model created successfully!");
 
@@ -70,11 +67,72 @@ public partial class OnnxModelCreatePage
         }
     }
 
-    private Task OnFileChanged(InputFileChangeEventArgs arg)
+    private async Task OnFileChanged(InputFileChangeEventArgs arg)
     {
         _file = arg.File;
         StateHasChanged();
-        return Task.CompletedTask;
+
+        // Analyze ONNX model to auto-fill metadata
+        if (_file != null && _file.Name.EndsWith(".onnx", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                _isCheckingOnnxModel = true;
+                await using var fileStream = _file.OpenReadStream(_file.Size);
+                var streamPart = new StreamPart(fileStream, _file.Name, _file.ContentType);
+
+                var metadata = await OnnxModelApi.AnalyzeOnnxModel(streamPart);
+
+                if (!string.IsNullOrEmpty(metadata.ErrorMessage))
+                {
+                    await JsRuntime.ShowWarningToast($"Không thể đọc metadata: {metadata.ErrorMessage}");
+                }
+                else
+                {
+                    // Auto-fill form with detected values
+                    if (metadata.Scale.HasValue && Onnx.Scale == 1) // Only override if user hasn't changed default
+                    {
+                        Onnx.Scale = metadata.Scale.Value;
+                    }
+                    else
+                    {
+                        Onnx.Scale = 0;
+                    }
+
+                    if (metadata.MustInputWidth.HasValue && Onnx.MustInputWidth == 0)
+                    {
+                        Onnx.MustInputWidth = metadata.MustInputWidth.Value;
+                    }
+                    else
+                    {
+                        Onnx.MustInputWidth = 0;
+                    }
+
+                    if (metadata.MustInputHeight.HasValue && Onnx.MustInputHeight == 0)
+                    {
+                        Onnx.MustInputHeight = metadata.MustInputHeight.Value;
+                    }
+                    else
+                    {
+                        Onnx.MustInputHeight = 0;
+                    }
+
+                    Onnx.ElementType = metadata.ElementType;
+
+                    await JsRuntime.ShowSuccessToast("Đã tự động phát hiện thông tin model");
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                await JsRuntime.ShowWarningToast($"Lỗi khi phân tích model: {ex.Message}");
+            }
+            finally
+            {
+                _isCheckingOnnxModel = false;
+                StateHasChanged();
+            }
+        }
     }
 
     private string FormatFileSize(long bytes)

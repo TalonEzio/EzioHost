@@ -70,7 +70,7 @@ public class AuthController(IOptionsMonitor<AppSettings> appSettings) : Controll
     {
         if (HttpContext.User.Identity is { IsAuthenticated: false } or not ClaimsIdentity) return Unauthorized();
 
-        var oidcToken = await HttpContext.GetOidcTokenAsync();
+        var oidcToken = await HttpContext.GetDownstreamAccessTokenAsync();
         return Ok(oidcToken);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
@@ -74,7 +74,16 @@ public class FileUploadService(
 
         var fileInfo = new FileInfo(tempFilePath);
 
-        if (fileInfo.Length < fileUpload.FileSize)
+        if (fileUpload.FileSize < fileInfo.Length)
+        {
+            throw new InvalidOperationException(
+                $"Kích thước file tải lên vượt quá kích thước dự kiến. Dự kiến: {fileUpload.FileSize}, Đã tải lên: {fileInfo.Length}");
+        }
+
+        //update received bytes
+        fileUpload.ReceivedBytes = fileInfo.Length;
+
+        if (fileUpload.FileSize > fileInfo.Length)
         {
             fileUpload.Status = VideoEnum.FileUploadStatus.InProgress;
             await fileUploadRepository.UpdateFileUpload(fileUpload);
@@ -93,6 +102,7 @@ public class FileUploadService(
         File.Move(tempFilePath, videoFinalPath, true);
 
         fileUpload.Status = VideoEnum.FileUploadStatus.Completed;
+        fileUpload.PhysicalPath = Path.GetRelativePath(BaseWebRootFolder, videoFinalPath);
         await UpdateFileUpload(fileUpload);
 
         //insert video info to database
@@ -107,7 +117,56 @@ public class FileUploadService(
         };
 
         await videoService.AddNewVideo(newVideo);
-        //await DeleteFileUpload(fileUpload);
         return VideoEnum.FileUploadStatus.Completed;
+    }
+
+    public async Task<FileUpload> CopyCompletedFile(FileUpload existingUpload, Guid userId)
+    {
+        if (string.IsNullOrEmpty(existingUpload.PhysicalPath))
+            throw new InvalidOperationException($"FileUpload {existingUpload.Id} không có PhysicalPath");
+
+        var sourceFile = Path.Combine(BaseWebRootFolder, existingUpload.PhysicalPath);
+
+        if (!File.Exists(sourceFile))
+            throw new InvalidOperationException($"Không tìm thấy file video tại {sourceFile}");
+
+        var copyFileUpload = new FileUpload
+        {
+            FileName = existingUpload.FileName,
+            FileSize = existingUpload.FileSize,
+            ReceivedBytes = existingUpload.ReceivedBytes,
+            ContentType = existingUpload.ContentType,
+            Checksum = existingUpload.Checksum,
+            CreatedBy = userId,
+            Status = VideoEnum.FileUploadStatus.Completed
+        };
+
+        await fileUploadRepository.AddFileUpload(copyFileUpload);
+
+        var newVideoDirectory = Path.Combine(BaseVideoFolder, copyFileUpload.Id.ToString());
+        Directory.CreateDirectory(newVideoDirectory);
+
+        var extension = Path.GetExtension(sourceFile);
+        var newFileNameWithoutExt = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
+        var destinationFile = Path.Combine(newVideoDirectory, $"{newFileNameWithoutExt}{extension}");
+
+        File.Copy(sourceFile, destinationFile, true);
+
+        copyFileUpload.PhysicalPath = Path.GetRelativePath(BaseWebRootFolder, destinationFile);
+        await fileUploadRepository.UpdateFileUpload(copyFileUpload);
+
+        var newVideo = new Video
+        {
+            Title = existingUpload.FileName,
+            RawLocation = Path.GetRelativePath(BaseWebRootFolder, destinationFile),
+            M3U8Location = Path.ChangeExtension(
+                Path.GetRelativePath(BaseWebRootFolder, destinationFile), ".m3u8"),
+            CreatedBy = userId,
+            Status = VideoEnum.VideoStatus.Queue
+        };
+
+        await videoService.AddNewVideo(newVideo);
+
+        return copyFileUpload;
     }
 }

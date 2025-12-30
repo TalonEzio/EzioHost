@@ -5,8 +5,8 @@ namespace EzioHost.ReverseProxy.Extensions;
 
 public static class OidcExtensions
 {
-    public static Task<string?> GetOidcTokenAsync(this HttpContext httpContext)
+    public static Task<string?> GetDownstreamAccessTokenAsync(this HttpContext httpContext)
     {
-        return httpContext.GetTokenAsync(OpenIdConnectParameterNames.IdToken);
+        return httpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
     }
 }

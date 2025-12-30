@@ -5,17 +5,45 @@ namespace EzioHost.WebApp.Client.Extensions;
 
 public static class AuthenticationStateExtension
 {
+    private const string UPLOAD_MAX_SPEED_MB_CLAIM = "UploadMaxSpeedMb";
+    private const string STORAGE_CLAIM = "Storage";
+    private const string USER_ID_CLAIM = ClaimTypes.NameIdentifier;
+
     extension(AuthenticationState authenticationState)
     {
-        public Guid UserId => GetUserId(authenticationState, ClaimTypes.NameIdentifier);
+        public Guid UserId => GetClaimValue<Guid>(authenticationState, USER_ID_CLAIM);
 
-        public Guid GetUserId(string claimTypes)
+        public long UploadMaxSpeedMb =>
+            GetClaimsValue<long>(authenticationState, UPLOAD_MAX_SPEED_MB_CLAIM)
+                .DefaultIfEmpty(0)
+                .Max();
+
+        public long Storage =>
+            GetClaimsValue<long>(authenticationState, STORAGE_CLAIM)
+                .DefaultIfEmpty(0)
+                .Max();
+
+        public T GetClaimValue<T>(string claimType) where T : struct, IParsable<T>
         {
-            if (authenticationState.User is { Identity.IsAuthenticated: false }) return Guid.Empty;
+            if (authenticationState.User is { Identity.IsAuthenticated: false }) return default;
+            var claimValue = authenticationState.User.Claims
+                .FirstOrDefault(x => x.Type == claimType)
+                ?.Value;
 
-            var userId = authenticationState.User.Claims.FirstOrDefault(x => x.Type == claimTypes)?.Value;
-            var parse = Guid.TryParse(userId, out var result);
-            return parse ? result : Guid.Empty;
+            var tryGetValue = T.TryParse(claimValue, null, out var result);
+            return tryGetValue ? result : default;
+        }
+
+        public IEnumerable<T> GetClaimsValue<T>(string claimType) where T : struct, IParsable<T>
+        {
+            if (authenticationState.User is { Identity.IsAuthenticated: false }) yield break;
+            var claimValues = authenticationState.User.Claims.Where(x => x.Type == claimType);
+
+            foreach (var claim in claimValues)
+            {
+                var tryGetValue = T.TryParse(claim.Value, null, out var result);
+                if (tryGetValue) yield return result;
+            }
         }
     }
 }

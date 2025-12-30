@@ -2,9 +2,23 @@
 
 namespace EzioHost.Shared.Enums;
 
-public enum OnnxModelPrecision
+public enum TensorElementType
 {
-    [Description("Fp16")] Fp16 = 16,
-    [Description("Fp32")] Fp32 = 32,
-    [Description("Fp16, Fp32")] MixedMode = 64
+    Float = 1,
+    UInt8 = 2,
+    Int8 = 3,
+    UInt16 = 4,
+    Int16 = 5,
+    Int32 = 6,
+    Int64 = 7,
+    String = 8,
+    Bool = 9,
+    Float16 = 10,
+    Double = 11,
+    UInt32 = 12,
+    UInt64 = 13,
+    Complex64 = 14,
+    Complex128 = 15,
+    BFloat16 = 16,
+    DataTypeMax = 17
 }

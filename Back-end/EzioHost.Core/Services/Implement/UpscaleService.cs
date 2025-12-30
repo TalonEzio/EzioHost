@@ -21,7 +21,7 @@ public class UpscaleService(
     IVideoService videoService,
     IVideoUnitOfWork videoUnitOfWork) : IUpscaleService
 {
-    private const int CONCURRENT_UPSCALE_TASK = 2;
+    private const int CONCURRENT_UPSCALE_TASK = 1;
     private const string FRAME_PATTERN = "frame_%05d.jpg";
     private const string FRAME_SEARCH_PATTERN = "frame_*.jpg";
 
@@ -76,21 +76,7 @@ public class UpscaleService(
             throw new InvalidOperationException(
                 $"Video with Id {videoUpscale.VideoId} was not found or has been deleted.");
 
-        var resolutionValue = (int)video.Resolution * model.Scale;
-
-        var resolutions = Enum.GetValues(typeof(VideoResolution))
-            .Cast<VideoResolution>()
-            .Select(r => (int)r)
-            .Where(r => r <= resolutionValue)
-            .OrderByDescending(r => r)
-            .ToList();
-
-        if (resolutions.Any())
-            videoUpscale.Resolution = (VideoResolution)resolutions.First();
-        else
-            throw new ArgumentException("Không có độ phân giải phù hợp", nameof(videoUpscale));
-
-        if (videoUpscale.Resolution > VideoResolution._1080p) videoUpscale.Resolution = VideoResolution._1080p; //force
+        videoUpscale.Resolution = VideoResolution.Upscaled;
 
         var inferenceSession = GetInferenceSession(model);
 
@@ -212,7 +198,7 @@ public class UpscaleService(
             await UpdateVideoUpscale(videoUpscale);
 
             var newVideoHlsStream =
-                await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution);
+                await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution, model.Scale);
 
             await videoUnitOfWork.BeginTransactionAsync();
 

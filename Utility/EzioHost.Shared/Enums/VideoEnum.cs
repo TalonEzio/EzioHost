@@ -25,7 +25,7 @@ public class VideoEnum
 
         [Description("720p")] _720p = 720,
 
-        [Description("960p")] _960p = 960,
+        //[Description("960p")] _960p = 960,
 
         [Description("1080p")] _1080p = 1080,
 
@@ -33,7 +33,9 @@ public class VideoEnum
 
         [Description("1920p")] _1920p = 1920,
 
-        [Description("2160p")] _2160p = 2160
+        [Description("2160p")] _2160p = 2160,
+
+        [Description("AI Upscaled")] Upscaled = 3636
     }
 
     public enum VideoShareType : byte

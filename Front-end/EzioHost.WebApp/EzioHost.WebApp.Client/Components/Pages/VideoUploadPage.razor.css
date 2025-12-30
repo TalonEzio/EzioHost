@@ -4,12 +4,15 @@
     border-radius: 0.5rem;
     cursor: pointer;
     min-height: 300px;
+    position: relative;
     transition: all 0.3s ease;
 }
 
 .upload-zone.drag-over {
     background: #e7f1ff;
     border-color: #0d6efd;
+    border-width: 3px;
+    transform: scale(1.02);
 }
 
 .upload-placeholder { pointer-events: none; }

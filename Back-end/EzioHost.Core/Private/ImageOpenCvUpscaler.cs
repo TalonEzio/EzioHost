@@ -19,16 +19,34 @@ internal sealed class ImageOpenCvUpscaler
 
     public Mat UpscaleImage(string imagePath, InferenceSession session, int scale)
     {
-        var stopwatch = new Stopwatch();
+        var stopwatch = Stopwatch.StartNew();
 
         var inputImage = Cv2.ImRead(imagePath);
         //Cv2.CvtColor(inputImage, inputImage, ColorConversionCodes.BGR2RGB);
 
-        var tensor = ImageToTensor(inputImage);
-
-        stopwatch.Restart();
         var inputName = session.InputMetadata.Keys.First();
-        var results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, tensor)]);
+        // Check if the model expects FP16 input
+        var inputType = session.InputMetadata[inputName].ElementDataType;
+
+        IDisposableReadOnlyCollection<DisposableNamedOnnxValue>? results = null;
+
+        if (inputType == TensorElementType.Float16)
+        {
+            // Create FP16 batch tensor: [batch_size, 3, H, W]
+            var batchTensorFp16 = ImageToTensorFp32(inputImage);
+            results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, batchTensorFp16)]);
+        }
+        else if (inputType == TensorElementType.Float)
+        {
+            // Fallback to FP32 if model doesn't support FP16
+            var batchTensor = ImageToTensorFp32(inputImage);
+            results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, batchTensor)]);
+        }
+
+        if (results == null)
+        {
+            throw new NotSupportedException($"Model input type {inputType} is not supported. Only Float16 and Float32 are supported.");
+        }
         stopwatch.Stop();
         Console.WriteLine(
             $"Thread ID: {Thread.CurrentThread.ManagedThreadId} - Run inference: {stopwatch.ElapsedMilliseconds} ms");
@@ -36,15 +54,16 @@ internal sealed class ImageOpenCvUpscaler
         var outputTensor = results.First().AsTensor<float>();
 
         stopwatch.Restart();
-        var outputImage = TensorToImageFast(outputTensor);
+        var outputImage = TensorToImage(outputTensor);
         stopwatch.Stop();
+
         Console.WriteLine(
             $"Thread ID: {Thread.CurrentThread.ManagedThreadId} - Convert tensor to image: {stopwatch.ElapsedMilliseconds} ms");
 
         return outputImage;
     }
 
-    private static DenseTensor<float> ImageToTensor(Mat image)
+    private static DenseTensor<float> ImageToTensorFp32(Mat image)
     {
         using var blob = CvDnn.BlobFromImage(
             image,
@@ -58,10 +77,38 @@ internal sealed class ImageOpenCvUpscaler
         var n = (int)blob.Total();
         var data = GC.AllocateUninitializedArray<float>(n);
         Marshal.Copy(blob.Data, data, 0, n);
-        return new DenseTensor<float>(data, new[] { 1, 3, image.Height, image.Width });
+        return new DenseTensor<float>(data, [1, 3, image.Height, image.Width]);
     }
 
-    private static Mat TensorToImageFast(Tensor<float> tensor)
+
+    private static DenseTensor<Float16> ImageToTensorFp16(Mat image)
+    {
+        using var blob = CvDnn.BlobFromImage(
+            image,
+            1.0 / 255.0,
+            new Size(image.Width, image.Height),
+            default,
+            true,
+            false
+        );
+
+        var n = (int)blob.Total();
+
+        var floatData = GC.AllocateUninitializedArray<float>(n);
+        Marshal.Copy(blob.Data, floatData, 0, n);
+
+        var fp16Data = GC.AllocateUninitializedArray<Float16>(n);
+
+        Parallel.For(0, n, i =>
+        {
+            fp16Data[i] = (Float16)floatData[i];
+        });
+
+        // 5. Tạo Tensor
+        return new DenseTensor<Float16>(fp16Data, [1, 3, image.Height, image.Width]);
+    }
+
+    private static Mat TensorToImage(Tensor<float> tensor)
     {
         var dense = (DenseTensor<float>)tensor;
         ReadOnlySpan<float> buf = dense.Buffer.Span; // NCHW

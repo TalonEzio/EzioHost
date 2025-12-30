@@ -53,14 +53,14 @@
 							{
 								<tr class="align-middle">
 									<td class="px-4">
-										<InputText @bind-Value="@onnxModel.Name" class="form-control form-control-sm" placeholder="Model name"></InputText>
+										<InputText @bind-Value="@onnxModel.Name" class="form-control form-control-sm" placeholder="Model name" readonly></InputText>
 									</td>
 									<td style="width: 150px;">
-										<InputNumber @bind-Value="@onnxModel.Scale" class="form-control form-control-sm" min="1" max="4"></InputNumber>
+											<InputNumber @bind-Value="@onnxModel.Scale" class="form-control form-control-sm" min="1" max="4" readonly></InputNumber>
 									</td>
 									<td style="width: 200px;">
-										<InputSelect @bind-Value="@onnxModel.Precision" class="form-select form-select-sm">
-											@foreach (var precision in Enum.GetValues<OnnxModelPrecision>())
+											<InputSelect @bind-Value="@onnxModel.ElementType" class="form-select form-select-sm">
+												@foreach (var precision in Enum.GetValues<TensorElementType>())
 											{
 												<option value="@precision">@precision.GetDescription()</option>
 											}

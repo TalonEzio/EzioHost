@@ -1,89 +1,88 @@
-export function clickFileInput(fileInput) {
-    if (fileInput && fileInput.click) {
-        fileInput.click();
-    }
-}
+export function setupDragAndDrop(dropZone, dotNetRef) {
+    if (!dropZone) return;
 
-export function clickFileInputById(fileInputId) {
-    const fileInput = document.getElementById(fileInputId);
-    if (fileInput && fileInput.click) {
-        fileInput.click();
-    }
-}
+    const dropZoneElement = dropZone;
+    const fileInputElement = document.getElementById("videoFileInput");
 
-export function findFileIndex(fileInputId, fileName, fileSize) {
-    const fileInput = document.getElementById(fileInputId);
-    if (!fileInput || !fileInput.files) {
-        return -1;
-    }
-
-    for (let i = 0; i < fileInput.files.length; i++) {
-        const file = fileInput.files[i];
-        if (file.name === fileName && file.size === fileSize) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-export function setupDragAndDrop(dropZone, fileInputId, dotNetRef) {
-    if (!dropZone || !fileInputId) {
+    if (!fileInputElement) {
+        console.warn("File input element not found");
         return;
     }
 
-    const dropZoneElement = dropZone;
-    const fileInputElement = document.getElementById(fileInputId);
+    // Prevent default drag behaviors
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        dropZoneElement.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
 
-    dropZoneElement.addEventListener("dragover",
-        (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dotNetRef.invokeMethodAsync("SetDragOver", true);
-        });
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 
-    dropZoneElement.addEventListener("dragleave",
-        (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dotNetRef.invokeMethodAsync("SetDragOver", false);
-        });
+    // Highlight drop zone when item is dragged over it
+    ["dragenter", "dragover"].forEach(eventName => {
+        dropZoneElement.addEventListener(eventName,
+            () => {
+                dropZoneElement.classList.add("drag-over");
+                dotNetRef.invokeMethodAsync("SetDragOver", true);
+            },
+            false);
+    });
 
+    ["dragleave", "drop"].forEach(eventName => {
+        dropZoneElement.addEventListener(eventName,
+            () => {
+                dropZoneElement.classList.remove("drag-over");
+                dotNetRef.invokeMethodAsync("SetDragOver", false);
+            },
+            false);
+    });
+
+    // Handle dropped files
     dropZoneElement.addEventListener("drop",
         (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dotNetRef.invokeMethodAsync("SetDragOver", false);
+            const dt = e.dataTransfer;
+            const files = dt.files;
 
-            if (!e.dataTransfer || !e.dataTransfer.files) {
+            if (files.length === 0) return;
+
+            // Filter only video files
+            const videoFiles = Array.from(files).filter(file => file.type.startsWith("video/"));
+
+            if (videoFiles.length === 0) {
+                dotNetRef.invokeMethodAsync("ShowWarning", "Vui lòng chọn file video");
                 return;
             }
 
-            const files = e.dataTransfer.files;
+            // Create a new DataTransfer object to set files
+            const dataTransfer = new DataTransfer();
 
-            if (fileInputElement && fileInputElement.files) {
-                // Create a new DataTransfer object to set files
-                const dataTransfer = new DataTransfer();
-
-                // Add existing files
+            // Add existing files
+            if (fileInputElement.files) {
                 for (let i = 0; i < fileInputElement.files.length; i++) {
                     dataTransfer.items.add(fileInputElement.files[i]);
                 }
-
-                // Add dropped files (only video files)
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    if (file.type.startsWith("video/")) {
-                        dataTransfer.items.add(file);
-                    }
-                }
-
-                // Set the files to the input
-                fileInputElement.files = dataTransfer.files;
-
-                // Trigger change event
-                const changeEvent = new Event("change", { bubbles: true });
-                fileInputElement.dispatchEvent(changeEvent);
             }
-        });
+
+            // Add dropped video files
+            videoFiles.forEach(file => {
+                dataTransfer.items.add(file);
+            });
+
+            // Set the files to the input
+            fileInputElement.files = dataTransfer.files;
+
+            // Trigger change event to notify SeekableInputFile
+            const changeEvent = new Event("change", { bubbles: true });
+            fileInputElement.dispatchEvent(changeEvent);
+        },
+        false);
+}
+
+export function clickFileInput() {
+    const fileInput = document.getElementById("videoFileInput");
+    if (fileInput && fileInput.click) {
+        fileInput.click();
+    }
 }

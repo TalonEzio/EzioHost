@@ -14,6 +14,6 @@ public class OnnxModelDto
     public int Scale { get; set; }
     public int MustInputWidth { get; set; }
     public int MustInputHeight { get; set; }
-    public OnnxModelPrecision Precision { get; set; }
+    public TensorElementType ElementType { get; set; }
     public bool CanPreview => !string.IsNullOrEmpty(DemoInput) && !string.IsNullOrEmpty(DemoOutput);
 }

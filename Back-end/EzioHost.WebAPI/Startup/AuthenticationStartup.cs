@@ -43,6 +43,18 @@ public static class AuthenticationStartup
                                 context.Token = accessToken;
 
                             return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = context =>
+                        {
+                            var request = context.Request;
+
+                            return Task.CompletedTask;
+                        },
+                        OnTokenValidated = context =>
+                        {
+                            var request = context.Request;
+
+                            return Task.CompletedTask;
                         }
                     };
                 }

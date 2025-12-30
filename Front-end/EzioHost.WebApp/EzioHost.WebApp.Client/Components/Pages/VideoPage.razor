@@ -1,284 +1,284 @@
 ﻿@page "/video"
-@rendermode InteractiveServer
+@rendermode InteractiveAuto
 @attribute [Authorize]
 <PageTitle>Video - EzioHost</PageTitle>
 
 <div class="container-fluid py-4">
-<!-- Header Section -->
-<div class="row mb-4">
-	<div class="col-12">
-		<div class="d-flex justify-content-between align-items-center">
-			<div>
-				<h1 class="h2 fw-bold mb-2">
-					<i class="bi bi-collection-play me-2"></i>
-					Thư viện Video
-				</h1>
-				<p class="text-muted mb-0">Quản lý và xem tất cả video của bạn</p>
-			</div>
-			<div class="d-flex gap-2">
-				<button class="btn btn-outline-primary" @onclick="ToggleViewMode">
-					<i class="bi bi-@(IsGridView ? "list" : "grid") me-1"></i>
-					@(IsGridView ? "Danh sách" : "Lưới")
-				</button>
-				<a href="/video-upload" class="btn btn-primary">
-					<i class="bi bi-cloud-upload me-1"></i>
-					Upload Video
-				</a>
-			</div>
-		</div>
-	</div>
-</div>
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold mb-2">
+                        <i class="bi bi-collection-play me-2"></i>
+                        Thư viện Video
+                    </h1>
+                    <p class="text-muted mb-0">Quản lý và xem tất cả video của bạn</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" @onclick="ToggleViewMode">
+                        <i class="bi bi-@(IsGridView ? "list" : "grid") me-1"></i>
+                        @(IsGridView ? "Danh sách" : "Lưới")
+                    </button>
+                    <a href="/video-upload" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload me-1"></i>
+                        Upload Video
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Filters and Search -->
-<div class="row mb-4">
-	<div class="col-12">
-		<div class="card border-0 shadow-sm">
-			<div class="card-body">
-				<div class="row g-3">
-					<div class="col-md-6">
-						<div class="input-group">
-							<span class="input-group-text">
-								<i class="bi bi-search"></i>
-							</span>
-							<input type="text" class="form-control" placeholder="Tìm kiếm video..."
-							       @bind="SearchTerm" @bind:event="oninput" @bind:after="OnFilterChanged"/>
-						</div>
-					</div>
-					<div class="col-md-3">
-						<select class="form-select" @bind="SelectedShareType" @bind:after="OnFilterChanged">
-							<option value="">Tất cả loại chia sẻ</option>
-							@foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
-							{
-								<option value="@((int)value)">@value.GetDescription()</option>
-							}
-						</select>
-					</div>
-					<div class="col-md-3">
-						<select class="form-select" @bind="SortBy" @bind:after="OnFilterChanged">
-							<option value="created_desc">Mới nhất</option>
-							<option value="created_asc">Cũ nhất</option>
-							<option value="title_asc">Tên A-Z</option>
-							<option value="title_desc">Tên Z-A</option>
-						</select>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" placeholder="Tìm kiếm video..."
+                                       @bind="SearchTerm" @bind:event="oninput" @bind:after="OnFilterChanged" />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" @bind="SelectedShareType" @bind:after="OnFilterChanged">
+                                <option value="">Tất cả loại chia sẻ</option>
+                                @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
+                                {
+                                    <option value="@((int)value)">@value.GetDescription()</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" @bind="SortBy" @bind:after="OnFilterChanged">
+                                <option value="created_desc">Mới nhất</option>
+                                <option value="created_asc">Cũ nhất</option>
+                                <option value="title_asc">Tên A-Z</option>
+                                <option value="title_desc">Tên Z-A</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Video Grid/List -->
-<div class="row">
-	<div class="col-12">
-		@if (IsLoading)
-		{
-			<div class="text-center py-5">
-				<div class="spinner-border text-primary" role="status">
-					<span class="visually-hidden">Đang tải...</span>
-				</div>
-				<p class="mt-3 text-muted">Đang tải video...</p>
-			</div>
-		}
-		else if (FilteredVideos.Any())
-		{
-			@if (IsGridView)
-			{
-				<div class="row g-4">
-					@foreach (var video in FilteredVideos)
-					{
-						<div class="col-lg-3 col-md-4 col-sm-6">
-							<div class="card h-100 shadow-sm">
-								<div class="position-relative">
-									<img src="@GetThumbnail(video)" class="card-img-top" alt="@video.Title" style="height: 200px; object-fit: cover;">
-									<div class="position-absolute top-0 end-0 m-2">
-										@if (video.CanPlay)
-										{
-											<span class="badge bg-success">Sẵn sàng</span>
-										}
-										else
-										{
-											<span class="badge bg-warning">Đang xử lý</span>
-										}
-									</div>
-								</div>
-								<div class="card-body">
-									<h6 class="card-title fw-bold text-truncate" title="@video.Title">@video.Title</h6>
-									<p class="card-text text-muted small">
-										@{
-											var resolutions = string.Join(", ", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
-											if (string.IsNullOrEmpty(resolutions)) resolutions = "Đang xử lý";
-										}
-										<i class="bi bi-badge-hd me-1"></i>@resolutions
-									</p>
-									<p class="card-text text-muted small">
-										<i class="bi bi-share me-1"></i>@video.ShareType.GetDescription()
-									</p>
-								</div>
-								<div class="card-footer bg-white border-top-0">
-									<div class="d-grid gap-2">
-										@if (video.CanPlay)
-										{
-											<button class="btn btn-sm btn-primary" @onclick="() => PlayVideo(video)">
-												<i class="bi bi-play-fill me-1"></i>Phát
-											</button>
-										}
-										<div class="btn-group btn-group-sm" role="group">
-											@if (video.CanUpscale)
-											{
-												<button class="btn btn-outline-warning" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
-													<i class="bi bi-magic"></i>
-												</button>
-											}
-											<button class="btn btn-outline-secondary" @onclick="() => ShowEditModal(video)">
-												<i class="bi bi-pencil"></i>
-											</button>
-											<button class="btn btn-outline-danger" @onclick="() => DeleteVideo(video)">
-												<i class="bi bi-trash"></i>
-											</button>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					}
-				</div>
-			}
-			else
-			{
-				<div class="list-group">
-					@foreach (var video in FilteredVideos)
-					{
-						<div class="list-group-item">
-							<div class="row align-items-center">
-								<div class="col-auto">
-									<img src="@GetThumbnail(video)" class="rounded" style="height: 80px; object-fit: cover; width: 120px;" alt="@video.Title">
-								</div>
-								<div class="col">
-									<h6 class="mb-1 fw-bold">@video.Title</h6>
-									<p class="mb-1 text-muted small">
-										@{
-											var resolutions = string.Join(", ", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
-											if (string.IsNullOrEmpty(resolutions)) resolutions = "Đang xử lý";
-										}
-										<i class="bi bi-badge-hd me-1"></i>@resolutions
-									</p>
-									<div class="d-flex align-items-center text-muted small">
-										<span class="me-3">
-											<i class="bi bi-share me-1"></i>@video.ShareType.GetDescription()
-										</span>
-										@if (video.CanPlay)
-										{
-											<span class="badge bg-success">Sẵn sàng</span>
-										}
-										else
-										{
-											<span class="badge bg-warning">Đang xử lý</span>
-										}
-									</div>
-								</div>
-								<div class="col-auto">
-									<div class="btn-group" role="group">
-										@if (video.CanPlay)
-										{
-											<button class="btn btn-sm btn-primary" @onclick="() => PlayVideo(video)">
-												<i class="bi bi-play-fill"></i>
-											</button>
-											<a href="/api/video/download/@video.Id" target="_blank" class="btn btn-sm btn-success">
-												<i class="bi bi-download"></i>
-											</a>
-											<a href="/video-share/@video.Id" target="_blank" class="btn btn-sm btn-info">
-												<i class="bi bi-share"></i>
-											</a>
-										}
-										@if (video.CanUpscale)
-										{
-											<button class="btn btn-sm btn-warning" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
-												<i class="bi bi-magic"></i>
-											</button>
-										}
-										@if (video.VideoUpscales.Any() && video.VideoUpscales.First().Status == VideoEnum.VideoUpscaleStatus.Ready)
-										{
-											<a href="/api/video/download-upscale/@video.Id" target="_blank" class="btn btn-sm btn-primary">
-												<i class="bi bi-download"></i> Upscale
-											</a>
-										}
-										<button class="btn btn-sm btn-outline-secondary" @onclick="() => ShowEditModal(video)">
-											<i class="bi bi-pencil"></i>
-										</button>
-										<button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteVideo(video)">
-											<i class="bi bi-trash"></i>
-										</button>
-									</div>
-								</div>
-							</div>
-						</div>
-					}
-				</div>
-			}
-		}
-		else
-		{
-			<div class="text-center py-5">
-				<i class="bi bi-collection-play text-muted" style="font-size: 4rem;"></i>
-				<h4 class="mt-3 text-muted">Không có video nào</h4>
-				<p class="text-muted">Bắt đầu bằng cách upload video đầu tiên của bạn.</p>
-				<a href="/video-upload" class="btn btn-primary">
-					<i class="bi bi-cloud-upload me-2"></i>Upload Video
-				</a>
-			</div>
-		}
-	</div>
-</div>
+    <!-- Video Grid/List -->
+    <div class="row">
+        <div class="col-12">
+            @if (IsLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Đang tải video...</p>
+                </div>
+            }
+            else if (FilteredVideos.Any())
+            {
+                @if (IsGridView)
+                {
+                    <div class="row g-4">
+                        @foreach (var video in FilteredVideos)
+                        {
+                            <div class="col-lg-3 col-md-4 col-sm-6">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="position-relative">
+                                        <img src="@GetThumbnail(video)" class="card-img-top" alt="@video.Title" style="height: 200px; object-fit: cover;">
+                                        <div class="position-absolute top-0 end-0 m-2">
+                                            @if (video.CanPlay)
+                                            {
+                                                <span class="badge bg-success">Sẵn sàng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">Đang xử lý</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold text-truncate" title="@video.Title">@video.Title</h6>
+                                        <p class="card-text text-muted small">
+                                            @{
+                                                var resolutions = string.Join(", ", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
+                                                if (string.IsNullOrEmpty(resolutions)) resolutions = "Đang xử lý";
+                                            }
+                                            <i class="bi bi-badge-hd me-1"></i>@resolutions
+                                        </p>
+                                        <p class="card-text text-muted small">
+                                            <i class="bi bi-share me-1"></i>@video.ShareType.GetDescription()
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-white border-top-0">
+                                        <div class="d-grid gap-2">
+                                            @if (video.CanPlay)
+                                            {
+                                                <button class="btn btn-sm btn-primary" @onclick="() => PlayVideo(video)">
+                                                    <i class="bi bi-play-fill me-1"></i>Phát
+                                                </button>
+                                            }
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                @if (video.CanUpscale)
+                                                {
+                                                    <button class="btn btn-outline-warning" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
+                                                        <i class="bi bi-magic"></i>
+                                                    </button>
+                                                }
+                                                <button class="btn btn-outline-secondary" @onclick="() => ShowEditModal(video)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" @onclick="() => DeleteVideo(video)" disabled="@(!video.CanPlay)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var video in FilteredVideos)
+                        {
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <img src="@GetThumbnail(video)" class="rounded" style="height: 80px; object-fit: cover; width: 120px;" alt="@video.Title">
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1 fw-bold">@video.Title</h6>
+                                        <p class="mb-1 text-muted small">
+                                            @{
+                                                var resolutions = string.Join(", ", video.VideoStreams.OrderBy(x => x.Resolution).Select(x => x.Resolution.GetDescription()));
+                                                if (string.IsNullOrEmpty(resolutions)) resolutions = "Đang xử lý";
+                                            }
+                                            <i class="bi bi-badge-hd me-1"></i>@resolutions
+                                        </p>
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <span class="me-3">
+                                                <i class="bi bi-share me-1"></i>@video.ShareType.GetDescription()
+                                            </span>
+                                            @if (video.CanPlay)
+                                            {
+                                                <span class="badge bg-success">Sẵn sàng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">Đang xử lý</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="btn-group" role="group">
+                                            @if (video.CanPlay)
+                                            {
+                                                <button class="btn btn-sm btn-primary" @onclick="() => PlayVideo(video)">
+                                                    <i class="bi bi-play-fill"></i>
+                                                </button>
+                                                <a href="/api/video/download/@video.Id" target="_blank" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                <a href="/video-share/@video.Id" target="_blank" class="btn btn-sm btn-info">
+                                                    <i class="bi bi-share"></i>
+                                                </a>
+                                            }
+                                            @if (video.CanUpscale)
+                                            {
+                                                <button class="btn btn-sm btn-warning" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
+                                                    <i class="bi bi-magic"></i>
+                                                </button>
+                                            }
+                                            @if (video.VideoUpscales.Any() && video.VideoUpscales.First().Status == VideoEnum.VideoUpscaleStatus.Ready)
+                                            {
+                                                <a href="/api/video/download-upscale/@video.Id" target="_blank" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-download"></i> Upscale
+                                                </a>
+                                            }
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => ShowEditModal(video)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteVideo(video)" disabled="@(!video.CanPlay)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-collection-play text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-muted">Không có video nào</h4>
+                    <p class="text-muted">Bắt đầu bằng cách upload video đầu tiên của bạn.</p>
+                    <a href="/video-upload" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload me-2"></i>Upload Video
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
 
-<!-- Video Player Modal -->
-@if (SelectedVideo != null)
-{
-	<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
-		<div class="modal-dialog modal-lg modal-dialog-centered">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">@SelectedVideo.Title</h5>
-					<button type="button" class="btn-close" @onclick="ClosePlayer"></button>
-				</div>
-				<div class="modal-body">
-					<div id="player"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-}
+    <!-- Video Player Modal -->
+    @if (SelectedVideo != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@SelectedVideo.Title</h5>
+                        <button type="button" class="btn-close" @onclick="ClosePlayer"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="player"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
-<!-- Edit Modal -->
-@if (EditingVideo != null)
-{
-	<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">Chỉnh sửa Video</h5>
-					<button type="button" class="btn-close" @onclick="CloseEditModal"></button>
-				</div>
-				<div class="modal-body">
-					<div class="mb-3">
-						<label class="form-label">Tiêu đề</label>
-						<InputText @bind-Value="EditingVideo.Title" class="form-control"/>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Loại chia sẻ</label>
-						<InputSelect @bind-Value="EditingVideo.ShareType" class="form-select">
-							@foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
-							{
-								<option value="@value">@value.GetDescription()</option>
-							}
-						</InputSelect>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" @onclick="CloseEditModal">Hủy</button>
-					<button type="button" class="btn btn-primary" @onclick="() => UpdateVideo(EditingVideo)">Lưu</button>
-				</div>
-			</div>
-		</div>
-	</div>
-}
+    <!-- Edit Modal -->
+    @if (EditingVideo != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Chỉnh sửa Video</h5>
+                        <button type="button" class="btn-close" @onclick="CloseEditModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tiêu đề</label>
+                            <InputText @bind-Value="EditingVideo.Title" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Loại chia sẻ</label>
+                            <InputSelect @bind-Value="EditingVideo.ShareType" class="form-select">
+                                @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
+                                {
+                                    <option value="@value">@value.GetDescription()</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseEditModal">Hủy</button>
+                        <button type="button" class="btn btn-primary" @onclick="() => UpdateVideo(EditingVideo)">Lưu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>

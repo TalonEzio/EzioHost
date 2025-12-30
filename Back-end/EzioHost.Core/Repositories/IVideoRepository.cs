@@ -11,12 +11,15 @@ public interface IVideoRepository
     Task<Video> UpdateVideoForUnitOfWork(Video updateVideo);
     Task DeleteVideo(Video deleteVideo);
 
-    Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null,
+    Task<IEnumerable<Video>> GetVideos(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<Video, bool>>? expression = null,
         Expression<Func<Video, object>>[]? includes = null);
 
     Task<Video?> GetVideoToEncode();
 
     Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
 
-    Task<Video?> GetVideoUpscaleById(Guid videoId);
+    Task<Video?> GetVideoWithReadyUpscale(Guid videoId);
 }

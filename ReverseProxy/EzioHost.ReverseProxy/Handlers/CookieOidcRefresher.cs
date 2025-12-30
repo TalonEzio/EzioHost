@@ -58,7 +58,6 @@ internal sealed class CookieOidcRefresher(
             return;
         }
 
-        // Token còn hạn, không cần refresh
         logger.LogDebug("Token still valid, expires at: {ExpiresAt}", accessTokenExpiration);
     }
 

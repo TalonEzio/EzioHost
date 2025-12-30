@@ -26,7 +26,7 @@ public class OnnxModel : BaseAuditableEntityWithUserId<Guid>
     public int Scale { get; set; }
     public int MustInputWidth { get; set; }
     public int MustInputHeight { get; set; }
-    public OnnxModelPrecision Precision { get; set; }
+    public TensorElementType ElementType { get; set; }
 
     public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
 }

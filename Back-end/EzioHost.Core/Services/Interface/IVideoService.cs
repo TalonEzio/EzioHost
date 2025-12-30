@@ -10,11 +10,14 @@ public interface IVideoService
     public event Action<VideoStreamAddedEvent> OnVideoStreamAdded;
     public event Action<VideoProcessDoneEvent> OnVideoProcessDone;
 
-    Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null,
+    Task<IEnumerable<Video>> GetVideos(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<Video, bool>>? expression = null,
         Expression<Func<Video, object>>[]? includes = null);
 
     Task<Video?> GetVideoById(Guid videoId);
-    Task<Video?> GetVideoUpscaleById(Guid videoId);
+    Task<Video?> GetVideoWithReadyUpscale(Guid videoId);
     Task<Video?> GetVideoToEncode();
     Task<Video> AddNewVideo(Video newVideo);
     Task<Video> UpdateVideo(Video updateVideo);
@@ -23,7 +26,7 @@ public interface IVideoService
     Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
 
     Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
-        VideoResolution targetResolution);
+        VideoResolution targetResolution, int scale = 2);
 
     public int GetBandwidthForResolution(string resolution);
     public string GetResolutionDimensions(string resolution);

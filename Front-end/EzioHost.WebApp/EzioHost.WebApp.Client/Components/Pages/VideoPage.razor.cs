@@ -1,9 +1,9 @@
-using System.Net.Http.Json;
 using EzioHost.Shared.Events;
 using EzioHost.Shared.Extensions;
 using EzioHost.Shared.HubActions;
 using EzioHost.Shared.Models;
 using EzioHost.WebApp.Client.Extensions;
+using EzioHost.WebApp.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -19,7 +19,8 @@ public partial class VideoPage : IAsyncDisposable
     private bool _isUpdating;
     private IJSObjectReference? _jsObjectReference;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
-    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
+    [Inject] public IVideoApi VideoApi { get; set; } = null!;
+    [Inject] public IAuthApi AuthApi { get; set; } = null!;
     [Inject] public NavigationManager NavigationManager { get; set; } = null!;
     private List<VideoDto> Videos { get; set; } = [];
     private List<VideoDto> FilteredVideos { get; set; } = [];
@@ -117,14 +118,8 @@ public partial class VideoPage : IAsyncDisposable
             var hubUrl = Path.Combine(url, "hubs", "VideoHub").Replace("\\", "/");
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl, options =>
-                {
-                    options.AccessTokenProvider = async () =>
-                    {
-                        using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-                        return await httpClient.GetStringAsync("/access-token");
-                    };
-                })
+                .WithUrl(hubUrl,
+                    options => { options.AccessTokenProvider = async () => await AuthApi.GetAccessToken(); })
                 .Build();
 
             _hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage),
@@ -178,8 +173,7 @@ public partial class VideoPage : IAsyncDisposable
                 await JsRuntime.ShowErrorToast($"Lỗi kết nối đến server: {e.Message}");
             }
 
-            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-            Videos = await httpClient.GetFromJsonAsync<List<VideoDto>>("api/Video") ?? [];
+            Videos = await VideoApi.GetVideos() ?? [];
             ApplyFilters();
             IsLoading = false;
             StateHasChanged();
@@ -196,10 +190,8 @@ public partial class VideoPage : IAsyncDisposable
 
         if (_jsObjectReference != null)
         {
-            //var videoUrl = new Uri(new Uri(origin), video.M3U8Location).AbsoluteUri;
-
             var videoUrl = video.M3U8Location;
-            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", videoUrl);
+            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.PlayerJsMetadata);
         }
     }
 
@@ -210,9 +202,13 @@ public partial class VideoPage : IAsyncDisposable
 
         try
         {
-            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-            var result = await httpClient.PostAsJsonAsync("api/Video", video);
-            result.EnsureSuccessStatusCode();
+            await VideoApi.UpdateVideo(new VideoUpdateDto()
+            {
+                Id = video.Id,
+                Title = video.Title,
+                ShareType = video.ShareType
+            });
+
             await JsRuntime.ShowSuccessToast("Cập nhật thành công");
             CloseEditModal();
             ApplyFilters();
@@ -238,9 +234,7 @@ public partial class VideoPage : IAsyncDisposable
                 await JsRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa video '{video.Title}'?");
             if (!confirmed) return;
 
-            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-            var result = await httpClient.DeleteAsync($"api/Video/{video.Id}");
-            result.EnsureSuccessStatusCode();
+            await VideoApi.DeleteVideo(video.Id);
 
             Videos.Remove(video);
             ApplyFilters();

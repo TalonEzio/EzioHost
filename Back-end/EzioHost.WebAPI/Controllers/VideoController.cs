@@ -7,6 +7,7 @@ using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 
 namespace EzioHost.WebAPI.Controllers;
 
@@ -23,11 +24,29 @@ public class VideoController(
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetVideos()
+    public async Task<IActionResult> GetVideos(int pageNumber, int pageSize, bool? includeStreams, bool? includeUpscaled)
     {
         var userId = User.UserId;
+        Expression<Func<Video, object>>[]? includes;
+
+        if (includeStreams == true && includeUpscaled == true)
+        {
+            includes = [x => x.VideoStreams, x => x.VideoUpscales];
+        }
+        else if (includeStreams == true)
+        {
+            includes = [x => x.VideoStreams];
+        }
+        else if (includeUpscaled == true)
+        {
+            includes = [x => x.VideoUpscales];
+        }
+        else
+        {
+            includes = [];
+        }
         var videos =
-            (await videoService.GetVideos(x => x.CreatedBy == userId, [x => x.VideoStreams, x => x.VideoUpscales]))
+            (await videoService.GetVideos(pageNumber, pageSize, x => x.CreatedBy == userId, includes))
             .ToList();
 
         var videoDtos = mapper.Map<List<VideoDto>>(videos);
@@ -65,7 +84,7 @@ public class VideoController(
     [Authorize]
     public async Task<IActionResult> DownloadVideoUpscale([FromRoute] Guid videoId)
     {
-        var video = await videoService.GetVideoUpscaleById(videoId);
+        var video = await videoService.GetVideoWithReadyUpscale(videoId);
         if (video == null || !video.VideoUpscales.Any()) return NotFound();
         if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
 
@@ -107,15 +126,15 @@ public class VideoController(
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> UpdateVideo([FromBody] VideoDto videoDto)
+    public async Task<IActionResult> UpdateVideo([FromBody] VideoUpdateDto videoUpdateDto)
     {
-        var video = await videoService.GetVideoById(videoDto.Id);
+        var video = await videoService.GetVideoById(videoUpdateDto.Id);
         if (video == null) return NotFound();
 
         try
         {
-            video.Title = videoDto.Title;
-            video.ShareType = videoDto.ShareType;
+            video.Title = videoUpdateDto.Title;
+            video.ShareType = videoUpdateDto.ShareType;
             video.ModifiedBy = User.UserId;
 
             await videoService.UpdateVideo(video);
@@ -156,10 +175,6 @@ public class VideoController(
 
         var contentKey = video.VideoStreams.First(x => x.Id == videoStreamId).Key;
 
-        contentKey = "d33e927a351edca2";
-
-
-        var contentBytes = Convert.FromHexString(contentKey);
         switch (video.ShareType)
         {
             case VideoEnum.VideoShareType.Public:

@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
 
@@ -16,4 +16,5 @@ public interface IFileUploadService
     Task DeleteFileUpload(Guid id);
     Task DeleteFileUpload(FileUpload fileUpload);
     Task<VideoEnum.FileUploadStatus> UploadChunk(FileUpload fileUpload, Stream chunkFileStream);
+    Task<FileUpload> CopyCompletedFile(FileUpload existingUpload, Guid userId);
 }

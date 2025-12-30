@@ -1,10 +1,10 @@
-using System.Net.Http.Json;
-using EzioHost.Shared.Constants;
 using EzioHost.Shared.Models;
 using EzioHost.WebApp.Client.Extensions;
+using EzioHost.WebApp.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
+using Refit;
 
 namespace EzioHost.WebApp.Client.Components.Pages;
 
@@ -20,21 +20,19 @@ public partial class OnnxModelPage
 
     private bool _upscaling;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
-    [Inject] public IHttpClientFactory HttpClientFactory { get; set; } = null!;
+    [Inject] public IOnnxModelApi OnnxModelApi { get; set; } = null!;
     public ImageCompare? ImageCompare { get; set; }
 
     [PersistentState] public List<OnnxModelDto>? OnnxModels { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-
         if (OnnxModels is null)
         {
             OnnxModels = [];
-            var response = await httpClient.GetFromJsonAsync<List<OnnxModelDto>>("api/OnnxModel");
+            var response = await OnnxModelApi.GetOnnxModels();
 
-            if (response != null && response.Any())
+            if (response.Any())
                 OnnxModels.AddRange(response);
             else
                 _message = "No ONNX model!";
@@ -66,10 +64,7 @@ public partial class OnnxModelPage
 
     private async Task OnDeleteModelClicked(OnnxModelDto onnxModel)
     {
-        using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-        var response = await httpClient.DeleteAsync($"/api/OnnxModel/{onnxModel.Id}");
-
-        response.EnsureSuccessStatusCode();
+        await OnnxModelApi.DeleteOnnxModel(onnxModel.Id);
 
         await JsRuntime.ShowSuccessToast($"Xóa {onnxModel.Name} thành công!");
 
@@ -96,35 +91,29 @@ public partial class OnnxModelPage
 
         try
         {
-            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-            var formContent = new MultipartFormDataContent();
             var imageStream = inputFile.OpenReadStream(inputFile.Size);
-            formContent.Add(new StreamContent(imageStream), FormFieldNames.ImageFile, inputFile.Name);
+            var streamPart = new StreamPart(imageStream, inputFile.Name, inputFile.ContentType);
 
-            var response = await httpClient.PostAsync($"/api/OnnxModel/demo/{onnxModel.Id}", formContent);
-            response.EnsureSuccessStatusCode();
+            var content = await OnnxModelApi.DemoUpscale(onnxModel.Id, streamPart);
 
-            var content = await response.Content.ReadFromJsonAsync<UpscaleDemoResponseDto>();
 
-            if (content != null)
+            _beforeImage = content.DemoInput;
+            _afterImage = content.DemoOutput;
+
+            var model = OnnxModels?.FirstOrDefault(x => x.Id == content.ModelId);
+            if (model != null)
             {
-                _beforeImage = content.DemoInput;
-                _afterImage = content.DemoOutput;
-
-                var model = OnnxModels?.FirstOrDefault(x => x.Id == content.ModelId);
-                if (model != null)
-                {
-                    model.DemoInput = content.DemoInput;
-                    model.DemoOutput = content.DemoOutput;
-                }
-
-                // Reset selected file sau khi upscale thành công
-                _selectedDemoInputFile = null;
-
-                await JsRuntime.ShowSuccessToast(
-                    $"Upscale completed successfully! Time: {content.ElapsedMilliseconds}ms");
-                StateHasChanged();
+                model.DemoInput = content.DemoInput;
+                model.DemoOutput = content.DemoOutput;
             }
+
+            // Reset selected file sau khi upscale thành công
+            _selectedDemoInputFile = null;
+
+            ImageCompare!.UpdateImages(_beforeImage, _afterImage);
+            await JsRuntime.ShowSuccessToast(
+                $"Upscale completed successfully! Time: {content.ElapsedMilliseconds}ms");
+            StateHasChanged();
         }
         catch (Exception e)
         {
@@ -144,10 +133,8 @@ public partial class OnnxModelPage
             onnxModel.DemoInput = onnxModel.DemoOutput = string.Empty;
             _beforeImage = _afterImage = string.Empty;
 
-            using var httpClient = HttpClientFactory.CreateClient(nameof(EzioHost));
-            var response = await httpClient.PostAsync($"/api/OnnxModel/demo-reset/{onnxModel.Id}", null);
+            await OnnxModelApi.ResetDemo(onnxModel.Id);
 
-            response.EnsureSuccessStatusCode();
             await JsRuntime.ShowSuccessToast($"Xóa preview cho {onnxModel.Name} thành công!");
             StateHasChanged();
         }

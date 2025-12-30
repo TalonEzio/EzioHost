@@ -1,13 +1,17 @@
-﻿namespace EzioHost.Shared.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace EzioHost.Shared.Models;
 
 public class UploadInfoDto
 {
     public Guid Id { get; set; }
     public string FileName { get; set; } = string.Empty;
     public long FileSize { get; set; }
+    public long ReceivedBytes { get; set; }
     public string ContentType { get; set; } = string.Empty;
-    public long UploadedBytes { get; set; } = 0;
     public string? Checksum { get; set; }
     public Guid UserId { get; set; }
-    public bool IsCompleted => FileSize == UploadedBytes;
+
+    [JsonIgnore]
+    public bool IsCompleted => FileSize == ReceivedBytes;
 }

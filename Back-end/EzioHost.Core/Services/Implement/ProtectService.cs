@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using EzioHost.Core.Services.Interface;
 
 namespace EzioHost.Core.Services.Implement;
@@ -8,7 +8,7 @@ public class ProtectService : IProtectService
     public string GenerateRandomKey()
     {
         using var rng = RandomNumberGenerator.Create();
-        var keyBytes = new byte[16]; // AES-128 key (16 bytes)
+        var keyBytes = new byte[8];
         rng.GetBytes(keyBytes);
         return BitConverter.ToString(keyBytes).Replace("-", "").ToLower();
     }

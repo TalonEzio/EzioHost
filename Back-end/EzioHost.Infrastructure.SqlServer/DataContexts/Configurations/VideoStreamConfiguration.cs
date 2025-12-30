@@ -20,6 +20,7 @@ internal class VideoStreamConfiguration : IEntityTypeConfiguration<VideoStream>
         builder.HasOne(x => x.Video)
             .WithMany(x => x.VideoStreams)
             .HasForeignKey(x => x.VideoId)
-            .IsRequired(false);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

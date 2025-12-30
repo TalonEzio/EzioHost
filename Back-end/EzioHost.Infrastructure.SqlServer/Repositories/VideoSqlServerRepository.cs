@@ -21,7 +21,7 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
 
     public Task<Video?> GetVideoById(Guid id)
     {
-        var find = _videos.FirstOrDefaultAsync(x => x.Id == id);
+        var find = _videos.Include(video => video.VideoStreams).Include(video => video.VideoUpscales).FirstOrDefaultAsync(x => x.Id == id);
         return find;
     }
 
@@ -49,7 +49,10 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
         }
     }
 
-    public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null,
+    public async Task<IEnumerable<Video>> GetVideos(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<Video, bool>>? expression = null,
         Expression<Func<Video, object>>[]? includes = null)
     {
         var videoQueryable = _videos.AsQueryable();
@@ -57,32 +60,48 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
             foreach (var include in includes)
                 videoQueryable = videoQueryable.Include(include);
 
-        return Task.FromResult<IEnumerable<Video>>(expression != null
-            ? videoQueryable.Where(expression)
-            : videoQueryable);
+        if (pageNumber < 1) pageNumber = 1;
+        if (pageSize < 1) pageSize = 1;
+
+        if (expression != null) videoQueryable = videoQueryable.Where(expression);
+
+        videoQueryable = videoQueryable.OrderByDescending(x => x.CreatedAt);
+
+        videoQueryable = videoQueryable
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize);
+
+        return await videoQueryable.AsNoTracking().ToListAsync();
     }
 
     public Task<Video?> GetVideoToEncode()
     {
-        var video = _videos.OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(x => x.Status == VideoEnum.VideoStatus.Queue);
-        return video;
+        return _videos.OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(x => x.Status == VideoEnum.VideoStatus.Queue);
     }
 
     public async Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId)
     {
-        var videoStream = await dbContext.VideoStreams.Include(x => x.Video)
-            .FirstOrDefaultAsync(x => x.Id == videoStreamId);
-        return videoStream?.Video;
+        var stream = await dbContext.VideoStreams
+            .AsNoTracking()
+            .Include(vs => vs.Video)
+            .FirstOrDefaultAsync(vs => vs.Id == videoStreamId);
+
+        if (stream == null) return null;
+
+        var video = stream.Video;
+        video.VideoStreams = [stream];
+
+        return video;
     }
 
-    public Task<Video?> GetVideoUpscaleById(Guid videoId)
-    {
-        return _videos.Include(x => x.VideoUpscales).FirstOrDefaultAsync(x =>
-            x.Id == videoId && x.VideoUpscales.All(upscale => upscale.Status == VideoEnum.VideoUpscaleStatus.Ready));
-    }
 
-    public Task<IEnumerable<Video>> GetVideos(Expression<Func<Video, bool>>? expression = null)
+    public Task<Video?> GetVideoWithReadyUpscale(Guid videoId)
     {
-        return Task.FromResult<IEnumerable<Video>>(expression == null ? _videos : _videos.Where(expression));
+        return _videos
+            .AsNoTracking()
+            .Where(x => x.Id == videoId)
+            .Include(x => x.VideoUpscales
+                .Where(upscale => upscale.Status == VideoEnum.VideoUpscaleStatus.Ready))
+            .FirstOrDefaultAsync();
     }
 }

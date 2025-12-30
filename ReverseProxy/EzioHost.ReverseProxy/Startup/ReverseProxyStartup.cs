@@ -21,7 +21,7 @@ public static class ReverseProxyStartup
                         var user = transformContext.HttpContext.User;
                         if (user.Identity is ClaimsIdentity && user.Identity.IsAuthenticated)
                         {
-                            var accessToken = await transformContext.HttpContext.GetOidcTokenAsync();
+                            var accessToken = await transformContext.HttpContext.GetDownstreamAccessTokenAsync();
                             transformContext.ProxyRequest.Headers.Authorization =
                                 new AuthenticationHeaderValue("Bearer", accessToken);
                         }

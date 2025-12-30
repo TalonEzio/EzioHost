@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @attribute [Authorize]
+@using EzioHost.Components.SeekableInputFile
 @implements IAsyncDisposable
 
 <PageTitle>Upload Video - EzioHost</PageTitle>
@@ -25,33 +26,42 @@
 			<div class="col-lg-8">
 				<div class="card border-0 shadow-sm">
 					<div class="card-body p-4">
-						<!-- Drag & Drop Zone -->
+						<!-- File Selection -->
 						<div class="upload-zone @(IsDragOver ? "drag-over" : "")"
 						     @ref="_dropZone"
-						     @ondragover="OnDragOver"
-						     @ondragleave="OnDragLeave">
-
-							<InputFile OnChange="OnFileSelected"
-							           class="d-none"
-							           id="fileInput"
-							           accept="video/*"
-							           multiple/>
+						     @ondragover:preventDefault="true"
+						     @ondragenter:preventDefault="true"
+						     @ondragleave:preventDefault="true"
+						     @ondrop:preventDefault="true">
+							<SeekableInputFile OnChanged="OnFilesChanged"
+							                   class="d-none" id="videoFileInput" accept="video/*" multiple/>
 
 							@if (SelectedFiles.Any())
 							{
-								<div class="uploaded-files">
+								<div class="uploaded-files mt-3">
 									<h5 class="mb-3">Files đã chọn: </h5>
 									@foreach (var file in SelectedFiles)
 									{
-										<div class="file-item d-flex align-items-center justify-content-between p-3 bg-light rounded mb-2">
-											<div class="d-flex align-items-center">
+										<div class="file-item d-flex align-items-center justify-content-between p-3 bg-light rounded mb-2"
+										     @onclick="() => SelectFile(file)"
+										     style="cursor: pointer;">
+											<div class="d-flex align-items-center flex-grow-1">
 												<i class="bi bi-file-earmark-play text-primary me-3" style="font-size: 1.5rem;"></i>
-												<div>
+												<div class="flex-grow-1">
 													<div class="fw-bold">@file.Name</div>
 													<small class="text-muted">@FormatFileSize(file.Size)</small>
+													@if (!string.IsNullOrEmpty(file.Checksum))
+													{
+														<div>
+															<small class="text-muted">Checksum: @file.Checksum.Substring(0, Math.Min(16, file.Checksum.Length))...</small>
+														</div>
+													}
 												</div>
 											</div>
-											<button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveFile(file)" disabled="@IsUploading">
+											<button class="btn btn-outline-danger btn-sm"
+											        @onclick="() => RemoveFile(file)"
+											        @onclick:stopPropagation="true"
+											        disabled="@IsUploading">
 												<i class="bi bi-x"></i>
 											</button>
 										</div>
@@ -104,17 +114,9 @@
 						</div>
 						<div class="card-body">
 							<div class="row g-3">
-								<div class="col-md-6">
+								<div class="col-12">
 									<label class="form-label">Tiêu đề</label>
-									<input type="text" class="form-control" @bind="VideoTitle" placeholder="Nhập tiêu đề video" disabled="@IsUploading"/>
-								</div>
-								<div class="col-md-6">
-									<label class="form-label">Chất lượng mục tiêu</label>
-									<select class="form-select" @bind="TargetQuality" disabled="@IsUploading">
-										<option value="1080p">1080p (Full HD)</option>
-										<option value="720p">720p (HD)</option>
-										<option value="480p">480p (SD)</option>
-									</select>
+									<input type="text" class="form-control" @bind="VideoTitle" placeholder="Nhập tiêu đề video hoặc click vào file để tự động điền" disabled="@IsUploading"/>
 								</div>
 								<div class="col-12">
 									<label class="form-label">Mô tả</label>

@@ -1,7 +1,8 @@
-﻿using EzioHost.Core.Services.Interface;
+using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
+using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,28 +16,39 @@ public class UploadController(IFileUploadService fileUploadService) : Controller
     [HttpPost("init")]
     public async Task<IActionResult> InitUpload([FromBody] UploadInfoDto fileInfo)
     {
+        var userId = HttpContext.User.UserId;
+
         var existingUpload = await fileUploadService
             .GetFileUploadByCondition(u =>
                 u.FileName == fileInfo.FileName
                 && u.FileSize == fileInfo.FileSize
                 && u.Checksum == fileInfo.Checksum
-                && u.CreatedBy == fileInfo.UserId
+                && u.CreatedBy == userId
             );
 
-        if (existingUpload != null) return Ok(existingUpload);
+        switch (existingUpload)
+        {
+            case { IsCompleted: false }:
+                return Ok(existingUpload);
+            case { IsCompleted: true }:
+                {
+                    var copyFileUpload = await fileUploadService.CopyCompletedFile(existingUpload, userId);
+                    return Created(string.Empty, copyFileUpload);
+                }
+        }
 
-        var fileUpload = new FileUpload
+        var newFileUpload = new FileUpload
         {
             FileName = fileInfo.FileName,
             FileSize = fileInfo.FileSize,
             ContentType = fileInfo.ContentType,
             Checksum = fileInfo.Checksum,
-            CreatedBy = fileInfo.UserId
+            CreatedBy = userId
         };
 
-        await fileUploadService.AddFileUpload(fileUpload);
+        await fileUploadService.AddFileUpload(newFileUpload);
 
-        return Ok(fileUpload);
+        return Created(string.Empty, newFileUpload);
     }
 
     [HttpPost("chunk/{uploadId:guid}")]

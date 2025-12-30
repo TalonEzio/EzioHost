@@ -1,4 +1,4 @@
-﻿using EzioHost.Domain.Entities;
+using EzioHost.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,5 +11,10 @@ public class FileUploadConfiguration : IEntityTypeConfiguration<FileUpload>
         builder.Property(x => x.FileName).HasMaxLength(200).IsUnicode();
         builder.Property(x => x.ContentType).HasMaxLength(100).IsUnicode();
         builder.Property(x => x.Checksum).HasMaxLength(512).IsUnicode();
+        builder.Property(x => x.PhysicalPath)
+            .HasMaxLength(1000)
+            .IsRequired(false)
+            .IsUnicode()
+            .UsePropertyAccessMode(PropertyAccessMode.Property);
     }
 }
