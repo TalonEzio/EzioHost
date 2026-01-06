@@ -35,10 +35,7 @@ public class VideoProcessingJob(
                 logger.LogInformation($"[VideoProcessingJob] Encoding video ID: {videoToEncode.Id}");
                 await videoService.EncodeVideo(videoToEncode);
             }
-            else
-            {
-                //logger.LogInformation("[VideoProcessingJob] No videos to encode.");
-            }
+            //logger.LogInformation("[VideoProcessingJob] No videos to encode.");
         }
         catch (Exception ex)
         {

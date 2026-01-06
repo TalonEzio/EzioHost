@@ -6,7 +6,7 @@ public static class ClaimsPrincipalExtensions
 {
     extension(ClaimsPrincipal user)
     {
-        public Guid UserId => GetUserId(user, ClaimTypes.NameIdentifier);
+        public Guid UserId => user.GetUserId(ClaimTypes.NameIdentifier);
 
         public Guid GetUserId(string claimTypes)
         {

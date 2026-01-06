@@ -1,7 +1,7 @@
+using System.Text.Json.Serialization;
 using EzioHost.WebApp.Client.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Refit;
-using System.Text.Json.Serialization;
 
 namespace EzioHost.WebApp.Client;
 

@@ -10,8 +10,4 @@ public class OnnxModelMetadataDto
     public string? ErrorMessage { get; set; }
 
     public TensorElementType ElementType { get; set; }
-
 }
-
-
-

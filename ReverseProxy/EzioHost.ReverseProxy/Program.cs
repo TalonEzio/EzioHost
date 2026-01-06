@@ -11,8 +11,11 @@ public class Program
 
         builder.AddServiceDefaults();
 
-        builder.ConfigureAuthentication();
-        builder.ConfigureHttpClient();
+        var settings = new AppSettings();
+        builder.Configuration.Bind(nameof(AppSettings), settings);
+
+        builder.ConfigureAuthentication(settings);
+        builder.ConfigureHttpClient(settings);
         builder.ConfigureReverseProxy();
 
         builder.Services.AddCors(cfg =>

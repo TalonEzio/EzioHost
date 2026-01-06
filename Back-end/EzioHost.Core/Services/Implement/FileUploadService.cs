@@ -75,10 +75,8 @@ public class FileUploadService(
         var fileInfo = new FileInfo(tempFilePath);
 
         if (fileUpload.FileSize < fileInfo.Length)
-        {
             throw new InvalidOperationException(
                 $"Kích thước file tải lên vượt quá kích thước dự kiến. Dự kiến: {fileUpload.FileSize}, Đã tải lên: {fileInfo.Length}");
-        }
 
         //update received bytes
         fileUpload.ReceivedBytes = fileInfo.Length;

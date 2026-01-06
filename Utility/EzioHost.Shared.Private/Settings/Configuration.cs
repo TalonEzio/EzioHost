@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 
-namespace EzioHost.Shared.Private.Endpoints;
+namespace EzioHost.Shared.Private.Settings;
 
 public static class Configuration
 {

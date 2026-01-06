@@ -31,10 +31,10 @@ public class UploadController(IFileUploadService fileUploadService) : Controller
             case { IsCompleted: false }:
                 return Ok(existingUpload);
             case { IsCompleted: true }:
-                {
-                    var copyFileUpload = await fileUploadService.CopyCompletedFile(existingUpload, userId);
-                    return Created(string.Empty, copyFileUpload);
-                }
+            {
+                var copyFileUpload = await fileUploadService.CopyCompletedFile(existingUpload, userId);
+                return Created(string.Empty, copyFileUpload);
+            }
         }
 
         var newFileUpload = new FileUpload

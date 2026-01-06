@@ -3,6 +3,8 @@
 public class AppSettings
 {
     public PaypalSettings Paypal { get; set; } = new();
+
+    public UrlSettings Urls { get; set; } = new();
 }
 
 public class PaypalSettings
@@ -11,4 +13,9 @@ public class PaypalSettings
     public string ClientSecret { get; set; } = string.Empty;
 
     public string SdkUrl => $"https://www.sandbox.paypal.com/sdk/js?client-id={ClientId}";
+}
+
+public class UrlSettings
+{
+    public string ReverseProxy { get; set; } = string.Empty;
 }

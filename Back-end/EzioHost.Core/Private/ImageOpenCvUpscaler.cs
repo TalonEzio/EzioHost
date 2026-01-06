@@ -44,9 +44,8 @@ internal sealed class ImageOpenCvUpscaler
         }
 
         if (results == null)
-        {
-            throw new NotSupportedException($"Model input type {inputType} is not supported. Only Float16 and Float32 are supported.");
-        }
+            throw new NotSupportedException(
+                $"Model input type {inputType} is not supported. Only Float16 and Float32 are supported.");
         stopwatch.Stop();
         Console.WriteLine(
             $"Thread ID: {Thread.CurrentThread.ManagedThreadId} - Run inference: {stopwatch.ElapsedMilliseconds} ms");
@@ -99,10 +98,7 @@ internal sealed class ImageOpenCvUpscaler
 
         var fp16Data = GC.AllocateUninitializedArray<Float16>(n);
 
-        Parallel.For(0, n, i =>
-        {
-            fp16Data[i] = (Float16)floatData[i];
-        });
+        Parallel.For(0, n, i => { fp16Data[i] = (Float16)floatData[i]; });
 
         // 5. Tạo Tensor
         return new DenseTensor<Float16>(fp16Data, [1, 3, image.Height, image.Width]);

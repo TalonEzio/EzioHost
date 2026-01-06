@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using EzioHost.Shared.Private.Endpoints;
 using EzioHost.WebApp.Client.Services;
 using EzioHost.WebApp.Handlers;
 using Refit;
@@ -8,44 +7,48 @@ namespace EzioHost.WebApp.Startup;
 
 public static class HttpClientStartup
 {
-    public static WebApplicationBuilder ConfigureHttpClient(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder ConfigureHttpClient(this WebApplicationBuilder builder, AppSettings settings)
     {
-        // Add HttpClient Factory
         builder.Services.AddTransient<RequestCookieHandler>();
-        builder.Services.AddHttpClient(nameof(EzioHost), cfg => { cfg.BaseAddress = new Uri(BaseUrl.ReverseProxyUrl); })
-            .AddHttpMessageHandler<RequestCookieHandler>();
-
         builder.Services.AddHttpContextAccessor();
 
-        // Register Refit APIs
-        var baseAddress = new Uri(BaseUrl.ReverseProxyUrl);
-        builder.Services
-            .AddRefitClient<IVideoApi>()
-            .ConfigureHttpClient(c => c.BaseAddress = baseAddress)
-            .AddHttpMessageHandler<RequestCookieHandler>()
-            ;
+        Action<IServiceProvider, HttpClient> configureClient = (_, client) =>
+        {
+            client.BaseAddress = new Uri(settings.Urls.ReverseProxy);
+        };
 
-        var serializer = SystemTextJsonContentSerializer.GetDefaultJsonSerializerOptions();
+        builder.Services.AddHttpClient(nameof(EzioHost), configureClient)
+            .AddHttpMessageHandler<RequestCookieHandler>();
 
-        serializer.Converters.Remove(serializer.Converters.Single(x => x.GetType() == typeof(JsonStringEnumConverter)));
+        var serializerOptions = SystemTextJsonContentSerializer.GetDefaultJsonSerializerOptions();
+
+        var enumConverter =
+            serializerOptions.Converters.SingleOrDefault(x => x.GetType() == typeof(JsonStringEnumConverter));
+        if (enumConverter != null) serializerOptions.Converters.Remove(enumConverter);
+
         var refitSettings = new RefitSettings
         {
-            ContentSerializer = new SystemTextJsonContentSerializer(serializer)
+            ContentSerializer = new SystemTextJsonContentSerializer(serializerOptions)
         };
 
         builder.Services
+            .AddRefitClient<IVideoApi>(refitSettings)
+            .ConfigureHttpClient(configureClient)
+            .AddHttpMessageHandler<RequestCookieHandler>();
+
+        builder.Services
             .AddRefitClient<IOnnxModelApi>(refitSettings)
-            .ConfigureHttpClient(c => c.BaseAddress = baseAddress)
+            .ConfigureHttpClient(configureClient)
             .AddHttpMessageHandler<RequestCookieHandler>();
 
         builder.Services
             .AddRefitClient<IUploadApi>(refitSettings)
-            .ConfigureHttpClient(c => c.BaseAddress = baseAddress)
+            .ConfigureHttpClient(configureClient)
             .AddHttpMessageHandler<RequestCookieHandler>();
 
         builder.Services
             .AddRefitClient<IAuthApi>(refitSettings)
-            .ConfigureHttpClient(c => c.BaseAddress = baseAddress)
+            .ConfigureHttpClient(configureClient)
             .AddHttpMessageHandler<RequestCookieHandler>();
 
         return builder;

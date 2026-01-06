@@ -11,8 +11,8 @@ namespace EzioHost.WebApp.Client.Components.Pages;
 public partial class OnnxModelCreatePage
 {
     private IBrowserFile? _file;
-    private bool _isSubmitting;
     private bool _isCheckingOnnxModel;
+    private bool _isSubmitting;
     private IJSObjectReference? _jsObjectReference;
     [Inject] public IOnnxModelApi OnnxModelApi { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
@@ -74,7 +74,6 @@ public partial class OnnxModelCreatePage
 
         // Analyze ONNX model to auto-fill metadata
         if (_file != null && _file.Name.EndsWith(".onnx", StringComparison.OrdinalIgnoreCase))
-        {
             try
             {
                 _isCheckingOnnxModel = true;
@@ -91,31 +90,19 @@ public partial class OnnxModelCreatePage
                 {
                     // Auto-fill form with detected values
                     if (metadata.Scale.HasValue && Onnx.Scale == 1) // Only override if user hasn't changed default
-                    {
                         Onnx.Scale = metadata.Scale.Value;
-                    }
                     else
-                    {
                         Onnx.Scale = 0;
-                    }
 
                     if (metadata.MustInputWidth.HasValue && Onnx.MustInputWidth == 0)
-                    {
                         Onnx.MustInputWidth = metadata.MustInputWidth.Value;
-                    }
                     else
-                    {
                         Onnx.MustInputWidth = 0;
-                    }
 
                     if (metadata.MustInputHeight.HasValue && Onnx.MustInputHeight == 0)
-                    {
                         Onnx.MustInputHeight = metadata.MustInputHeight.Value;
-                    }
                     else
-                    {
                         Onnx.MustInputHeight = 0;
-                    }
 
                     Onnx.ElementType = metadata.ElementType;
 
@@ -132,7 +119,6 @@ public partial class OnnxModelCreatePage
                 _isCheckingOnnxModel = false;
                 StateHasChanged();
             }
-        }
     }
 
     private string FormatFileSize(long bytes)

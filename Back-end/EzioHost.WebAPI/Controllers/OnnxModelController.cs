@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Diagnostics;
+using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
@@ -8,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using System.Diagnostics;
 
 namespace EzioHost.WebAPI.Controllers;
 
@@ -198,6 +198,7 @@ public class OnnxModelController(
                     if (height > 0) metadata.MustInputHeight = height;
                     if (width > 0) metadata.MustInputWidth = width;
                 }
+
                 metadata.ElementType = inputMetadata.ElementDataType switch
                 {
                     TensorElementType.Float => Shared.Enums.TensorElementType.Float,
@@ -218,7 +219,6 @@ public class OnnxModelController(
                     TensorElementType.BFloat16 => Shared.Enums.TensorElementType.BFloat16,
                     _ => Shared.Enums.TensorElementType.Float
                 };
-
             }
 
             // Get output metadata to calculate scale
@@ -241,10 +241,7 @@ public class OnnxModelController(
                         var widthScale = outputWidth / inputWidth;
 
                         // Scale should be the same for width and height
-                        if (heightScale == widthScale && heightScale is > 0 and <= 8)
-                        {
-                            metadata.Scale = heightScale;
-                        }
+                        if (heightScale == widthScale && heightScale is > 0 and <= 8) metadata.Scale = heightScale;
                     }
                 }
             }

@@ -10,9 +10,12 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.AddServiceDefaults();
 
+        var settings = new AppSettings();
+        builder.Configuration.Bind(nameof(AppSettings), settings);
+
         builder.ConfigureRazorComponents();
-        builder.ConfigureAuthentication();
-        builder.ConfigureHttpClient();
+        builder.ConfigureAuthentication(settings);
+        builder.ConfigureHttpClient(settings);
         builder.ConfigureKestrel();
         builder.ConfigureAppSettings();
         builder.ConfigureSignalR();

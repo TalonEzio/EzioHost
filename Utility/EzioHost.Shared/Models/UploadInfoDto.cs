@@ -12,6 +12,5 @@ public class UploadInfoDto
     public string? Checksum { get; set; }
     public Guid UserId { get; set; }
 
-    [JsonIgnore]
-    public bool IsCompleted => FileSize == ReceivedBytes;
+    [JsonIgnore] public bool IsCompleted => FileSize == ReceivedBytes;
 }

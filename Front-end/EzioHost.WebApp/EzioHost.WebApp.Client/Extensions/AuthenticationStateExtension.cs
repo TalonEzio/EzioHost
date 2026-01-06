@@ -11,15 +11,15 @@ public static class AuthenticationStateExtension
 
     extension(AuthenticationState authenticationState)
     {
-        public Guid UserId => GetClaimValue<Guid>(authenticationState, USER_ID_CLAIM);
+        public Guid UserId => authenticationState.GetClaimValue<Guid>(USER_ID_CLAIM);
 
         public long UploadMaxSpeedMb =>
-            GetClaimsValue<long>(authenticationState, UPLOAD_MAX_SPEED_MB_CLAIM)
+            authenticationState.GetClaimsValue<long>(UPLOAD_MAX_SPEED_MB_CLAIM)
                 .DefaultIfEmpty(0)
                 .Max();
 
         public long Storage =>
-            GetClaimsValue<long>(authenticationState, STORAGE_CLAIM)
+            authenticationState.GetClaimsValue<long>(STORAGE_CLAIM)
                 .DefaultIfEmpty(0)
                 .Max();
 

@@ -1,98 +1,98 @@
 @rendermode InteractiveAuto
 
 <div class="pure-image-compare-container">
-	<!-- Control Panel -->
-	<div class="compare-controls">
-		<div class="controls-row">
-			<div class="control-group">
-				<label>
-					<i class="bi bi-sliders"></i> Position: <strong>@SliderPosition%</strong>
-				</label>
-				<input type="range"
-				       class="form-range"
-				       min="0"
-				       max="100"
-				       step="1"
-				       value="@SliderPosition"
-				       @oninput="OnSliderInput"/>
-			</div>
+    <!-- Control Panel -->
+    <div class="compare-controls">
+        <div class="controls-row">
+            <div class="control-group">
+                <label>
+                    <i class="bi bi-sliders"></i> Position: <strong>@SliderPosition%</strong>
+                </label>
+                <input type="range"
+                       class="form-range"
+                       min="0"
+                       max="100"
+                       step="1"
+                       value="@SliderPosition"
+                       @oninput="OnSliderInput"/>
+            </div>
 
-			<div class="control-group">
-				<label>
-					<i class="bi bi-arrow-clockwise"></i> Angle: <strong>@HandleAngle°</strong>
-				</label>
-				<div class="angle-control">
-					<input type="range"
-					       class="form-range"
-					       min="-45"
-					       max="45"
-					       step="1"
-					       value="@HandleAngle"
-					       @oninput="OnAngleInput"/>
-					<button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAngle">
-						<i class="bi bi-arrow-counterclockwise"></i>
-					</button>
-				</div>
-			</div>
-		</div>
+            <div class="control-group">
+                <label>
+                    <i class="bi bi-arrow-clockwise"></i> Angle: <strong>@HandleAngle°</strong>
+                </label>
+                <div class="angle-control">
+                    <input type="range"
+                           class="form-range"
+                           min="-45"
+                           max="45"
+                           step="1"
+                           value="@HandleAngle"
+                           @oninput="OnAngleInput"/>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAngle">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
 
-		<div class="controls-row">
-			<div class="control-buttons">
-				<button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(0)">
-					<i class="bi bi-arrow-bar-left"></i> Before
-				</button>
-				<button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => SetPosition(50)">
-					<i class="bi bi-dash-circle"></i> 50/50
-				</button>
-				<button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(100)">
-					After <i class="bi bi-arrow-bar-right"></i>
-				</button>
-			</div>
+        <div class="controls-row">
+            <div class="control-buttons">
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(0)">
+                    <i class="bi bi-arrow-bar-left"></i> Before
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => SetPosition(50)">
+                    <i class="bi bi-dash-circle"></i> 50/50
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(100)">
+                    After <i class="bi bi-arrow-bar-right"></i>
+                </button>
+            </div>
 
-			<div class="control-buttons">
-				<button type="button" class="btn btn-sm btn-outline-info" @onclick="ToggleOrientation">
-					<i class="bi bi-arrow-down-up"></i> @(_isVertical ? "Vertical" : "Horizontal")
-				</button>
-				<button type="button" class="btn btn-sm btn-outline-warning" @onclick="ToggleDirection">
-					<i class="bi bi-arrow-left-right"></i> @(_isReversed ? "Reversed" : "Normal")
-				</button>
-				<button type="button" class="btn btn-sm btn-outline-success" @onclick="SwapImages">
-					<i class="bi bi-arrow-repeat"></i> Swap
-				</button>
-			</div>
-		</div>
-	</div>
+            <div class="control-buttons">
+                <button type="button" class="btn btn-sm btn-outline-info" @onclick="ToggleOrientation">
+                    <i class="bi bi-arrow-down-up"></i> @(_isVertical ? "Vertical" : "Horizontal")
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="ToggleDirection">
+                    <i class="bi bi-arrow-left-right"></i> @(_isReversed ? "Reversed" : "Normal")
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" @onclick="SwapImages">
+                    <i class="bi bi-arrow-repeat"></i> Swap
+                </button>
+            </div>
+        </div>
+    </div>
 
-	<!-- Image Comparison -->
-	<div class="compare-wrapper"
-	     @ref="_compareElement"
-	     @onmousedown="StartDrag"
-	     @onmousemove="OnDrag"
-	     @onmouseup="EndDrag"
-	     @onmouseleave="EndDrag"
-	     @ontouchstart="StartDrag"
-	     @ontouchmove="OnDragTouch"
-	     @ontouchend="EndDrag">
+    <!-- Image Comparison -->
+    <div class="compare-wrapper"
+         @ref="_compareElement"
+         @onmousedown="StartDrag"
+         @onmousemove="OnDrag"
+         @onmouseup="EndDrag"
+         @onmouseleave="EndDrag"
+         @ontouchstart="StartDrag"
+         @ontouchmove="OnDragTouch"
+         @ontouchend="EndDrag">
 
-		<!-- Before Image (Full) -->
-		<div class="compare-before">
-			<img src="@CurrentBeforeImage" alt="Before" draggable="false"/>
-			<div class="compare-label compare-label-left">@BeforeLabel</div>
-		</div>
+        <!-- Before Image (Full) -->
+        <div class="compare-before">
+            <img src="@CurrentBeforeImage" alt="Before" draggable="false"/>
+            <div class="compare-label compare-label-left">@BeforeLabel</div>
+        </div>
 
-		<!-- After Image (Clipped) -->
-		<div class="compare-after" style="clip-path: @GetClipPath();">
-			<img src="@CurrentAfterImage" alt="After" draggable="false"/>
-			<div class="compare-label compare-label-right">@AfterLabel</div>
-		</div>
+        <!-- After Image (Clipped) -->
+        <div class="compare-after" style="clip-path: @GetClipPath();">
+            <img src="@CurrentAfterImage" alt="After" draggable="false"/>
+            <div class="compare-label compare-label-right">@AfterLabel</div>
+        </div>
 
-		<!-- Slider Handle -->
-		<div class="compare-handle @(_isVertical ? "vertical" : "horizontal")"
-		     style="@GetHandlePosition(); transform: @GetHandleRotation();">
-			<div class="handle-line"></div>
-			<div class="handle-circle">
-				<i class="bi bi-arrows-expand"></i>
-			</div>
-		</div>
-	</div>
+        <!-- Slider Handle -->
+        <div class="compare-handle @(_isVertical ? "vertical" : "horizontal")"
+             style="@GetHandlePosition(); transform: @GetHandleRotation();">
+            <div class="handle-line"></div>
+            <div class="handle-circle">
+                <i class="bi bi-arrows-expand"></i>
+            </div>
+        </div>
+    </div>
 </div>

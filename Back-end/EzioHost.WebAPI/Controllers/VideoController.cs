@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Linq.Expressions;
+using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
@@ -7,7 +8,6 @@ using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq.Expressions;
 
 namespace EzioHost.WebAPI.Controllers;
 
@@ -24,27 +24,20 @@ public class VideoController(
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetVideos(int pageNumber, int pageSize, bool? includeStreams, bool? includeUpscaled)
+    public async Task<IActionResult> GetVideos(int pageNumber, int pageSize, bool? includeStreams,
+        bool? includeUpscaled)
     {
         var userId = User.UserId;
         Expression<Func<Video, object>>[]? includes;
 
         if (includeStreams == true && includeUpscaled == true)
-        {
             includes = [x => x.VideoStreams, x => x.VideoUpscales];
-        }
         else if (includeStreams == true)
-        {
             includes = [x => x.VideoStreams];
-        }
         else if (includeUpscaled == true)
-        {
             includes = [x => x.VideoUpscales];
-        }
         else
-        {
             includes = [];
-        }
         var videos =
             (await videoService.GetVideos(pageNumber, pageSize, x => x.CreatedBy == userId, includes))
             .ToList();

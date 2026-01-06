@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace EzioHost.Shared.Enums;
+﻿namespace EzioHost.Shared.Enums;
 
 public enum TensorElementType
 {

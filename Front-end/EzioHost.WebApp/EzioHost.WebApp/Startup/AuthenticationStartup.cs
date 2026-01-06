@@ -1,4 +1,3 @@
-using EzioHost.Shared.Private.Endpoints;
 using EzioHost.WebApp.Handlers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -8,9 +7,9 @@ namespace EzioHost.WebApp.Startup;
 
 public static class AuthenticationStartup
 {
-    public static WebApplicationBuilder ConfigureAuthentication(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder ConfigureAuthentication(this WebApplicationBuilder builder,
+        AppSettings settings)
     {
-        // Add Authentication
         builder.Services.AddCascadingAuthenticationState();
         builder.Services.AddScoped<AuthenticationStateProvider, ReverseProxyAuthenticationStateProvider>();
 
@@ -20,10 +19,9 @@ public static class AuthenticationStartup
                 cfg.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 cfg.DefaultSignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })
-            //custom oidc cookie handler
             .AddScheme<ReverseProxyAuthenticationSchemeOptions, ReverseProxyAuthenticationHandler>(
                 ReverseProxyAuthenticationSchemeConstants.AuthenticationScheme,
-                cfg => { cfg.ReverseProxyBaseUrl = BaseUrl.ReverseProxyUrl; });
+                cfg => cfg.ReverseProxyBaseUrl = settings.Urls.ReverseProxy);
         builder.Services.AddAuthorization();
 
         return builder;

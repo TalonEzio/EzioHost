@@ -21,7 +21,8 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
 
     public Task<Video?> GetVideoById(Guid id)
     {
-        var find = _videos.Include(video => video.VideoStreams).Include(video => video.VideoUpscales).FirstOrDefaultAsync(x => x.Id == id);
+        var find = _videos.Include(video => video.VideoStreams).Include(video => video.VideoUpscales)
+            .FirstOrDefaultAsync(x => x.Id == id);
         return find;
     }
 

@@ -10,7 +10,8 @@ namespace EzioHost.ReverseProxy.Startup;
 
 public static class AuthenticationStartup
 {
-    public static WebApplicationBuilder ConfigureAuthentication(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder ConfigureAuthentication(this WebApplicationBuilder builder,
+        AppSettings settings)
     {
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -18,8 +19,6 @@ public static class AuthenticationStartup
 
         builder.Services.AddOptions<AppSettings>().Bind(builder.Configuration.GetSection(nameof(AppSettings)));
 
-        var settings = new AppSettings();
-        builder.Configuration.Bind(nameof(AppSettings), settings);
 
         builder.Services.AddAuthentication(options =>
             {

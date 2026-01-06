@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Manager\EzioHost.Aspire\EzioHost.Aspire.ServiceDefaults\EzioHost.Aspire.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\..\Utility\EzioHost.Shared.Private\EzioHost.Shared.Private.csproj" />
     <ProjectReference Include="..\EzioHost.WebApp.Client\EzioHost.WebApp.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.1" />

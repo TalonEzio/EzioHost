@@ -213,17 +213,11 @@ public class VideoService(
 
         var videoRatio = 1.0 * videoInputStream.DisplayAspectRatio.Width / videoInputStream.DisplayAspectRatio.Height;
         var targetHeight = (int)targetResolution;
-        if (targetResolution == VideoResolution.Upscaled)
-        {
-            targetHeight = videoInputStream.Height;
-        }
+        if (targetResolution == VideoResolution.Upscaled) targetHeight = videoInputStream.Height;
         var targetWidth = (int)Math.Round(targetHeight * videoRatio);
 
         if (targetWidth % 2 != 0) targetWidth++;
-        if (targetResolution == VideoResolution.Upscaled)
-        {
-            targetWidth = videoInputStream.Width;
-        }
+        if (targetResolution == VideoResolution.Upscaled) targetWidth = videoInputStream.Width;
 
         var resolutionSize = new Size(targetWidth, targetHeight);
 

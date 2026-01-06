@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 
 namespace EzioHost.Benchmark;
 
@@ -10,7 +9,5 @@ internal class Program
         Console.OutputEncoding = Encoding.Unicode;
         // Use an empty ManualConfig to prevent BenchmarkDotNet from attaching platform-specific diagnosers
         //BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
-
-
     }
 }

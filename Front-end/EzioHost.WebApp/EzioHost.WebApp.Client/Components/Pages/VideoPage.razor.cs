@@ -202,7 +202,7 @@ public partial class VideoPage : IAsyncDisposable
 
         try
         {
-            await VideoApi.UpdateVideo(new VideoUpdateDto()
+            await VideoApi.UpdateVideo(new VideoUpdateDto
             {
                 Id = video.Id,
                 Title = video.Title,

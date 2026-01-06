@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Manager\EzioHost.Aspire\EzioHost.Aspire.ServiceDefaults\EzioHost.Aspire.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\Utility\EzioHost.Shared.Private\EzioHost.Shared.Private.csproj" />
+    <ProjectReference Include="..\..\Utility\EzioHost.Shared\EzioHost.Shared.csproj" />
   </ItemGroup>
 
 </Project>

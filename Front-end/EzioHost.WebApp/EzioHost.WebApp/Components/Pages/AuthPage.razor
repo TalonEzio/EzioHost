@@ -8,12 +8,12 @@
 <h1>Auth</h1>
 
 <AuthorizeView>
-	<Authorized>
-		<ul>
-			@foreach (var claim in context.User.Claims)
-			{
-				<li>@claim.Type: @claim.Value</li>
-			}
-		</ul>
-	</Authorized>
+    <Authorized>
+        <ul>
+            @foreach (var claim in context.User.Claims)
+            {
+                <li>@claim.Type: @claim.Value</li>
+            }
+        </ul>
+    </Authorized>
 </AuthorizeView>

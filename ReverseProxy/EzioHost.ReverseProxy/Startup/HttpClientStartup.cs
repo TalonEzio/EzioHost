@@ -1,13 +1,11 @@
-using EzioHost.Shared.Private.Endpoints;
-
 namespace EzioHost.ReverseProxy.Startup;
 
 public static class HttpClientStartup
 {
-    public static WebApplicationBuilder ConfigureHttpClient(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder ConfigureHttpClient(this WebApplicationBuilder builder, AppSettings settings)
     {
         builder.Services.AddHttpClient(nameof(EzioHost),
-            cfg => { cfg.BaseAddress = new Uri(BaseUrl.WebApiUrl); });
+            cfg => { cfg.BaseAddress = new Uri(settings.Urls.WebApi); });
 
         return builder;
     }
