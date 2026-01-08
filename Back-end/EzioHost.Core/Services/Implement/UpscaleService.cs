@@ -6,6 +6,7 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
+using EzioHost.Domain.Settings;
 using EzioHost.Shared.Extensions;
 using FFMpegCore;
 using FFMpegCore.Enums;
@@ -17,6 +18,7 @@ namespace EzioHost.Core.Services.Implement;
 
 public class UpscaleService(
     IDirectoryProvider directoryProvider,
+    ISettingProvider settingProvider,
     IUpscaleRepository upscaleRepository,
     IVideoService videoService,
     IVideoUnitOfWork videoUnitOfWork) : IUpscaleService
@@ -28,6 +30,8 @@ public class UpscaleService(
     private static readonly ImageEncodingParam ImageEncodingParam;
     private static readonly ImageOpenCvUpscaler Upscaler;
     private static readonly SessionOptions SessionOptions;
+
+    private VideoEncodeSetting videoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
 
     static UpscaleService()
@@ -174,8 +178,8 @@ public class UpscaleService(
                     .WithFramerate(frameRate)
                 )
                 .OutputToFile(Path.Combine(tempDir, randomVideoFileName), true, options => options
-                    .WithVideoCodec("h264_nvenc")
-                    .WithCustomArgument("-b:v 8000k")
+                    .WithVideoCodec(videoEncodeSetting.VideoCodec)
+                    .WithCustomArgument($"-b:v ${videoEncodeSetting.UpscaleBitrateKbps}k")
                     .WithCustomArgument("-pix_fmt yuv420p")
                     .WithVideoFilters(filterOptions => filterOptions
                         .Scale(outputWidth, outputHeight)

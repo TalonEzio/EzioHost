@@ -15,6 +15,13 @@ public partial class VideoSharePage
 
     protected override async Task OnInitializedAsync()
     {
-        Video ??= await VideoApi.GetVideoById(VideoId);
+        try
+        {
+            Video ??= await VideoApi.GetVideoById(VideoId);
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/");
+        }
     }
 }

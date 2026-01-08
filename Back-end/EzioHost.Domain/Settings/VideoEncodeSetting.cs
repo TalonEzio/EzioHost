@@ -6,4 +6,6 @@ public class VideoEncodeSetting
     public string AudioCodec { get; set; } = "aac";
     public int HlsTime { get; set; } = 1;
     public string BaseDrmUrl { get; set; } = "/api/video/drm/";
+    public int UpscaleBitrateKbps { get; set; } = 8000;
+
 }
