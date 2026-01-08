@@ -1,17 +1,20 @@
-﻿using System.Collections.Concurrent;
-using System.Text;
-using EzioHost.Core.Private;
+﻿using EzioHost.Core.Private;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
 using EzioHost.Domain.Settings;
+using EzioHost.Shared.Events;
 using EzioHost.Shared.Extensions;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
+using System.Collections.Concurrent;
+using System.Text;
+using AutoMapper;
+using EzioHost.Shared.Models;
 using static EzioHost.Shared.Enums.VideoEnum;
 
 namespace EzioHost.Core.Services.Implement;
@@ -21,7 +24,8 @@ public class UpscaleService(
     ISettingProvider settingProvider,
     IUpscaleRepository upscaleRepository,
     IVideoService videoService,
-    IVideoUnitOfWork videoUnitOfWork) : IUpscaleService
+    IVideoUnitOfWork videoUnitOfWork,
+    IMapper mapper) : IUpscaleService
 {
     private const int CONCURRENT_UPSCALE_TASK = 1;
     private const string FRAME_PATTERN = "frame_%05d.jpg";
@@ -31,7 +35,7 @@ public class UpscaleService(
     private static readonly ImageOpenCvUpscaler Upscaler;
     private static readonly SessionOptions SessionOptions;
 
-    private VideoEncodeSetting videoEncodeSetting => settingProvider.GetVideoEncodeSetting();
+    private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
 
     static UpscaleService()
@@ -54,8 +58,6 @@ public class UpscaleService(
     private string WebRootPath => directoryProvider.GetWebRootPath();
 
     private IVideoRepository VideoRepository => videoUnitOfWork.VideoRepository;
-    private IVideoStreamRepository VideoStreamRepository => videoUnitOfWork.VideoStreamRepository;
-
     private static ConcurrentDictionary<Guid, InferenceSession> CacheInferenceSessions { get; } = [];
 
     public async Task UpscaleImage(OnnxModel model, string inputPath, string outputPath)
@@ -69,6 +71,8 @@ public class UpscaleService(
 
     public async Task UpscaleVideo(VideoUpscale videoUpscale)
     {
+        await videoUnitOfWork.BeginTransactionAsync();
+
         var model = videoUpscale.Model;
         var video = videoUpscale.Video;
 
@@ -84,39 +88,31 @@ public class UpscaleService(
 
         var inferenceSession = GetInferenceSession(model);
 
-        // Đường dẫn đến file video gốc
         var inputVideoPath = Path.Combine(WebRootPath, video.RawLocation);
 
-        // Đường dẫn đến file video đầu ra
         var outputVideoPath = Path.GetFileNameWithoutExtension(inputVideoPath) + "_upscaled";
         outputVideoPath = Path.Combine(Path.GetDirectoryName(inputVideoPath)!,
             outputVideoPath + Path.GetExtension(inputVideoPath));
         outputVideoPath = Path.Combine(WebRootPath, outputVideoPath);
 
-        // Tạo thư mục tạm để lưu các frame
         var tempDir = Path.Combine(TempPath, Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
 
-        // Tạo thư mục cho các frame đã upscale
         var framesDir = Path.Combine(tempDir, "frames");
         Directory.CreateDirectory(framesDir);
 
-        // Tạo thư mục cho các frame đã upscale
         var upscaledFramesDir = Path.Combine(tempDir, "upscaled_frames");
         Directory.CreateDirectory(upscaledFramesDir);
 
         try
         {
-            // Đọc thông tin video
             var mediaInfo = await FFProbe.AnalyseAsync(inputVideoPath);
-            var videoStream = mediaInfo.PrimaryVideoStream!;
+            var mediaInfoPrimaryVideoStream = mediaInfo.PrimaryVideoStream!;
 
-            // Lấy thông tin video
-            var originalWidth = videoStream.Width;
-            var originalHeight = videoStream.Height;
-            var frameRate = videoStream.FrameRate;
+            var originalWidth = mediaInfoPrimaryVideoStream.Width;
+            var originalHeight = mediaInfoPrimaryVideoStream.Height;
+            var frameRate = mediaInfoPrimaryVideoStream.FrameRate;
 
-            // Tính toán kích thước đầu ra sau khi upscale
             var outputWidth = originalWidth * model.Scale;
             var outputHeight = originalHeight * model.Scale;
 
@@ -132,7 +128,6 @@ public class UpscaleService(
             var randomVideoFileName = Path.GetRandomFileName() + ".mp4";
             var randomAudioFileName = Path.GetRandomFileName() + ".aac";
 
-            // Trích xuất âm thanh từ video
             var audioExtractionArguments = FFMpegArguments
                 .FromFileInput(inputVideoPath)
                 .OutputToFile(Path.Combine(tempDir, randomAudioFileName), true, options => options
@@ -178,8 +173,8 @@ public class UpscaleService(
                     .WithFramerate(frameRate)
                 )
                 .OutputToFile(Path.Combine(tempDir, randomVideoFileName), true, options => options
-                    .WithVideoCodec(videoEncodeSetting.VideoCodec)
-                    .WithCustomArgument($"-b:v ${videoEncodeSetting.UpscaleBitrateKbps}k")
+                    .WithVideoCodec(VideoEncodeSetting.VideoCodec)
+                    .WithCustomArgument($"-b:v {VideoEncodeSetting.UpscaleBitrateKbps}k")
                     .WithCustomArgument("-pix_fmt yuv420p")
                     .WithVideoFilters(filterOptions => filterOptions
                         .Scale(outputWidth, outputHeight)
@@ -204,10 +199,7 @@ public class UpscaleService(
             var newVideoHlsStream =
                 await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution, model.Scale);
 
-            await videoUnitOfWork.BeginTransactionAsync();
-
-            VideoStreamRepository.Create(newVideoHlsStream);
-            video.VideoStreams.Add(newVideoHlsStream);
+            await videoService.AddNewVideoStream(video, newVideoHlsStream);
 
             var currentResolution = videoUpscale.Resolution.GetDescription();
             var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location))
@@ -231,6 +223,13 @@ public class UpscaleService(
 
             videoUpscale.Status = VideoUpscaleStatus.Ready;
             await UpdateVideoUpscale(videoUpscale);
+
+            OnVideoUpscaleStreamAdded?.Invoke(new VideoStreamAddedEventArgs
+            {
+                VideoId = video.Id,
+                VideoStream = mapper.Map<VideoStreamDto>(newVideoHlsStream)
+            });
+
         }
         catch
         {
@@ -241,6 +240,7 @@ public class UpscaleService(
             if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
         }
     }
+
 
     public Task<VideoUpscale> AddNewVideoUpscale(VideoUpscale newVideoUpscale)
     {
@@ -266,6 +266,8 @@ public class UpscaleService(
     {
         return upscaleRepository.GetVideoNeedUpscale();
     }
+
+    public event Action<VideoStreamAddedEventArgs>? OnVideoUpscaleStreamAdded;
 
     private InferenceSession GetInferenceSession(OnnxModel onnxModel)
     {

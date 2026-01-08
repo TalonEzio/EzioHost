@@ -31,7 +31,7 @@ public class VideoService(
     private readonly string _webRootPath = directoryProvider.GetWebRootPath();
     private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
-    public event Action<VideoStreamAddedEvent>? OnVideoStreamAdded;
+    public event Action<VideoStreamAddedEventArgs>? OnVideoStreamAdded;
     public event Action<VideoProcessDoneEvent>? OnVideoProcessDone;
 
     public Task<Video?> GetVideoWithReadyUpscale(Guid videoId)
@@ -91,22 +91,11 @@ public class VideoService(
             inputVideo.Status = VideoStatus.Encoding;
             await _videoRepository.UpdateVideo(inputVideo);
 
-
-            var videoStreams = new List<VideoStream>();
-
             foreach (var videoResolution in inputVideo.Resolution.GetEnumsLessThanOrEqual())
             {
                 var newVideoStream = await CreateHlsVariantStream(absoluteRawLocation, inputVideo, videoResolution);
-                videoStreams.Add(newVideoStream);
 
-                _videoStreamRepository.Create(newVideoStream);
-                inputVideo.VideoStreams.Add(newVideoStream);
-
-                OnVideoStreamAdded?.Invoke(new VideoStreamAddedEvent
-                {
-                    VideoId = inputVideo.Id,
-                    VideoStream = mapper.Map<VideoStreamDto>(newVideoStream)
-                });
+                await AddNewVideoStream(inputVideo, newVideoStream);
             }
 
             var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
@@ -117,7 +106,7 @@ public class VideoService(
             var m3U8AllContentBuilder = new StringBuilder();
             m3U8AllContentBuilder.AppendLine("#EXTM3U");
 
-            foreach (var videoStream in videoStreams)
+            foreach (var videoStream in inputVideo.VideoStreams)
             {
                 var currentResolution = videoStream.Resolution.GetDescription();
                 var filePath = Path.Combine(currentResolution, Path.GetFileName(videoStream.M3U8Location))
@@ -182,6 +171,22 @@ public class VideoService(
             case "2160p": return "3840x2160";
             default: return "1920x1080";
         }
+    }
+
+    public Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
+    {
+        video.VideoStreams ??= [];
+        _videoStreamRepository.Add(videoStream);
+        video.VideoStreams.Add(videoStream);
+        videoStream.Video = video;
+
+        OnVideoStreamAdded?.Invoke(new VideoStreamAddedEventArgs
+        {
+            VideoId = video.Id,
+            VideoStream = mapper.Map<VideoStreamDto>(videoStream)
+        });
+
+        return Task.FromResult(videoStream);
     }
 
     public async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,

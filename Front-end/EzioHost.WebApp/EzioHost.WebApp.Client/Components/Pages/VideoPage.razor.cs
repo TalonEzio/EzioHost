@@ -125,7 +125,7 @@ public partial class VideoPage : IAsyncDisposable
             _hubConnection.On<string>(nameof(IVideoHubAction.ReceiveMessage),
                 async message => { await JsRuntime.ShowSuccessToast(message); });
 
-            _hubConnection.On<VideoStreamAddedEvent>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
+            _hubConnection.On<VideoStreamAddedEventArgs>(nameof(IVideoHubAction.ReceiveNewVideoStream), async args =>
             {
                 var video = Videos.FirstOrDefault(x => x.Id == args.VideoId);
                 if (video == null) return;

@@ -1,4 +1,4 @@
-﻿namespace EzioHost.Shared.Common;
+﻿namespace EzioHost.Shared.Constants;
 
 public class RoleConstants
 {

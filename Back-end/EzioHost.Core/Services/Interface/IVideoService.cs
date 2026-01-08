@@ -7,7 +7,7 @@ namespace EzioHost.Core.Services.Interface;
 
 public interface IVideoService
 {
-    public event Action<VideoStreamAddedEvent> OnVideoStreamAdded;
+    public event Action<VideoStreamAddedEventArgs> OnVideoStreamAdded;
     public event Action<VideoProcessDoneEvent> OnVideoProcessDone;
 
     Task<IEnumerable<Video>> GetVideos(
@@ -30,4 +30,6 @@ public interface IVideoService
 
     public int GetBandwidthForResolution(string resolution);
     public string GetResolutionDimensions(string resolution);
+
+    Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream);
 }

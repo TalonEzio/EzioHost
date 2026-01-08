@@ -113,7 +113,7 @@ public static class AuthenticationStartup
         builder.Services.ConfigureCookieOidcRefresh(
             CookieAuthenticationDefaults.AuthenticationScheme,
             OpenIdConnectDefaults.AuthenticationScheme,
-            TimeSpan.FromMinutes(1));
+            TimeSpan.FromMinutes(5));
 
         builder.Services.AddAuthorization();
 

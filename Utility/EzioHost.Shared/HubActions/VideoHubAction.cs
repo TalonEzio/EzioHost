@@ -5,6 +5,6 @@ namespace EzioHost.Shared.HubActions;
 public interface IVideoHubAction
 {
     Task ReceiveMessage(string message);
-    Task ReceiveNewVideoStream(VideoStreamAddedEvent videoChangedEvent);
+    Task ReceiveNewVideoStream(VideoStreamAddedEventArgs videoChangedEventArgs);
     Task ReceiveVideoProcessingDone(VideoProcessDoneEvent videoProcessDoneEvent);
 }

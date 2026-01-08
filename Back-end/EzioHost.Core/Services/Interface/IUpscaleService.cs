@@ -1,4 +1,5 @@
 ﻿using EzioHost.Domain.Entities;
+using EzioHost.Shared.Events;
 
 namespace EzioHost.Core.Services.Interface;
 
@@ -11,4 +12,6 @@ public interface IUpscaleService
     Task<VideoUpscale> UpdateVideoUpscale(VideoUpscale updateVideoUpscale);
     Task DeleteVideoUpscale(VideoUpscale deleteVideoUpscale);
     Task<VideoUpscale?> GetVideoNeedUpscale();
+
+    event Action<VideoStreamAddedEventArgs> OnVideoUpscaleStreamAdded;
 }

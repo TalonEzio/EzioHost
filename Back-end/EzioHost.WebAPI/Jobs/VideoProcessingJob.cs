@@ -15,6 +15,7 @@ public class VideoProcessingJob(
     ILogger<VideoProcessingJob> logger,
     IHubContext<VideoHub, IVideoHubAction> videoHub) : IJob, IDisposable
 {
+    private Guid _userId;
     public void Dispose()
     {
         videoService.OnVideoStreamAdded -= VideoServiceOnOnVideoStreamAdded;
@@ -30,9 +31,11 @@ public class VideoProcessingJob(
         try
         {
             var videoToEncode = await videoService.GetVideoToEncode();
+
             if (videoToEncode != null)
             {
                 logger.LogInformation($"[VideoProcessingJob] Encoding video ID: {videoToEncode.Id}");
+                _userId = videoToEncode.CreatedBy;
                 await videoService.EncodeVideo(videoToEncode);
             }
             //logger.LogInformation("[VideoProcessingJob] No videos to encode.");
@@ -48,13 +51,17 @@ public class VideoProcessingJob(
         }
     }
 
-    private void VideoServiceOnOnVideoProcessDone(VideoProcessDoneEvent obj)
+    private void VideoServiceOnOnVideoProcessDone(VideoProcessDoneEvent args)
     {
-        videoHub.Clients.All.ReceiveVideoProcessingDone(obj).SafeFireAndForget();
+        if (_userId == Guid.Empty) return;
+
+        videoHub.Clients.User(_userId.ToString()).ReceiveVideoProcessingDone(args).SafeFireAndForget();
     }
 
-    private void VideoServiceOnOnVideoStreamAdded(VideoStreamAddedEvent obj)
+    private void VideoServiceOnOnVideoStreamAdded(VideoStreamAddedEventArgs obj)
     {
-        videoHub.Clients.All.ReceiveNewVideoStream(obj).SafeFireAndForget();
+        if (_userId == Guid.Empty) return;
+
+        videoHub.Clients.User(_userId.ToString()).ReceiveNewVideoStream(obj).SafeFireAndForget();
     }
 }

@@ -11,7 +11,7 @@ public class VideoStreamSqlServerRepository(EzioHostDbContext dbContext) : IVide
         dbContext.VideoStreams.AddRange(videoStreams);
     }
 
-    public void Create(VideoStream videoStream)
+    public void Add(VideoStream videoStream)
     {
         dbContext.VideoStreams.Add(videoStream);
     }

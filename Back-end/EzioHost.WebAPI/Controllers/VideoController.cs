@@ -200,7 +200,8 @@ public class VideoController(
             Scale = model.Scale,
             Video = video,
             Model = model,
-            Status = VideoEnum.VideoUpscaleStatus.Queue
+            Status = VideoEnum.VideoUpscaleStatus.Queue,
+            CreatedBy = HttpContext.User.UserId
         };
 
         await upscaleService.AddNewVideoUpscale(videoUpscale);
