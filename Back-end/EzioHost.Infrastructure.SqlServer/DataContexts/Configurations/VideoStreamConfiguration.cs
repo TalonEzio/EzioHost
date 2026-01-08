@@ -14,7 +14,7 @@ internal class VideoStreamConfiguration : IEntityTypeConfiguration<VideoStream>
             .UsePropertyAccessMode(PropertyAccessMode.Property);
 
         builder.Property(x => x.Key).IsRequired().HasMaxLength(32).IsUnicode(false);
-        builder.Property(x => x.IV).IsRequired().HasMaxLength(32).IsUnicode(false);
+        builder.Property(x => x.Iv).IsRequired().HasMaxLength(32).IsUnicode(false);
 
         // Make Video navigation optional to avoid issues with global query filter
         builder.HasOne(x => x.Video)

@@ -1,4 +1,6 @@
-﻿using EzioHost.Core.Private;
+﻿using System.Collections.Concurrent;
+using AutoMapper;
+using EzioHost.Core.Private;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
@@ -6,15 +8,12 @@ using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
 using EzioHost.Domain.Settings;
 using EzioHost.Shared.Events;
-using EzioHost.Shared.Extensions;
+using EzioHost.Shared.Models;
 using FFMpegCore;
 using FFMpegCore.Enums;
+using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-using System.Collections.Concurrent;
-using System.Text;
-using AutoMapper;
-using EzioHost.Shared.Models;
 using static EzioHost.Shared.Enums.VideoEnum;
 
 namespace EzioHost.Core.Services.Implement;
@@ -25,18 +24,19 @@ public class UpscaleService(
     IUpscaleRepository upscaleRepository,
     IVideoService videoService,
     IVideoUnitOfWork videoUnitOfWork,
-    IMapper mapper) : IUpscaleService
+    IMapper mapper,
+    IM3U8PlaylistService m3U8PlaylistService,
+    ILogger<UpscaleService> logger) : IUpscaleService
 {
     private const int CONCURRENT_UPSCALE_TASK = 1;
     private const string FRAME_PATTERN = "frame_%05d.jpg";
     private const string FRAME_SEARCH_PATTERN = "frame_*.jpg";
 
     private static readonly ImageEncodingParam ImageEncodingParam;
-    private static readonly ImageOpenCvUpscaler Upscaler;
     private static readonly SessionOptions SessionOptions;
 
-    private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
-
+    private readonly Lazy<ImageOpenCvUpscaler> _upscalerLazy = new(() =>
+        new ImageOpenCvUpscaler(logger.CreateLogger<ImageOpenCvUpscaler>()));
 
     static UpscaleService()
     {
@@ -50,9 +50,11 @@ public class UpscaleService(
         {
             SessionOptions = new SessionOptions();
         }
-
-        Upscaler = new ImageOpenCvUpscaler();
     }
+
+    private ImageOpenCvUpscaler Upscaler => _upscalerLazy.Value;
+
+    private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
     private string TempPath => directoryProvider.GetTempPath();
     private string WebRootPath => directoryProvider.GetWebRootPath();
@@ -201,21 +203,8 @@ public class UpscaleService(
 
             await videoService.AddNewVideoStream(video, newVideoHlsStream);
 
-            var currentResolution = videoUpscale.Resolution.GetDescription();
-            var filePath = Path.Combine(currentResolution, Path.GetFileName(newVideoHlsStream.M3U8Location))
-                .Replace("\\", "/");
-
-            var m3U8ContentBuilder = new StringBuilder();
-            m3U8ContentBuilder.AppendLine(
-                $"#EXT-X-STREAM-INF:BANDWIDTH={videoService.GetBandwidthForResolution(currentResolution)},RESOLUTION={videoService.GetResolutionDimensions(currentResolution)}");
-            m3U8ContentBuilder.AppendLine(filePath);
-
-            await using var m3U8MergeFileStream = new FileStream(
-                Path.Combine(WebRootPath, video.M3U8Location),
-                FileMode.OpenOrCreate,
-                FileAccess.Write);
-            m3U8MergeFileStream.Seek(0, SeekOrigin.End);
-            await m3U8MergeFileStream.WriteAsync(Encoding.UTF8.GetBytes(m3U8ContentBuilder.ToString()));
+            var absoluteM3U8Location = Path.Combine(WebRootPath, video.M3U8Location);
+            await m3U8PlaylistService.AppendStreamToPlaylistAsync(video, newVideoHlsStream, absoluteM3U8Location);
 
 
             await VideoRepository.UpdateVideoForUnitOfWork(video);
@@ -224,16 +213,18 @@ public class UpscaleService(
             videoUpscale.Status = VideoUpscaleStatus.Ready;
             await UpdateVideoUpscale(videoUpscale);
 
-            OnVideoUpscaleStreamAdded?.Invoke(new VideoStreamAddedEventArgs
+            OnVideoUpscaleStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
             {
                 VideoId = video.Id,
                 VideoStream = mapper.Map<VideoStreamDto>(newVideoHlsStream)
             });
-
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Error upscaling video {VideoUpscaleId} for video {VideoId}. Rolling back transaction.",
+                videoUpscale.Id, videoUpscale.VideoId);
             await videoUnitOfWork.RollbackTransactionAsync();
+            throw;
         }
         finally
         {
@@ -267,7 +258,7 @@ public class UpscaleService(
         return upscaleRepository.GetVideoNeedUpscale();
     }
 
-    public event Action<VideoStreamAddedEventArgs>? OnVideoUpscaleStreamAdded;
+    public event EventHandler<VideoStreamAddedEventArgs>? OnVideoUpscaleStreamAdded;
 
     private InferenceSession GetInferenceSession(OnnxModel onnxModel)
     {

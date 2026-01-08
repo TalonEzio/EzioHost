@@ -2,7 +2,7 @@
 
 namespace EzioHost.Shared.Events;
 
-public class VideoProcessDoneEvent
+public class VideoProcessDoneEvent : EventArgs
 {
     public required VideoDto Video { get; set; }
 }

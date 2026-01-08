@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using System.Linq.Expressions;
-using System.Text;
 using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
@@ -13,6 +12,7 @@ using EzioHost.Shared.Extensions;
 using EzioHost.Shared.Models;
 using FFMpegCore;
 using FFMpegCore.Enums;
+using Microsoft.Extensions.Logging;
 using static EzioHost.Shared.Enums.VideoEnum;
 using VideoStream = EzioHost.Domain.Entities.VideoStream;
 
@@ -23,7 +23,10 @@ public class VideoService(
     IDirectoryProvider directoryProvider,
     IProtectService protectService,
     ISettingProvider settingProvider,
-    IMapper mapper) : IVideoService
+    IMapper mapper,
+    IM3U8PlaylistService m3U8PlaylistService,
+    IVideoResolutionService videoResolutionService,
+    ILogger<VideoService> logger) : IVideoService
 {
     private readonly IVideoRepository _videoRepository = videoUnitOfWork.VideoRepository;
     private readonly IVideoStreamRepository _videoStreamRepository = videoUnitOfWork.VideoStreamRepository;
@@ -31,8 +34,8 @@ public class VideoService(
     private readonly string _webRootPath = directoryProvider.GetWebRootPath();
     private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
 
-    public event Action<VideoStreamAddedEventArgs>? OnVideoStreamAdded;
-    public event Action<VideoProcessDoneEvent>? OnVideoProcessDone;
+    public event EventHandler<VideoStreamAddedEventArgs>? OnVideoStreamAdded;
+    public event EventHandler<VideoProcessDoneEvent>? OnVideoProcessDone;
 
     public Task<Video?> GetVideoWithReadyUpscale(Guid videoId)
     {
@@ -98,27 +101,7 @@ public class VideoService(
                 await AddNewVideoStream(inputVideo, newVideoStream);
             }
 
-            var m3U8Folder = new FileInfo(inputVideo.M3U8Location).Directory!.FullName;
-            if (!Directory.Exists(m3U8Folder)) Directory.CreateDirectory(m3U8Folder);
-
-            var m3U8MergeFileStream = new FileStream(absoluteM3U8Location, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-
-            var m3U8AllContentBuilder = new StringBuilder();
-            m3U8AllContentBuilder.AppendLine("#EXTM3U");
-
-            foreach (var videoStream in inputVideo.VideoStreams)
-            {
-                var currentResolution = videoStream.Resolution.GetDescription();
-                var filePath = Path.Combine(currentResolution, Path.GetFileName(videoStream.M3U8Location))
-                    .Replace("\\", "/");
-
-                m3U8AllContentBuilder.AppendLine(
-                    $"#EXT-X-STREAM-INF:BANDWIDTH={GetBandwidthForResolution(currentResolution)},RESOLUTION={GetResolutionDimensions(currentResolution)}");
-                m3U8AllContentBuilder.AppendLine(filePath);
-            }
-
-            await m3U8MergeFileStream.WriteAsync(Encoding.UTF8.GetBytes(m3U8AllContentBuilder.ToString()));
-            m3U8MergeFileStream.Close();
+            await m3U8PlaylistService.BuildFullPlaylistAsync(inputVideo, absoluteM3U8Location);
 
             inputVideo.Status = VideoStatus.Ready;
 
@@ -129,49 +112,19 @@ public class VideoService(
             inputVideo.VideoStreams = inputVideo.VideoStreams.DistinctBy(x => x.Id).ToList();
             var videoMapper = mapper.Map<VideoDto>(inputVideo);
 
-            OnVideoProcessDone?.Invoke(new VideoProcessDoneEvent
+            OnVideoProcessDone?.Invoke(this, new VideoProcessDoneEvent
             {
                 Video = videoMapper
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Error encoding video {VideoId}. Rolling back transaction.", inputVideo.Id);
             await videoUnitOfWork.RollbackTransactionAsync();
+            throw;
         }
     }
 
-    public int GetBandwidthForResolution(string resolution)
-    {
-        return resolution switch
-        {
-            "360p" => 800000,
-            "480p" => 1400000,
-            "720p" => 2800000,
-            "960p" => 4000000,
-            "1080p" => 5000000,
-            "1440p" => 8000000,
-            "1920p" => 8000000,
-            "2160p" => 15000000,
-            "AI Upscaled" => 5000000,
-            _ => 1000000
-        };
-    }
-
-    public string GetResolutionDimensions(string resolution)
-    {
-        switch (resolution)
-        {
-            case "360p": return "640x360";
-            case "480p": return "854x480";
-            case "720p": return "1280x720";
-            case "960p": return "1280x960";
-            case "1080p": return "1920x1080";
-            case "1440p": return "2560x1440";
-            case "1920p": return "2560x1920";
-            case "2160p": return "3840x2160";
-            default: return "1920x1080";
-        }
-    }
 
     public Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
     {
@@ -180,7 +133,7 @@ public class VideoService(
         video.VideoStreams.Add(videoStream);
         videoStream.Video = video;
 
-        OnVideoStreamAdded?.Invoke(new VideoStreamAddedEventArgs
+        OnVideoStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
         {
             VideoId = video.Id,
             VideoStream = mapper.Map<VideoStreamDto>(videoStream)
@@ -206,7 +159,7 @@ public class VideoService(
             VideoId = inputVideo.Id,
             Video = inputVideo,
             Key = protectService.GenerateRandomKey(), // 🔑 Random key
-            IV = protectService.GenerateRandomIv(), // 🔄 Random IV
+            Iv = protectService.GenerateRandomIv(), // 🔄 Random IV
             M3U8Location = Path.GetRelativePath(_webRootPath, absoluteVideoStreamM3U8Location)
         };
 
@@ -232,7 +185,9 @@ public class VideoService(
                 options => options
                     .WithVideoCodec(VideoEncodeSetting.VideoCodec)
                     .WithAudioCodec(VideoEncodeSetting.AudioCodec)
-                    .WithVideoBitrate(GetBandwidthForResolution(targetResolution.GetDescription()) / 1000) //kbps
+                    .WithVideoBitrate(
+                        videoResolutionService.GetBandwidthForResolution(targetResolution.GetDescription()) /
+                        1000) //kbps
                     .WithAudioBitrate(AudioQuality.Normal) //128kbps
                     .WithCustomArgument(
                         $"-vf \"scale={resolutionSize.Width}:{resolutionSize.Height},format=yuv420p\"") //handle 10 bit file
@@ -243,7 +198,7 @@ public class VideoService(
                     .WithCustomArgument("-hls_playlist_type vod")
                     .WithCustomArgument("-hls_enc 1")
                     .WithCustomArgument($"-hls_enc_key \"{videoStream.Key}\"")
-                    .WithCustomArgument($"-hls_enc_iv \"{videoStream.IV}\"")
+                    .WithCustomArgument($"-hls_enc_iv \"{videoStream.Iv}\"")
                     .WithFastStart()
             );
 
@@ -278,9 +233,12 @@ public class VideoService(
 
             await File.WriteAllLinesAsync(absoluteVideoStreamM3U8Location, m3U8Content);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine($"FFMpeg processing error: {e.Message}");
+            logger.LogError(ex,
+                "FFMpeg processing error while creating HLS variant stream for video {VideoId}, resolution {Resolution}",
+                inputVideo.Id, targetResolution);
+            throw;
         }
 
         return videoStream;

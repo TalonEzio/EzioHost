@@ -13,23 +13,18 @@ namespace EzioHost.WebAPI.Jobs;
 public class VideoProcessingJob(
     IVideoService videoService,
     ILogger<VideoProcessingJob> logger,
-    IHubContext<VideoHub, IVideoHubAction> videoHub) : IJob, IDisposable
+    IHubContext<VideoHub, IVideoHubAction> videoHub) : IJob
 {
     private Guid _userId;
-    public void Dispose()
-    {
-        videoService.OnVideoStreamAdded -= VideoServiceOnOnVideoStreamAdded;
-        videoService.OnVideoProcessDone -= VideoServiceOnOnVideoProcessDone;
-    }
 
     public async Task Execute(IJobExecutionContext context)
     {
-        videoService.OnVideoStreamAdded += VideoServiceOnOnVideoStreamAdded;
-        videoService.OnVideoProcessDone += VideoServiceOnOnVideoProcessDone;
-
         var stopwatch = Stopwatch.StartNew();
         try
         {
+            videoService.OnVideoStreamAdded += VideoServiceOnOnVideoStreamAdded;
+            videoService.OnVideoProcessDone += VideoServiceOnOnVideoProcessDone;
+
             var videoToEncode = await videoService.GetVideoToEncode();
 
             if (videoToEncode != null)
@@ -48,17 +43,21 @@ public class VideoProcessingJob(
         {
             stopwatch.Stop();
             logger.LogInformation($"[VideoProcessingJob] Finished in {stopwatch.ElapsedMilliseconds} ms");
+
+
+            videoService.OnVideoStreamAdded -= VideoServiceOnOnVideoStreamAdded;
+            videoService.OnVideoProcessDone -= VideoServiceOnOnVideoProcessDone;
         }
     }
 
-    private void VideoServiceOnOnVideoProcessDone(VideoProcessDoneEvent args)
+    private void VideoServiceOnOnVideoProcessDone(object? sender, VideoProcessDoneEvent args)
     {
         if (_userId == Guid.Empty) return;
 
         videoHub.Clients.User(_userId.ToString()).ReceiveVideoProcessingDone(args).SafeFireAndForget();
     }
 
-    private void VideoServiceOnOnVideoStreamAdded(VideoStreamAddedEventArgs obj)
+    private void VideoServiceOnOnVideoStreamAdded(object? sender, VideoStreamAddedEventArgs obj)
     {
         if (_userId == Guid.Empty) return;
 

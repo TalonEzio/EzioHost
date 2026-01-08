@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using OpenCvSharp;
@@ -10,7 +11,7 @@ using OpenCvSharp.Dnn;
 
 namespace EzioHost.Core.Private;
 
-internal sealed class ImageOpenCvUpscaler
+internal sealed class ImageOpenCvUpscaler(ILogger<ImageOpenCvUpscaler> logger)
 {
     public Task<Mat> UpscaleImageAsync(string imagePath, InferenceSession session, int scale)
     {
@@ -47,8 +48,8 @@ internal sealed class ImageOpenCvUpscaler
             throw new NotSupportedException(
                 $"Model input type {inputType} is not supported. Only Float16 and Float32 are supported.");
         stopwatch.Stop();
-        Console.WriteLine(
-            $"Thread ID: {Thread.CurrentThread.ManagedThreadId} - Run inference: {stopwatch.ElapsedMilliseconds} ms");
+        logger.LogDebug("Thread ID: {ThreadId} - Run inference: {ElapsedMs} ms",
+            Thread.CurrentThread.ManagedThreadId, stopwatch.ElapsedMilliseconds);
 
         var outputTensor = results.First().AsTensor<float>();
 
@@ -56,8 +57,8 @@ internal sealed class ImageOpenCvUpscaler
         var outputImage = TensorToImage(outputTensor);
         stopwatch.Stop();
 
-        Console.WriteLine(
-            $"Thread ID: {Thread.CurrentThread.ManagedThreadId} - Convert tensor to image: {stopwatch.ElapsedMilliseconds} ms");
+        logger.LogDebug("Thread ID: {ThreadId} - Convert tensor to image: {ElapsedMs} ms",
+            Thread.CurrentThread.ManagedThreadId, stopwatch.ElapsedMilliseconds);
 
         return outputImage;
     }

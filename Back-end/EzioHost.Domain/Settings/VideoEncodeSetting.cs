@@ -7,5 +7,4 @@ public class VideoEncodeSetting
     public int HlsTime { get; set; } = 1;
     public string BaseDrmUrl { get; set; } = "/api/video/drm/";
     public int UpscaleBitrateKbps { get; set; } = 8000;
-
 }

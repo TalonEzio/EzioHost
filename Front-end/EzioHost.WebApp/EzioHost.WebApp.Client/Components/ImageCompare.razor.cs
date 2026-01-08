@@ -11,7 +11,7 @@ public partial class ImageCompare
     private bool _isReversed;
     private bool _isSwapped;
     private bool _isVertical = true; // true = TOP-BOTTOM, false = LEFT-RIGHT
-    [Inject] public IJSRuntime JS { get; set; } = null!;
+    [Inject] public IJSRuntime Js { get; set; } = null!;
 
     [Parameter] public string BeforeImage { get; set; } = "";
     [Parameter] public string AfterImage { get; set; } = "";
@@ -152,7 +152,7 @@ public partial class ImageCompare
             try
             {
                 var position =
-                    await JS.InvokeAsync<int>("getPercentagePosition", _compareElement, e.Touches[0].ClientX);
+                    await Js.InvokeAsync<int>("getPercentagePosition", _compareElement, e.Touches[0].ClientX);
                 SliderPosition = Math.Clamp(position, 0, 100);
                 StateHasChanged();
             }
@@ -176,7 +176,7 @@ public partial class ImageCompare
     {
         try
         {
-            var position = await JS.InvokeAsync<int>("getPercentagePosition", _compareElement, e.ClientX);
+            var position = await Js.InvokeAsync<int>("getPercentagePosition", _compareElement, e.ClientX);
             SliderPosition = Math.Clamp(position, 0, 100);
             StateHasChanged();
         }

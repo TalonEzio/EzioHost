@@ -7,8 +7,8 @@ namespace EzioHost.Core.Services.Interface;
 
 public interface IVideoService
 {
-    public event Action<VideoStreamAddedEventArgs> OnVideoStreamAdded;
-    public event Action<VideoProcessDoneEvent> OnVideoProcessDone;
+    public event EventHandler<VideoStreamAddedEventArgs>? OnVideoStreamAdded;
+    public event EventHandler<VideoProcessDoneEvent>? OnVideoProcessDone;
 
     Task<IEnumerable<Video>> GetVideos(
         int pageNumber,
@@ -27,9 +27,6 @@ public interface IVideoService
 
     Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
         VideoResolution targetResolution, int scale = 2);
-
-    public int GetBandwidthForResolution(string resolution);
-    public string GetResolutionDimensions(string resolution);
 
     Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream);
 }

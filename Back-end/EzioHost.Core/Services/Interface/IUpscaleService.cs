@@ -13,5 +13,5 @@ public interface IUpscaleService
     Task DeleteVideoUpscale(VideoUpscale deleteVideoUpscale);
     Task<VideoUpscale?> GetVideoNeedUpscale();
 
-    event Action<VideoStreamAddedEventArgs> OnVideoUpscaleStreamAdded;
+    event EventHandler<VideoStreamAddedEventArgs>? OnVideoUpscaleStreamAdded;
 }

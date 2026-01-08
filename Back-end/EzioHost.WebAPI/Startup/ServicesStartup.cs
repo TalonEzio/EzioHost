@@ -38,6 +38,9 @@ public static class ServicesStartup
         builder.Services.AddScoped<IUpscaleRepository, UpscaleSqlServerRepository>();
         builder.Services.AddScoped<IUpscaleService, UpscaleService>();
 
+        builder.Services.AddScoped<IM3U8PlaylistService, M3U8PlaylistService>();
+        builder.Services.AddScoped<IVideoResolutionService, VideoResolutionService>();
+
         return builder;
     }
 }
