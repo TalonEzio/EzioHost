@@ -9,6 +9,13 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        //builder.WebHost.ConfigureKestrel(serverOptions =>
+        //{
+        //    serverOptions.Limits.MaxRequestHeadersTotalSize = 256 * 1024;
+
+        //    serverOptions.Limits.MaxRequestHeaderCount = 100; 
+        //});
+
         builder.AddServiceDefaults();
 
         builder.ConfigureAppSettings(out var appSettings);

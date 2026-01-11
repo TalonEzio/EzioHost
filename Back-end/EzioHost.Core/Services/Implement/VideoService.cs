@@ -28,6 +28,7 @@ public class VideoService(
     IVideoResolutionService videoResolutionService,
     ILogger<VideoService> logger) : IVideoService
 {
+    private readonly string _thumbnailPath = directoryProvider.GetThumbnailFolder();
     private readonly IVideoRepository _videoRepository = videoUnitOfWork.VideoRepository;
     private readonly IVideoStreamRepository _videoStreamRepository = videoUnitOfWork.VideoStreamRepository;
 
@@ -59,12 +60,9 @@ public class VideoService(
 
     public async Task<Video> AddNewVideo(Video newVideo)
     {
-        var rawLocation = Path.Combine(_webRootPath, newVideo.RawLocation);
-        var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
-        var videoHeight = mediaInfo.VideoStreams[0].Height;
-
-        newVideo.Height = videoHeight;
-
+        await UpdateResolution(newVideo);
+        newVideo.Thumbnail = await GenerateThumbnail(newVideo);
+        newVideo.ShareType = VideoShareType.Public;
         await _videoRepository.AddNewVideo(newVideo);
 
         return newVideo;
@@ -77,6 +75,12 @@ public class VideoService(
 
     public async Task<Video> UpdateVideo(Video updateVideo)
     {
+        if (string.IsNullOrEmpty(updateVideo.Thumbnail))
+        {
+            await UpdateResolution(updateVideo);
+            updateVideo.Thumbnail = await GenerateThumbnail(updateVideo);
+        }
+
         var video = await _videoRepository.UpdateVideo(updateVideo);
 
         return video;
@@ -130,7 +134,6 @@ public class VideoService(
     {
         video.VideoStreams ??= [];
         _videoStreamRepository.Add(videoStream);
-        video.VideoStreams.Add(videoStream);
         videoStream.Video = video;
 
         OnVideoStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
@@ -254,5 +257,40 @@ public class VideoService(
     public Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId)
     {
         return _videoRepository.GetVideoByVideoStreamId(videoStreamId);
+    }
+
+    public async Task<string> GenerateThumbnail(Video video)
+    {
+        var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
+        var upscaleLocation = Path.Combine(_webRootPath, video.VideoUpscales.FirstOrDefault()?.OutputLocation ?? string.Empty);
+
+        if (!string.IsNullOrEmpty(upscaleLocation) && File.Exists(upscaleLocation))
+        {
+            rawLocation = upscaleLocation;
+        }
+
+        var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
+        var duration = mediaInfo.Duration;
+
+        var random = new Random();
+        var randomSeconds = random.NextDouble() * duration.TotalSeconds;
+        var captureTime = TimeSpan.FromSeconds(randomSeconds);
+
+        var thumbFileName = $"thumb_{video.Id}.jpg";
+        var thumbFullPath = Path.Combine(_thumbnailPath, thumbFileName);
+
+        await FFMpeg.SnapshotAsync(rawLocation, thumbFullPath, null, captureTime);
+
+        return Path.GetRelativePath(_webRootPath, thumbFullPath);
+    }
+
+    public async Task UpdateResolution(Video video)
+    {
+        var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
+
+        var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
+        var videoHeight = mediaInfo.PrimaryVideoStream!.Height;
+
+        video.Height = videoHeight;
     }
 }

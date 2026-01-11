@@ -31,12 +31,13 @@ public class UpscaleService(
     private const int CONCURRENT_UPSCALE_TASK = 1;
     private const string FRAME_PATTERN = "frame_%05d.jpg";
     private const string FRAME_SEARCH_PATTERN = "frame_*.jpg";
+    private const int MAX_CACHED_SESSIONS = 5; // Limit number of cached sessions
 
     private static readonly ImageEncodingParam ImageEncodingParam;
     private static readonly SessionOptions SessionOptions;
 
     private readonly Lazy<ImageOpenCvUpscaler> _upscalerLazy = new(() =>
-        new ImageOpenCvUpscaler(logger.CreateLogger<ImageOpenCvUpscaler>()));
+        new ImageOpenCvUpscaler());
 
     static UpscaleService()
     {
@@ -204,9 +205,10 @@ public class UpscaleService(
             await videoService.AddNewVideoStream(video, newVideoHlsStream);
 
             var absoluteM3U8Location = Path.Combine(WebRootPath, video.M3U8Location);
-            await m3U8PlaylistService.AppendStreamToPlaylistAsync(video, newVideoHlsStream, absoluteM3U8Location);
+            await m3U8PlaylistService.BuildFullPlaylistAsync(video, absoluteM3U8Location);
 
-
+            //Update thumbnail from upscaled video
+            video.Thumbnail = await videoService.GenerateThumbnail(video);
             await VideoRepository.UpdateVideoForUnitOfWork(video);
             await videoUnitOfWork.CommitTransactionAsync();
 
@@ -264,11 +266,43 @@ public class UpscaleService(
     {
         if (CacheInferenceSessions.TryGetValue(onnxModel.Id, out var session)) return session;
 
+        // Check if we've reached the cache limit and remove oldest sessions if needed
+        if (CacheInferenceSessions.Count >= MAX_CACHED_SESSIONS) CleanupOldSessions();
+
         var onnxModelPath = Path.Combine(WebRootPath, onnxModel.FileLocation);
 
-        var newInferenceSession = new InferenceSession(onnxModelPath, SessionOptions);
-        if (CacheInferenceSessions.TryAdd(onnxModel.Id, newInferenceSession)) return newInferenceSession;
+        if (!File.Exists(onnxModelPath)) throw new FileNotFoundException($"ONNX model file not found: {onnxModelPath}");
 
-        throw new FileLoadException("Cannot add onnx model");
+        var newInferenceSession = new InferenceSession(onnxModelPath, SessionOptions);
+        if (CacheInferenceSessions.TryAdd(onnxModel.Id, newInferenceSession))
+        {
+            logger.LogInformation("Cached new inference session for model ID: {ModelId}", onnxModel.Id);
+            return newInferenceSession;
+        }
+
+        // If we can't add to cache (race condition), dispose the session we created
+        newInferenceSession.Dispose();
+        throw new FileLoadException("Cannot add onnx model to cache");
+    }
+
+    private void CleanupOldSessions()
+    {
+        try
+        {
+            // Remove oldest sessions to make room for new ones
+            var sessionsToRemove = CacheInferenceSessions.Count - MAX_CACHED_SESSIONS + 1;
+            var keysToRemove = CacheInferenceSessions.Keys.Take(sessionsToRemove).ToList();
+
+            foreach (var key in keysToRemove)
+                if (CacheInferenceSessions.TryRemove(key, out var oldSession))
+                {
+                    oldSession.Dispose();
+                    logger.LogInformation("Removed old inference session for model ID: {ModelId}", key);
+                }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during inference session cleanup");
+        }
     }
 }

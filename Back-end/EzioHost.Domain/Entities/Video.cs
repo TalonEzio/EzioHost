@@ -8,7 +8,7 @@ namespace EzioHost.Domain.Entities;
 public class Video : BaseAuditableEntityWithUserId<Guid>
 {
     public Guid Id { get; set; }
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set => field = Path.GetFileNameWithoutExtension(value); } = string.Empty;
 
     public string RawLocation
     {
@@ -20,6 +20,12 @@ public class Video : BaseAuditableEntityWithUserId<Guid>
     {
         get;
         set => field = UriPathHelper.NormalizeUriPath(value, nameof(M3U8Location));
+    } = string.Empty;
+
+    public string Thumbnail
+    {
+        get;
+        set => field = UriPathHelper.NormalizeUriPath(value, nameof(Thumbnail));
     } = string.Empty;
 
     public VideoEnum.VideoResolution Resolution { get; set; }

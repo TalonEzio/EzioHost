@@ -24,53 +24,126 @@ public class VideoController(
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetVideos(int pageNumber, int pageSize, bool? includeStreams,
-        bool? includeUpscaled)
+    public async Task<IActionResult> GetVideos(
+        int pageNumber = 1,
+        int pageSize = 10,
+        bool? includeStreams = null,
+        bool? includeUpscaled = false)
     {
-        var userId = User.UserId;
-        Expression<Func<Video, object>>[]? includes;
+        try
+        {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        if (includeStreams == true && includeUpscaled == true)
-            includes = [x => x.VideoStreams, x => x.VideoUpscales];
-        else if (includeStreams == true)
-            includes = [x => x.VideoStreams];
-        else if (includeUpscaled == true)
-            includes = [x => x.VideoUpscales];
-        else
-            includes = [];
-        var videos =
-            (await videoService.GetVideos(pageNumber, pageSize, x => x.CreatedBy == userId, includes))
-            .ToList();
+            var userId = User.UserId;
+            if (userId == Guid.Empty)
+                return Unauthorized("User ID not found");
 
-        var videoDtos = mapper.Map<List<VideoDto>>(videos);
+            Expression<Func<Video, object>>[]? includes;
 
+            if (includeStreams == true && includeUpscaled == true)
+                includes = [x => x.VideoStreams, x => x.VideoUpscales];
+            else if (includeStreams == true)
+                includes = [x => x.VideoStreams];
+            else if (includeUpscaled == true)
+                includes = [x => x.VideoUpscales];
+            else
+                includes = [];
 
-        return Ok(videoDtos);
+            var videos = (await videoService.GetVideos(
+                pageNumber,
+                pageSize,
+                x => x.CreatedBy == userId,
+                includes)).ToList();
+
+            var videoDtos = mapper.Map<List<VideoDto>>(videos);
+
+            return Ok(videoDtos);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "Internal server error occurred while retrieving videos");
+        }
     }
 
     [HttpGet("play/{videoId:guid}")]
     public async Task<IActionResult> GetM3U8ById([FromRoute] Guid videoId)
     {
-        var video = await videoService.GetVideoById(videoId);
-        if (video == null) return NotFound();
+        try
+        {
+            if (videoId == Guid.Empty)
+                return BadRequest("Invalid video ID");
 
-        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+            var video = await videoService.GetVideoById(videoId);
+            if (video == null)
+                return NotFound("Video not found");
 
-        var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
-        return File(fileContent, "application/x-mpegURL");
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+                return BadRequest("Video is not ready for playback");
+
+            if (!System.IO.File.Exists(video.M3U8Location))
+                return NotFound("Video file not found");
+
+            var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
+            return File(fileContent, "application/x-mpegURL");
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound("Video file not found");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized("Access denied");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "Internal server error occurred while retrieving video");
+        }
     }
 
     [HttpGet("download/{videoId:guid}")]
     [Authorize]
     public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
     {
-        var video = await videoService.GetVideoById(videoId);
-        if (video == null) return NotFound();
-        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+        try
+        {
+            if (videoId == Guid.Empty)
+                return BadRequest("Invalid video ID");
 
-        var fileLocation = Path.Combine(WebRootPath, video.RawLocation);
-        var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
-        return File(fileContent, "application/octet-stream", $"{video.Title}");
+            var video = await videoService.GetVideoById(videoId);
+            if (video == null)
+                return NotFound("Video not found");
+
+            if (video.Status != VideoEnum.VideoStatus.Ready)
+                return BadRequest("Video is not ready for download");
+
+            var fileLocation = Path.Combine(WebRootPath, video.RawLocation);
+            if (!System.IO.File.Exists(fileLocation))
+                return NotFound("Video file not found");
+
+            var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
+            return File(fileContent, "application/octet-stream", $"{video.Title}");
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound("Video file not found");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized("Access denied");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "Internal server error occurred while downloading video");
+        }
     }
 
     [HttpGet("download-upscale/{videoId:guid}")]

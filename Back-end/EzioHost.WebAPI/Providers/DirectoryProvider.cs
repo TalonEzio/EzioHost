@@ -21,6 +21,11 @@ public class DirectoryProvider : IDirectoryProvider
         return GetOrCreateSubFolder("Uploads");
     }
 
+    public string GetThumbnailFolder()
+    {
+        return GetOrCreateSubFolder("Thumbnails");
+    }
+
     public string GetBaseVideoFolder()
     {
         return GetOrCreateSubFolder("Videos");

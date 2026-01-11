@@ -11,6 +11,8 @@ public interface IM3U8PlaylistService
 
     /// <summary>
     ///     Appends a new video stream entry to an existing M3U8 playlist
+    ///     LƯU Ý: Phương thức này có thể gây ra trùng lặp nếu không được sử dụng cẩn thận.
+    ///     Nên sử dụng BuildFullPlaylistAsync để xây dựng lại toàn bộ playlist từ database.
     /// </summary>
     Task AppendStreamToPlaylistAsync(Video video, VideoStream videoStream, string absoluteM3U8Location);
 }

@@ -12,10 +12,17 @@ internal class VideoConfiguration : IEntityTypeConfiguration<Video>
             .HasMaxLength(500)
             .IsUnicode()
             .UsePropertyAccessMode(PropertyAccessMode.Property);
+
         builder.Property(x => x.RawLocation)
             .HasMaxLength(500)
             .IsUnicode()
             .UsePropertyAccessMode(PropertyAccessMode.Property);
+
+        builder.Property(x => x.Thumbnail)
+            .HasMaxLength(500)
+            .IsUnicode()
+            .UsePropertyAccessMode(PropertyAccessMode.Property);
+
         builder.Property(x => x.Title).HasMaxLength(100).IsUnicode();
     }
 }

@@ -36,9 +36,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Infrastructure.SqlServer", "Back-end\EzioHost.Infrastructure.SqlServer\EzioHost.Infrastructure.SqlServer.csproj", "{F23B9B20-3152-4F41-A240-C996D0CBD6C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Benchmark", "Test\EzioHost.Benchmark\EzioHost.Benchmark.csproj", "{744AC434-04C2-4AAB-A6AF-8257359083F1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Shared.Private", "Utility\EzioHost.Shared.Private\EzioHost.Shared.Private.csproj", "{1C13C9CA-3122-4781-A1DB-0BD7C118F7F6}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzioHost.Components", "Front-end\EzioHost.Components\EzioHost.Components.csproj", "{3A507E1C-8AF6-4D2D-B1B5-AB3B619D4D4A}"
 EndProject
 Global

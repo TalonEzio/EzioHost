@@ -1,3 +1,5 @@
+using EzioHost.Core.Services.Interface;
+
 namespace EzioHost.Core.Services.Implement;
 
 public class VideoResolutionService : IVideoResolutionService

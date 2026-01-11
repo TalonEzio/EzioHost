@@ -123,6 +123,12 @@
                                             </button>
                                         }
                                         <div class="btn-group btn-group-sm" role="group">
+                                            @if (video.CanPlay)
+                                            {
+                                                <a href="/video-share/@video.Id" target="_blank" class="btn btn-sm btn-info" title="Video Share">
+                                                    <i class="bi bi-share-fill"></i>
+                                                </a>
+                                            }
                                             @if (video.CanUpscale)
                                             {
                                                 <button class="btn btn-outline-warning" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
@@ -186,8 +192,11 @@
                                             <a href="/api/video/download/@video.Id" target="_blank" class="btn btn-sm btn-success">
                                                 <i class="bi bi-download"></i>
                                             </a>
-                                            <a href="/video-share/@video.Id" target="_blank" class="btn btn-sm btn-info">
-                                                <i class="bi bi-share"></i>
+                                            <a href="/video-embed/@video.Id" target="_blank" class="btn btn-sm btn-info" title="Video Embed">
+                                                <i class="bi bi-code-slash"></i>
+                                            </a>
+                                            <a href="/video-share/@video.Id" target="_blank" class="btn btn-sm btn-primary" title="Video Share">
+                                                <i class="bi bi-share-fill"></i>
                                             </a>
                                         }
                                         @if (video.CanUpscale)

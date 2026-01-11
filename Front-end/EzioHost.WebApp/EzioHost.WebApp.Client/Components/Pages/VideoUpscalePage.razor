@@ -5,32 +5,72 @@
 <HeadContent>
     <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
 </HeadContent>
-<h2 class="h2">Upscale Page</h2>
-@if (RendererInfo.IsInteractive)
-{
-    <p>Please select Model to upscale</p>
 
-    <select @onchange="OnOnnxModelChange" class="form-select">
-        @foreach (var model in OnnxModels)
-        {
-            <option value="@model.Id">@model.Name</option>
-        }
-    </select>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">Video Upscaling</h3>
+                </div>
 
-    <div class="row d-flex mt-2">
-        <div class="col-md-6">
-            @if (_selectedModel != null)
-            {
-                <h4>Selected model info:</h4>
-                <p>Name: @_selectedModel.Name</p>
-                <p>Scale: @_selectedModel.Scale</p>
-                <ImageCompare @ref="ImageCompareComponent" BeforeImage="@_selectedModel.DemoInput" AfterImage="@_selectedModel.DemoOutput"/>
-                <button class="btn btn-primary" @onclick=@(RequestUpscaleVideo)>Upscale</button>
-            }
+                <div class="card-body p-4">
+                    @if (RendererInfo.IsInteractive)
+                    {
+                        <div class="mb-4">
+                            <label class="form-label fw-bold mb-2">Select Upscaling Model</label>
+                            <select @onchange="OnOnnxModelChange" class="form-select form-select-lg">
+                                @foreach (var model in OnnxModels)
+                                {
+                                    <option value="@model.Id">@model.Name</option>
+                                }
+                            </select>
+                            <div class="form-text">Choose AI model for video enhancement</div>
+                        </div>
+
+                        @if (_selectedModel != null)
+                        {
+                            <div class="border rounded p-3 mb-4 bg-light">
+                                <h4 class="mb-3">Model Details</h4>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted small">Model Name</label>
+                                        <div class="fw-medium">@_selectedModel.Name</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted small">Upscale Factor</label>
+                                        <div class="fw-medium">@_selectedModel.Scale</div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label text-muted small mb-2">Sample Comparison</label>
+                                    <div class="border rounded overflow-hidden">
+                                        <ImageCompare @ref="ImageCompareComponent"
+                                                      BeforeImage="@_selectedModel.DemoInput"
+                                                      AfterImage="@_selectedModel.DemoOutput"/>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button class="btn btn-primary btn-lg py-3 fw-bold d-flex align-items-center justify-content-center"
+                                            @onclick="RequestUpscaleVideo">
+                                        <i class="bi bi-stars me-2"></i> PROCESS UPSCALE
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-center align-items-center py-5">
+                            <div class="spinner-border text-info me-3" role="status"></div>
+                            <div class="fw-medium">Initializing upscaler components...</div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
-}
-else
-{
-    <p>Waiting...</p>
-}
+</div>

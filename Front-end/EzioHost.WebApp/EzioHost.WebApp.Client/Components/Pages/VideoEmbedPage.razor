@@ -1,0 +1,11 @@
+﻿@page "/video-embed/{VideoId:guid}"
+@using Microsoft.AspNetCore.Components.Sections
+@layout NullLayout
+<div id="player" width="100vw" height="100vh" data-video="@Video?.PlayerJsMetadata"></div>
+
+<SectionContent SectionName="@SectionNames.FooterSection">
+    <script src="/Components/Pages/VideoEmbedPage.Razor.js">
+
+    </script>
+
+</SectionContent>

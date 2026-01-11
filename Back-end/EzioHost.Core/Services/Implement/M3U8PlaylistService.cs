@@ -23,6 +23,12 @@ public class M3U8PlaylistService(IVideoResolutionService videoResolutionService)
         await m3U8FileStream.WriteAsync(Encoding.UTF8.GetBytes(playlistContent));
     }
 
+    /// <summary>
+    ///     Thêm một stream vào playlist hiện có.
+    ///     LƯU Ý: Phương thức này có thể gây ra trùng lặp nếu không được sử dụng cẩn thận.
+    ///     Nên sử dụng BuildFullPlaylistAsync để xây dựng lại toàn bộ playlist từ database.
+    ///     Chỉ sử dụng phương thức này khi bạn chắc chắn stream chưa tồn tại trong playlist.
+    /// </summary>
     public async Task AppendStreamToPlaylistAsync(Video video, VideoStream videoStream, string absoluteM3U8Location)
     {
         var currentResolution = videoStream.Resolution.GetDescription();
@@ -44,7 +50,13 @@ public class M3U8PlaylistService(IVideoResolutionService videoResolutionService)
         var builder = new StringBuilder();
         builder.AppendLine(M3_U8_HEADER);
 
-        foreach (var videoStream in videoStreams)
+        // Sắp xếp và loại bỏ trùng lặp dựa trên resolution để đảm bảo mỗi resolution chỉ xuất hiện một lần
+        var uniqueStreams = videoStreams
+            .GroupBy(v => v.Resolution)
+            .Select(g => g.First())
+            .OrderBy(v => v.Resolution);
+
+        foreach (var videoStream in uniqueStreams)
         {
             var currentResolution = videoStream.Resolution.GetDescription();
             var filePath = Path.Combine(currentResolution, Path.GetFileName(videoStream.M3U8Location))

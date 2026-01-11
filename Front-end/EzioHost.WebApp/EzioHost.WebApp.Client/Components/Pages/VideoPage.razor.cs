@@ -87,7 +87,10 @@ public partial class VideoPage : IAsyncDisposable
 
     private string GetThumbnail(VideoDto video)
     {
-        // Placeholder thumbnail - có thể thay bằng actual thumbnail URL từ video
+        // Sử dụng thumbnail thực từ video, nếu không có thì dùng placeholder
+        if (!string.IsNullOrEmpty(video.Thumbnail)) return video.Thumbnail;
+
+        // Fallback về placeholder nếu không có thumbnail
         return $"https://via.placeholder.com/320x180/0d6efd/ffffff?text={Uri.EscapeDataString(video.Title)}";
     }
 

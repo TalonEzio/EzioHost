@@ -29,4 +29,8 @@ public interface IVideoService
         VideoResolution targetResolution, int scale = 2);
 
     Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream);
+
+    Task<string> GenerateThumbnail(Video video);
+
+    Task UpdateResolution(Video video);
 }

@@ -107,6 +107,7 @@ public class FileUploadService(
 
         var newVideo = new Video
         {
+            Id = Guid.NewGuid(),
             Title = fileUpload.FileName,
             RawLocation = Path.GetRelativePath(BaseWebRootFolder, videoFinalPath),
             M3U8Location = Path.ChangeExtension(Path.GetRelativePath(BaseWebRootFolder, videoFinalPath), ".m3u8"),
@@ -155,6 +156,7 @@ public class FileUploadService(
 
         var newVideo = new Video
         {
+            Id = Guid.NewGuid(),
             Title = existingUpload.FileName,
             RawLocation = Path.GetRelativePath(BaseWebRootFolder, destinationFile),
             M3U8Location = Path.ChangeExtension(

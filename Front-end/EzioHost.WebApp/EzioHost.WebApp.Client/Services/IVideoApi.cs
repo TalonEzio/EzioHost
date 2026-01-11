@@ -10,7 +10,7 @@ public interface IVideoApi
         [Query] int? pageNumber = 1,
         [Query] int? pageSize = 20,
         [Query] bool? includeStreams = true,
-        [Query] bool? includeUpscales = true);
+        [Query] bool? includeUpscales = false);
 
     [Get("/api/Video/{videoId}")]
     Task<VideoDto> GetVideoById(Guid videoId);
