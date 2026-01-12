@@ -80,6 +80,21 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
         return _videos.OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(x => x.Status == VideoEnum.VideoStatus.Queue);
     }
 
+    public async Task<Video?> GetVideoToBackup()
+    {
+        var video = await _videos
+            .Where(x => x.BackupStatus == VideoEnum.VideoBackupStatus.NotBackedUp)
+            .OrderBy(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (video == null) return null;
+
+        video.BackupStatus = VideoEnum.VideoBackupStatus.BackingUp;
+        await dbContext.SaveChangesAsync();
+
+        return video;
+    }
+
     public async Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId)
     {
         var stream = await dbContext.VideoStreams

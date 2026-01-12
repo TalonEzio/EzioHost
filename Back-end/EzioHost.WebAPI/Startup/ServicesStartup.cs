@@ -1,3 +1,4 @@
+using Amazon.S3;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
@@ -5,7 +6,9 @@ using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Infrastructure.SqlServer.UnitOfWorks;
+using EzioHost.Infrastructure.Storage.CloudFlare.Services.Implement;
 using EzioHost.WebAPI.Providers;
+using Microsoft.Extensions.Options;
 
 namespace EzioHost.WebAPI.Startup;
 
@@ -41,6 +44,22 @@ public static class ServicesStartup
         builder.Services.AddScoped<IM3U8PlaylistService, M3U8PlaylistService>();
         builder.Services.AddScoped<IVideoResolutionService, VideoResolutionService>();
 
+        builder.Services.AddScoped<IStorageService, R2StorageService>();
+
+        builder.Services.AddScoped<IAmazonS3>(serviceProvider =>
+        {
+            var appSettings = serviceProvider.GetService<IOptionsMonitor<AppSettings>>();
+
+            var storageSettings = appSettings!.CurrentValue.Storage;
+
+            var s3Config = new AmazonS3Config
+            {
+                ServiceURL = storageSettings.ServiceUrl,
+                ForcePathStyle = true
+            };
+            var s3 = new AmazonS3Client(storageSettings.AccessKey, storageSettings.SecretKey, s3Config);
+            return s3;
+        });
         return builder;
     }
 }

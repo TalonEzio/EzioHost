@@ -36,6 +36,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Manager\EzioHost.Aspire\EzioHost.Aspire.ServiceDefaults\EzioHost.Aspire.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\EzioHost.Infrastructure.SqlServer\EzioHost.Infrastructure.SqlServer.csproj" />
+		<ProjectReference Include="..\EzioHost.Infrastructure.Storage\EzioHost.Infrastructure.Storage.CloudFlare.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

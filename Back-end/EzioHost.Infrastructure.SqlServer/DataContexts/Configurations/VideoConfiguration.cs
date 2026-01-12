@@ -24,5 +24,13 @@ internal class VideoConfiguration : IEntityTypeConfiguration<Video>
             .UsePropertyAccessMode(PropertyAccessMode.Property);
 
         builder.Property(x => x.Title).HasMaxLength(100).IsUnicode();
+
+        builder.Property(x => x.BackupUrl)
+            .HasMaxLength(1000)
+            .IsUnicode()
+            .IsRequired(false);
+
+        builder.Property(x => x.BackupStatus)
+            .HasConversion<byte>();
     }
 }

@@ -34,6 +34,19 @@ public static class QuartzStartup
                     .RepeatForever()
                 )
             );
+
+            var videoBackupJobKey = new JobKey(nameof(VideoBackupJob));
+            quartz.AddJob<VideoBackupJob>(opts => opts.WithIdentity(videoBackupJobKey).StoreDurably());
+
+            quartz.AddTrigger(cfg => cfg
+                .WithIdentity(nameof(VideoBackupJob))
+                .ForJob(videoBackupJobKey)
+                .StartNow()
+                .WithSimpleSchedule(schedule => schedule
+                    .WithIntervalInSeconds(10)
+                    .RepeatForever()
+                )
+            );
         });
         builder.Services.AddQuartzHostedService(cfg =>
         {

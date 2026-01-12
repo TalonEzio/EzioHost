@@ -63,4 +63,12 @@ public class VideoEnum
         Queue = 0,
         Ready = 1
     }
+
+    public enum VideoBackupStatus : byte
+    {
+        [Description("Chưa sao lưu")] NotBackedUp = 0,
+        [Description("Đang sao lưu")] BackingUp = 1,
+        [Description("Đã sao lưu")] BackedUp = 2,
+        [Description("Sao lưu thất bại")] BackupFailed = 3
+    }
 }

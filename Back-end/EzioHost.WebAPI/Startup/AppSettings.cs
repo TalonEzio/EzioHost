@@ -6,5 +6,6 @@ namespace EzioHost.WebAPI.Startup;
 public class AppSettings
 {
     public JwtOidcSetting JwtOidc { get; set; } = new();
-    public VideoEncodeSetting VideoEncode { get; set; } = new();
+    public VideoEncodeSettings VideoEncode { get; set; } = new();
+    public StorageSettings Storage { get; set; } = new();
 }

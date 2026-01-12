@@ -32,5 +32,7 @@ public interface IVideoService
 
     Task<string> GenerateThumbnail(Video video);
 
-    Task UpdateResolution(Video video);
+    Task<Video?> GetVideoBackup();
+    Task<VideoBackupStatus> BackupVideo(Video video);
+
 }

@@ -159,8 +159,6 @@ public partial class VideoPage : IAsyncDisposable
                 video.VideoStreams.Clear();
                 video.VideoStreams.AddRange(args.Video.VideoStreams);
                 video.Status = args.Video.Status;
-                video.M3U8Location = args.Video.M3U8Location;
-
                 video.VideoStreams = video.VideoStreams.DistinctBy(x => x.Id).ToList();
 
                 ApplyFilters();
@@ -193,7 +191,6 @@ public partial class VideoPage : IAsyncDisposable
 
         if (_jsObjectReference != null)
         {
-            var videoUrl = video.M3U8Location;
             await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.PlayerJsMetadata);
         }
     }

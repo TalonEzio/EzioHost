@@ -9,16 +9,17 @@ public class MapperClass : Profile
     public MapperClass()
     {
         CreateMap<Video, VideoDto>()
-            .ForMember(dest => dest.M3U8Location,
-                opt => opt.MapFrom<StaticPathResolver, string?>(src => src.M3U8Location))
+            //.ForMember(dest => dest.M3U8Location,
+            //    opt => opt.MapFrom<StaticPathResolver, string?>(src => src.M3U8Location))
             .ForMember(dest => dest.Thumbnail,
                 opt => opt.MapFrom<StaticPathResolver, string?>(src => src.Thumbnail))
             .ReverseMap();
 
         CreateMap<VideoStream, VideoStreamDto>()
             .ForMember(dest => dest.M3U8Location,
-                opt => opt.MapFrom<StaticPathResolver, string?>(src => src.M3U8Location))
-            .ReverseMap();
+                opt => opt.MapFrom<StreamUrlResolver, string?>(src => src.M3U8Location))
+            .ReverseMap()
+            .ForMember(dest => dest.M3U8Location, opt => opt.Ignore());
 
         CreateMap<OnnxModel, OnnxModelDto>()
             .ForMember(dest => dest.DemoInput,

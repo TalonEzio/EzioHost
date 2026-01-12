@@ -18,6 +18,7 @@ public interface IVideoRepository
         Expression<Func<Video, object>>[]? includes = null);
 
     Task<Video?> GetVideoToEncode();
+    Task<Video?> GetVideoToBackup();
 
     Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
 

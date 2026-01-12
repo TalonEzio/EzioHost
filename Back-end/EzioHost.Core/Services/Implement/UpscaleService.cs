@@ -55,7 +55,7 @@ public class UpscaleService(
 
     private ImageOpenCvUpscaler Upscaler => _upscalerLazy.Value;
 
-    private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
+    private VideoEncodeSettings VideoEncodeSetting => settingProvider.GetVideoEncodeSettings();
 
     private string TempPath => directoryProvider.GetTempPath();
     private string WebRootPath => directoryProvider.GetWebRootPath();

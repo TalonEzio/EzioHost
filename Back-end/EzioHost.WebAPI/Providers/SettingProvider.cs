@@ -7,8 +7,13 @@ namespace EzioHost.WebAPI.Providers;
 
 public class SettingProvider(IOptionsMonitor<AppSettings> appSettingsMonitor) : ISettingProvider
 {
-    public VideoEncodeSetting GetVideoEncodeSetting()
+    public VideoEncodeSettings GetVideoEncodeSettings()
     {
         return appSettingsMonitor.CurrentValue.VideoEncode;
+    }
+
+    public StorageSettings GetStorageSettings()
+    {
+        return appSettingsMonitor.CurrentValue.Storage;
     }
 }

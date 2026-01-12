@@ -4,5 +4,6 @@ namespace EzioHost.Core.Providers;
 
 public interface ISettingProvider
 {
-    VideoEncodeSetting GetVideoEncodeSetting();
+    VideoEncodeSettings GetVideoEncodeSettings();
+    StorageSettings GetStorageSettings();
 }

@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using AutoMapper;
+﻿using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
@@ -8,6 +7,11 @@ using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
+using EzioHost.Domain.Settings;
+using EzioHost.Shared.Extensions;
+using EzioHost.WebAPI.Startup;
+using Microsoft.Extensions.Options;
 
 namespace EzioHost.WebAPI.Controllers;
 
@@ -18,10 +22,12 @@ public class VideoController(
     IMapper mapper,
     IUpscaleService upscaleService,
     IOnnxModelService modelService,
-    IDirectoryProvider directoryProvider) : ControllerBase
+    IDirectoryProvider directoryProvider,
+    IOptions<AppSettings> appSettings) : ControllerBase
 {
     private string WebRootPath => directoryProvider.GetWebRootPath();
 
+    private StorageSettings StorageSettings => appSettings.Value.Storage;
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetVideos(
@@ -45,8 +51,8 @@ public class VideoController(
                 includes = [x => x.VideoStreams, x => x.VideoUpscales];
             else if (includeStreams == true)
                 includes = [x => x.VideoStreams];
-            else if (includeUpscaled == true)
-                includes = [x => x.VideoUpscales];
+            //else if (includeUpscaled == true)
+            //    includes = [x => x.VideoUpscales];
             else
                 includes = [];
 
@@ -68,47 +74,11 @@ public class VideoController(
         {
             return BadRequest(ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, "Internal server error occurred while retrieving videos");
+            return StatusCode(500, $"Internal server error occurred while retrieving videos.");
         }
     }
-
-    [HttpGet("play/{videoId:guid}")]
-    public async Task<IActionResult> GetM3U8ById([FromRoute] Guid videoId)
-    {
-        try
-        {
-            if (videoId == Guid.Empty)
-                return BadRequest("Invalid video ID");
-
-            var video = await videoService.GetVideoById(videoId);
-            if (video == null)
-                return NotFound("Video not found");
-
-            if (video.Status != VideoEnum.VideoStatus.Ready)
-                return BadRequest("Video is not ready for playback");
-
-            if (!System.IO.File.Exists(video.M3U8Location))
-                return NotFound("Video file not found");
-
-            var fileContent = await System.IO.File.ReadAllBytesAsync(video.M3U8Location);
-            return File(fileContent, "application/x-mpegURL");
-        }
-        catch (FileNotFoundException ex)
-        {
-            return NotFound("Video file not found");
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized("Access denied");
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Internal server error occurred while retrieving video");
-        }
-    }
-
     [HttpGet("download/{videoId:guid}")]
     [Authorize]
     public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
@@ -132,15 +102,15 @@ public class VideoController(
             var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
             return File(fileContent, "application/octet-stream", $"{video.Title}");
         }
-        catch (FileNotFoundException ex)
+        catch (FileNotFoundException)
         {
             return NotFound("Video file not found");
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
             return Unauthorized("Access denied");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, "Internal server error occurred while downloading video");
         }
@@ -179,7 +149,7 @@ public class VideoController(
                 return Ok(videoDto);
 
             case VideoEnum.VideoShareType.Internal:
-                return BadRequest();
+                break;
 
             case VideoEnum.VideoShareType.Private when User.Identity is { IsAuthenticated: true }:
                 if (video.CreatedBy == User.UserId) return Ok(videoDto);
@@ -257,6 +227,37 @@ public class VideoController(
         return BadRequest();
     }
 
+    [HttpGet("stream/manifest/{videoId}/{resolution}")]
+    public async Task<IActionResult> GetManifest(Guid videoId, int resolution)
+    {
+        if (!Enum.IsDefined(typeof(VideoEnum.VideoResolution), resolution))
+            return BadRequest("Resolution không hợp lệ");
+
+        var resEnum = (VideoEnum.VideoResolution)resolution;
+
+        var video = await videoService.GetVideoById(videoId);
+        if (video == null) return NotFound("Không tìm thấy video");
+
+        var targetVideoStream = video.VideoStreams.FirstOrDefault(x => x.Resolution == resEnum);
+        if (targetVideoStream == null || string.IsNullOrEmpty(targetVideoStream.M3U8Location))
+            return NotFound("Không tìm thấy stream");
+
+
+        var m3U8LocalLocation = Uri.UnescapeDataString(targetVideoStream.M3U8Location);
+        var physicalPath = Path.Combine(WebRootPath, m3U8LocalLocation);
+
+        if (!System.IO.File.Exists(physicalPath))
+            return NotFound("File manifest gốc chưa được tạo");
+
+        string content = await System.IO.File.ReadAllTextAsync(physicalPath);
+
+        string cdnBaseUrl = $"{StorageSettings.PublicDomain.TrimEnd('/')}/videos/{videoId}/{resolution}/";
+
+        var resolutionDescription = resEnum.GetDescription();
+        content = content.Replace(resolutionDescription, $"{cdnBaseUrl}{resolutionDescription}");
+
+        return Content(content, "application/vnd.apple.mpegurl");
+    }
 
     [HttpPost("{videoId:guid}/upscale/{modelId:guid}")]
     public async Task<IActionResult> UpscaleVideo([FromRoute] Guid videoId, [FromRoute] Guid modelId)

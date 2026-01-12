@@ -1,6 +1,6 @@
 ﻿namespace EzioHost.Domain.Settings;
 
-public class VideoEncodeSetting
+public class VideoEncodeSettings
 {
     public string VideoCodec { get; set; } = "h264_nvenc";
     public string AudioCodec { get; set; } = "aac";

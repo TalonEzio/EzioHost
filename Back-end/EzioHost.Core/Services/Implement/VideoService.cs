@@ -26,6 +26,7 @@ public class VideoService(
     IMapper mapper,
     IM3U8PlaylistService m3U8PlaylistService,
     IVideoResolutionService videoResolutionService,
+    IStorageService storageService,
     ILogger<VideoService> logger) : IVideoService
 {
     private readonly string _thumbnailPath = directoryProvider.GetThumbnailFolder();
@@ -33,7 +34,7 @@ public class VideoService(
     private readonly IVideoStreamRepository _videoStreamRepository = videoUnitOfWork.VideoStreamRepository;
 
     private readonly string _webRootPath = directoryProvider.GetWebRootPath();
-    private VideoEncodeSetting VideoEncodeSetting => settingProvider.GetVideoEncodeSetting();
+    private VideoEncodeSettings VideoEncodeSetting => settingProvider.GetVideoEncodeSettings();
 
     public event EventHandler<VideoStreamAddedEventArgs>? OnVideoStreamAdded;
     public event EventHandler<VideoProcessDoneEvent>? OnVideoProcessDone;
@@ -130,7 +131,7 @@ public class VideoService(
     }
 
 
-    public Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
+    public async Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
     {
         video.VideoStreams ??= [];
         _videoStreamRepository.Add(videoStream);
@@ -142,7 +143,8 @@ public class VideoService(
             VideoStream = mapper.Map<VideoStreamDto>(videoStream)
         });
 
-        return Task.FromResult(videoStream);
+        await UploadSegmentsToStorageAsync(videoStream);
+        return videoStream;
     }
 
     public async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
@@ -284,6 +286,25 @@ public class VideoService(
         return Path.GetRelativePath(_webRootPath, thumbFullPath);
     }
 
+    public Task<Video?> GetVideoBackup()
+    {
+        return _videoRepository.GetVideoToBackup();
+    }
+
+    public async Task<VideoBackupStatus> BackupVideo(Video video)
+    {
+        var localVideoPath = Path.Combine(_webRootPath, video.RawLocation);
+        string fileName = Path.GetFileName(localVideoPath);
+        string key = $"videos/{video.Id}/{fileName}";
+
+        await storageService.UploadLargeFileAsync(localVideoPath, key, "application/octet-stream"); //default
+
+        video.BackupStatus = VideoBackupStatus.BackedUp;
+        await UpdateVideo(video);
+
+        return video.BackupStatus;
+    }
+
     public async Task UpdateResolution(Video video)
     {
         var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
@@ -293,4 +314,28 @@ public class VideoService(
 
         video.Height = videoHeight;
     }
+
+    public async Task UploadSegmentsToStorageAsync(VideoStream videoStream)
+    {
+        string relativePath = Uri.UnescapeDataString(videoStream.M3U8Location);
+
+        var fullFilePath = Path.Combine(_webRootPath, relativePath);
+        var folderPath = Path.GetDirectoryName(fullFilePath)!;
+
+        if (!Directory.Exists(folderPath))
+        {
+            return;
+        }
+
+        var tsFiles = Directory.GetFiles(folderPath, "*.ts");
+
+        await Parallel.ForEachAsync(tsFiles, async (filePath, ct) =>
+        {
+            string fileName = Path.GetFileName(filePath);
+            string key = $"videos/{videoStream.Video.Id}/{(int)videoStream.Resolution}/{fileName}";
+
+            await storageService.UploadFileAsync(filePath, key, "video/MP2T");
+        });
+    }
+
 }
