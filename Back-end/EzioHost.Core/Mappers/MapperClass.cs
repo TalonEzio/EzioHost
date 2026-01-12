@@ -13,6 +13,8 @@ public class MapperClass : Profile
             //    opt => opt.MapFrom<StaticPathResolver, string?>(src => src.M3U8Location))
             .ForMember(dest => dest.Thumbnail,
                 opt => opt.MapFrom<StaticPathResolver, string?>(src => src.Thumbnail))
+            .ForMember(dest => dest.Subtitles,
+                opt => opt.MapFrom(src => src.VideoSubtitles))
             .ReverseMap();
 
         CreateMap<VideoStream, VideoStreamDto>()
@@ -38,6 +40,11 @@ public class MapperClass : Profile
         CreateMap<VideoUpscale, VideoUpscaleDto>()
             .ForMember(dest => dest.OutputLocation,
                 opt => opt.MapFrom<StaticPathResolver, string?>(src => src.OutputLocation))
+            .ReverseMap();
+
+        CreateMap<VideoSubtitle, VideoSubtitleDto>()
+            .ForMember(dest => dest.Url,
+                opt => opt.MapFrom<SubtitleUrlResolver, string>(src => null!))
             .ReverseMap();
     }
 }

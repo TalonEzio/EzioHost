@@ -14,6 +14,8 @@ public class EzioHostDbContext(DbContextOptions<EzioHostDbContext> options) : Db
 
     public DbSet<VideoUpscale> VideoUpscales { get; set; }
 
+    public DbSet<VideoSubtitle> VideoSubtitles { get; set; }
+
     public DbSet<EncodingQualitySetting> EncodingQualitySettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,6 +32,7 @@ public class EzioHostDbContext(DbContextOptions<EzioHostDbContext> options) : Db
         modelBuilder.Entity<Video>().HasQueryFilter(x => !x.DeletedAt.HasValue);
         modelBuilder.Entity<OnnxModel>().HasQueryFilter(x => !x.DeletedAt.HasValue);
         modelBuilder.Entity<EncodingQualitySetting>().HasQueryFilter(x => !x.DeletedAt.HasValue);
+        modelBuilder.Entity<VideoSubtitle>().HasQueryFilter(x => !x.DeletedAt.HasValue);
 
         modelBuilder.Entity<VideoUpscale>().HasQueryFilter(x =>
             !x.DeletedAt.HasValue && !x.Model.DeletedAt.HasValue && !x.Video.DeletedAt.HasValue);

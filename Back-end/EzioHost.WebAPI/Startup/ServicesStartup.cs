@@ -49,6 +49,9 @@ public static class ServicesStartup
 
         builder.Services.AddScoped<IStorageService, R2StorageService>();
 
+        builder.Services.AddScoped<IVideoSubtitleRepository, VideoSubtitleSqlServerRepository>();
+        builder.Services.AddScoped<IVideoSubtitleService, VideoSubtitleService>();
+
         builder.Services.AddScoped<IAmazonS3>(serviceProvider =>
         {
             var appSettings = serviceProvider.GetService<IOptionsMonitor<AppSettings>>();

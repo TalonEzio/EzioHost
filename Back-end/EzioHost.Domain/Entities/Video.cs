@@ -39,6 +39,8 @@ public class Video : BaseAuditableEntityWithUserId<Guid>
 
     public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];
 
+    public ICollection<VideoSubtitle> VideoSubtitles { get; set; } = [];
+
     /// <summary>
     ///     Sets Resolution based on video height using tolerance calculation
     /// </summary>

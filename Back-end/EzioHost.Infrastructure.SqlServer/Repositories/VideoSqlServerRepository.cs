@@ -21,7 +21,9 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
 
     public Task<Video?> GetVideoById(Guid id)
     {
-        var find = _videos.Include(video => video.VideoStreams).Include(video => video.VideoUpscales)
+        var find = _videos.Include(video => video.VideoStreams)
+            .Include(video => video.VideoUpscales)
+            .Include(video => video.VideoSubtitles)
             .FirstOrDefaultAsync(x => x.Id == id);
         return find;
     }
@@ -77,7 +79,9 @@ public class VideoSqlServerRepository(EzioHostDbContext dbContext) : IVideoRepos
 
     public Task<Video?> GetVideoToEncode()
     {
-        return _videos.OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(x => x.Status == VideoEnum.VideoStatus.Queue);
+        return _videos.OrderBy(x => x.CreatedAt)
+            .Include(x => x.VideoStreams)
+            .FirstOrDefaultAsync(x => x.Status == VideoEnum.VideoStatus.Queue);
     }
 
     public async Task<Video?> GetVideoToBackup()

@@ -21,6 +21,7 @@ public class VideoDto
 
     public List<VideoStreamDto> VideoStreams { get; set; } = [];
     public List<VideoUpscaleDto> VideoUpscales { get; set; } = [];
+    public List<VideoSubtitleDto> Subtitles { get; set; } = [];
 
     public string PlayerJsMetadata
     {
@@ -30,6 +31,20 @@ public class VideoDto
 
             foreach (var stream in VideoStreams.OrderBy(x => x.Resolution))
                 builder.Append($"[{stream.Resolution.GetDescription()}]{stream.M3U8Location},");
+            return builder.ToString().TrimEnd(',');
+        }
+    }
+
+    public string SubtitleMetadata
+    {
+        get
+        {
+            if (!Subtitles.Any())
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            foreach (var subtitle in Subtitles)
+                builder.Append($"[{subtitle.Language}]{subtitle.Url}?ext=.vtt,");
             return builder.ToString().TrimEnd(',');
         }
     }

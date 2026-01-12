@@ -5,18 +5,18 @@
             const playerElement = document.getElementById("player");
             const videoData = playerElement?.getAttribute("data-video-player");
             const posterData = playerElement?.getAttribute("data-video-poster");
-
-            const dumpUrlSubtitle = 'https://gist.githubusercontent.com/samdutton/ca37f3adaf4e23679957b8083e061177/raw/e19399fbccbc069a2af4266e5120ae6bad62699a/sample.vtt';
+            const subtitleData = playerElement?.getAttribute("data-video-subtitles");
 
             if (videoData && playerElement) {
                 if (window.Playerjs) {
-                    new window.Playerjs({
+                    const playerConfig = {
                         id: "player",
                         file: videoData,
                         hls: 1,
-                        subtitle: `[Vietnamese]${dumpUrlSubtitle},[English]${dumpUrlSubtitle},[AI]${dumpUrlSubtitle}`,
-                        poster: posterData
-                    });
+                        poster: posterData,
+                        subtitle: subtitleData
+                    };
+                    new window.Playerjs(playerConfig);
                 } else {
                     console.warn("Playerjs library not found");
                 }

@@ -56,6 +56,11 @@ public static class HttpClientStartup
             .ConfigureHttpClient(configureClient)
             .AddHttpMessageHandler<RequestCookieHandler>();
 
+        builder.Services
+            .AddRefitClient<IVideoSubtitleApi>(refitSettings)
+            .ConfigureHttpClient(configureClient)
+            .AddHttpMessageHandler<RequestCookieHandler>();
+
         return builder;
     }
 }

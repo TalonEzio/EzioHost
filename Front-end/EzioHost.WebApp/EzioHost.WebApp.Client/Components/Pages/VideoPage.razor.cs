@@ -249,4 +249,25 @@ public partial class VideoPage : IAsyncDisposable
             _isDeleting = false;
         }
     }
+
+    private async Task HandleSubtitleChanged()
+    {
+        if (EditingVideo != null)
+        {
+            // Reload video to get updated subtitles
+            var updatedVideo = await VideoApi.GetVideoById(EditingVideo.Id);
+
+            var index = Videos.FindIndex(v => v.Id == updatedVideo.Id);
+            if (index >= 0)
+            {
+                Videos[index] = updatedVideo;
+                if (EditingVideo.Id == updatedVideo.Id)
+                {
+                    EditingVideo = updatedVideo;
+                }
+            }
+            ApplyFilters();
+
+        }
+    }
 }

@@ -2,76 +2,109 @@
 @using Microsoft.AspNetCore.Components.Sections
 @layout NullLayout
 
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-share-fill me-2"></i>
-                        Chi tiết Video
-                    </h4>
-                </div>
-                <div class="card-body">
-                    @if (Video == null)
-                    {
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Đang tải...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Đang tải thông tin video...</p>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header Card -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+            <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
+                <h2 class="text-2xl font-bold text-white flex items-center">
+                    <i class="bi bi-share-fill mr-2"></i>
+                    Chi tiết Video
+                </h2>
+            </div>
+            
+            <div class="p-6">
+                @if (Video == null)
+                {
+                    <div class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                        <p class="mt-4 text-gray-600">Đang tải thông tin video...</p>
+                    </div>
+                }
+                else
+                {
+                    <!-- Video Info Section -->
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">@Video.Title</h3>
+                            <p class="text-gray-600 flex items-center">
+                                <i class="bi bi-calendar mr-2"></i>
+                                Ngày tạo: @Video.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </p>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="row mb-4">
-                            <div class="col-md-8">
-                                <h3 class="card-title">@Video.Title</h3>
-                                <p class="text-muted">
-                                    <i class="bi bi-calendar me-1"></i> Ngày tạo: @Video.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                                </p>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <a href="/api/video/download/@Video.Id" target="_blank" class="btn btn-success">
-                                    <i class="bi bi-download me-1"></i> Download
-                                </a>
-                            </div>
+                        <div class="flex-shrink-0">
+                            <a href="/api/video/download/@Video.Id" target="_blank" 
+                               class="inline-flex items-center px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg">
+                                <i class="bi bi-download mr-2"></i>
+                                Download
+                            </a>
                         </div>
+                    </div>
 
-                        <div class="mb-4">
-                            <div id="player" data-video-player="@Video.PlayerJsMetadata" data-video-poster="@Video.Thumbnail" style="width: 100%; height: 400px;"></div>
-
-                            <div id="videoId" data-video-id="@Video.Id" style="display: none;"></div>
+                    <!-- Video Player Section -->
+                    <div class="mb-6">
+                        <div class="bg-black rounded-xl overflow-hidden shadow-2xl">
+                            <div id="player"
+                                 data-video-player="@Video.PlayerJsMetadata"
+                                 data-video-poster="@Video.Thumbnail"
+                                 data-video-subtitles="@Video.SubtitleMetadata"
+                                 class="w-full"
+                                 style="min-height: 400px; aspect-ratio: 16/9;"></div>
                         </div>
+                        <div id="videoId" data-video-id="@Video.Id" class="hidden"></div>
+                    </div>
 
-                        <div class="mb-4">
-                            <h5>
-                                <i class="bi bi-code-slash me-2"></i>
-                                Thông tin nhúng
-                            </h5>
+                    <!-- Embed Information Section -->
+                    <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border border-gray-200">
+                        <h4 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="bi bi-code-slash mr-2 text-primary-600"></i>
+                            Thông tin nhúng
+                        </h4>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Link nhúng:</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control bg-light" value="" readonly id="embedLink">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('embedLink')">
-                                        <i class="bi bi-clipboard"></i> Sao chép
+                        <div class="space-y-6">
+                            <!-- Embed Link -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="bi bi-link-45deg mr-1"></i>
+                                    Link nhúng:
+                                </label>
+                                <div class="flex gap-2">
+                                    <input type="text" 
+                                           class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm font-mono" 
+                                           value="" 
+                                           readonly 
+                                           id="embedLink">
+                                    <button class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 font-medium flex items-center whitespace-nowrap shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0" 
+                                            type="button" 
+                                            onclick="copyToClipboard('embedLink')">
+                                        <i class="bi bi-clipboard mr-2"></i>
+                                        Sao chép
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Iframe: </label>
-                                <div class="input-group">
-                                    <textarea class="form-control bg-light" rows="3" readonly id="iframeCode"></textarea>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('iframeCode')">
-                                        <i class="bi bi-clipboard"></i> Sao chép
+                            <!-- Iframe Code -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="bi bi-code-square mr-1"></i>
+                                    Iframe Code:
+                                </label>
+                                <div class="flex gap-2">
+                                    <textarea class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm font-mono resize-none" 
+                                              rows="3" 
+                                              readonly 
+                                              id="iframeCode"></textarea>
+                                    <button class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 font-medium flex items-start whitespace-nowrap shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0" 
+                                            type="button" 
+                                            onclick="copyToClipboard('iframeCode')">
+                                        <i class="bi bi-clipboard mr-2"></i>
+                                        Sao chép
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             </div>
         </div>
     </div>

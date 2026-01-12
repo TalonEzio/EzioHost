@@ -8,6 +8,7 @@ public static class AutoMapperStartup
     {
         builder.Services.AddScoped<StaticPathResolver>();
         builder.Services.AddScoped<StreamUrlResolver>();
+        builder.Services.AddScoped<SubtitleUrlResolver>();
         builder.Services.AddAutoMapper(cfg => { cfg.AddProfile(typeof(MapperClass)); });
 
         return builder;

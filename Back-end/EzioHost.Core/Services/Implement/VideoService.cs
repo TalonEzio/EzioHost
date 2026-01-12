@@ -97,19 +97,7 @@ public class VideoService(
         {
             await videoUnitOfWork.BeginTransactionAsync();
 
-            inputVideo.Status = VideoStatus.Encoding;
-            await _videoRepository.UpdateVideo(inputVideo);
-
-            // Reload video with VideoStreams to check for existing streams
-            var videoWithStreams = await _videoRepository.GetVideoById(inputVideo.Id);
-            if (videoWithStreams != null)
-            {
-                inputVideo.VideoStreams = videoWithStreams.VideoStreams?.ToList() ?? [];
-            }
-            else
-            {
-                inputVideo.VideoStreams = [];
-            }
+            inputVideo.VideoStreams ??= [];
 
             // Get user's active encoding settings
             var userSettings = await encodingQualitySettingService.GetActiveSettingsForEncoding(inputVideo.CreatedBy);
@@ -136,7 +124,7 @@ public class VideoService(
             }
 
             // Ensure at least one resolution is encoded
-            if (resolutionsToEncode.Count == 0)
+            if (resolutionsToEncode.Count == 0 && !inputVideo.VideoStreams.Any())
             {
                 throw new InvalidOperationException(
                     $"Cannot encode video {inputVideo.Id}: No resolutions available for encoding. Please enable at least one resolution in settings.");
@@ -157,7 +145,6 @@ public class VideoService(
 
             await videoUnitOfWork.CommitTransactionAsync();
 
-            inputVideo.VideoStreams = inputVideo.VideoStreams.DistinctBy(x => x.Id).ToList();
             var videoMapper = mapper.Map<VideoDto>(inputVideo);
 
             OnVideoProcessDone?.Invoke(this, new VideoProcessDoneEvent
@@ -189,7 +176,6 @@ public class VideoService(
 
         _videoStreamRepository.Add(videoStream);
         videoStream.Video = video;
-        video.VideoStreams.Add(videoStream);
 
         OnVideoStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
         {
