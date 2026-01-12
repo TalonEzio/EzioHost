@@ -1,0 +1,132 @@
+@page "/settings"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Cài đặt - EzioHost</PageTitle>
+
+<div class="settings-page-container">
+    <!-- Header -->
+    <div class="settings-header">
+        <div>
+            <h1 class="settings-title">
+                <i class="bi bi-gear"></i>
+                Cài đặt
+            </h1>
+            <p class="settings-subtitle">Quản lý cài đặt và cấu hình hệ thống</p>
+        </div>
+    </div>
+
+    <!-- Settings Cards Grid -->
+    <div class="settings-grid">
+        <!-- Encoding Settings Card -->
+        <a href="/settings/encoding" class="settings-card-link">
+            <div class="settings-card">
+                <div class="settings-card-icon encoding-icon">
+                    <i class="bi bi-sliders"></i>
+                </div>
+                <div class="settings-card-content">
+                    <h3 class="settings-card-title">Chất lượng Encoding</h3>
+                    <p class="settings-card-description">
+                        Cấu hình chất lượng và bitrate cho các độ phân giải video. Chọn các độ phân giải sẽ được encode và điều chỉnh bitrate cho từng độ phân giải.
+                    </p>
+                    <div class="settings-card-meta">
+                        <span class="meta-item">
+                            <i class="bi bi-check-circle"></i>
+                            Cấu hình bitrate
+                        </span>
+                        <span class="meta-item">
+                            <i class="bi bi-toggle-on"></i>
+                            Bật/tắt resolutions
+                        </span>
+                    </div>
+                </div>
+                <div class="settings-card-arrow">
+                    <i class="bi bi-chevron-right"></i>
+                </div>
+            </div>
+        </a>
+
+        <!-- Placeholder for future settings -->
+        <div class="settings-card coming-soon">
+            <div class="settings-card-icon">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <div class="settings-card-content">
+                <h3 class="settings-card-title">Bảo mật</h3>
+                <p class="settings-card-description">
+                    Cấu hình các tùy chọn bảo mật và quyền truy cập.
+                </p>
+                <div class="coming-soon-badge">
+                    <span>Sắp có</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card coming-soon">
+            <div class="settings-card-icon">
+                <i class="bi bi-cloud"></i>
+            </div>
+            <div class="settings-card-content">
+                <h3 class="settings-card-title">Lưu trữ</h3>
+                <p class="settings-card-description">
+                    Quản lý cài đặt lưu trữ và backup.
+                </p>
+                <div class="coming-soon-badge">
+                    <span>Sắp có</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card coming-soon">
+            <div class="settings-card-icon">
+                <i class="bi bi-bell"></i>
+            </div>
+            <div class="settings-card-content">
+                <h3 class="settings-card-title">Thông báo</h3>
+                <p class="settings-card-description">
+                    Cấu hình các tùy chọn thông báo và email.
+                </p>
+                <div class="coming-soon-badge">
+                    <span>Sắp có</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats-section">
+        <h2 class="section-title">
+            <i class="bi bi-graph-up"></i>
+            Thống kê nhanh
+        </h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon video-icon">
+                    <i class="bi bi-collection-play"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">-</div>
+                    <div class="stat-label">Video đã upload</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon storage-icon">
+                    <i class="bi bi-hdd"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">-</div>
+                    <div class="stat-label">Dung lượng đã dùng</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon encoding-icon">
+                    <i class="bi bi-sliders"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">@EnabledResolutionsCount</div>
+                    <div class="stat-label">Resolutions đã bật</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

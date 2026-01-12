@@ -26,7 +26,7 @@ public interface IVideoService
     Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId);
 
     Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
-        VideoResolution targetResolution, int scale = 2);
+        VideoResolution targetResolution, Guid userId, int scale = 2);
 
     Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream);
 

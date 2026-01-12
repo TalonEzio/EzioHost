@@ -1,8 +1,10 @@
 using EzioHost.Core.Services.Interface;
+using EzioHost.Shared.Enums;
 
 namespace EzioHost.Core.Services.Implement;
 
-public class VideoResolutionService : IVideoResolutionService
+public class VideoResolutionService(
+    IEncodingQualitySettingService encodingQualitySettingService) : IVideoResolutionService
 {
     public int GetBandwidthForResolution(string resolution)
     {
@@ -19,6 +21,46 @@ public class VideoResolutionService : IVideoResolutionService
             "AI Upscaled" => 5000000,
             _ => 1000000
         };
+    }
+
+    public async Task<int> GetBandwidthForResolutionAsync(string resolution, Guid userId)
+    {
+        VideoEnum.VideoResolution resolutionEnum;
+        bool parsed = false;
+
+        // Try to parse resolution to enum
+        if (resolution == "AI Upscaled")
+        {
+            resolutionEnum = VideoEnum.VideoResolution.Upscaled;
+            parsed = true;
+        }
+        else
+        {
+            var cleanResolution = resolution.Replace("p", "").Replace(" ", "");
+            parsed = Enum.TryParse<VideoEnum.VideoResolution>(cleanResolution, true, out resolutionEnum) ||
+                     Enum.TryParse<VideoEnum.VideoResolution>($"_{cleanResolution}", true, out resolutionEnum);
+        }
+
+        if (!parsed)
+        {
+            // Fallback to default if resolution can't be parsed
+            return GetBandwidthForResolution(resolution);
+        }
+
+        // Get user settings
+        var activeSettings = await encodingQualitySettingService.GetActiveSettingsForEncoding(userId);
+        
+        // Find matching setting
+        var setting = activeSettings.FirstOrDefault(s => s.Resolution == resolutionEnum);
+
+        if (setting != null)
+        {
+            // Convert kbps to bps
+            return setting.BitrateKbps * 1000;
+        }
+
+        // Fallback to default hardcoded value
+        return GetBandwidthForResolution(resolution);
     }
 
     public string GetResolutionDimensions(string resolution)

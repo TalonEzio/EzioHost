@@ -200,7 +200,7 @@ public class UpscaleService(
             await UpdateVideoUpscale(videoUpscale);
 
             var newVideoHlsStream =
-                await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution, model.Scale);
+                await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution, video.CreatedBy, model.Scale);
 
             await videoService.AddNewVideoStream(video, newVideoHlsStream);
 

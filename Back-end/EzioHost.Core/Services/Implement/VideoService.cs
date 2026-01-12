@@ -27,6 +27,7 @@ public class VideoService(
     IM3U8PlaylistService m3U8PlaylistService,
     IVideoResolutionService videoResolutionService,
     IStorageService storageService,
+    IEncodingQualitySettingService encodingQualitySettingService,
     ILogger<VideoService> logger) : IVideoService
 {
     private readonly string _thumbnailPath = directoryProvider.GetThumbnailFolder();
@@ -99,9 +100,51 @@ public class VideoService(
             inputVideo.Status = VideoStatus.Encoding;
             await _videoRepository.UpdateVideo(inputVideo);
 
-            foreach (var videoResolution in inputVideo.Resolution.GetEnumsLessThanOrEqual())
+            // Reload video with VideoStreams to check for existing streams
+            var videoWithStreams = await _videoRepository.GetVideoById(inputVideo.Id);
+            if (videoWithStreams != null)
             {
-                var newVideoStream = await CreateHlsVariantStream(absoluteRawLocation, inputVideo, videoResolution);
+                inputVideo.VideoStreams = videoWithStreams.VideoStreams?.ToList() ?? [];
+            }
+            else
+            {
+                inputVideo.VideoStreams = [];
+            }
+
+            // Get user's active encoding settings
+            var userSettings = await encodingQualitySettingService.GetActiveSettingsForEncoding(inputVideo.CreatedBy);
+            var enabledResolutions = userSettings.Select(s => s.Resolution).ToHashSet();
+
+            // Get existing resolutions that are already encoded
+            var existingResolutions = inputVideo.VideoStreams
+                .Select(vs => vs.Resolution)
+                .ToHashSet();
+
+            // Filter resolutions: only encode enabled resolutions that are <= video resolution and not already encoded
+            var resolutionsToEncode = inputVideo.Resolution.GetEnumsLessThanOrEqual()
+                .Where(r => enabledResolutions.Contains(r) && !existingResolutions.Contains(r))
+                .ToList();
+
+            // If no enabled resolutions match (e.g., video is 480p but user only enabled 720p, 1080p),
+            // encode the original video resolution to ensure at least one version is available
+            if (resolutionsToEncode.Count == 0 && !existingResolutions.Contains(inputVideo.Resolution))
+            {
+                logger.LogInformation(
+                    "No enabled resolutions match video resolution {VideoResolution}. Encoding original resolution to ensure playback availability.",
+                    inputVideo.Resolution);
+                resolutionsToEncode.Add(inputVideo.Resolution);
+            }
+
+            // Ensure at least one resolution is encoded
+            if (resolutionsToEncode.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot encode video {inputVideo.Id}: No resolutions available for encoding. Please enable at least one resolution in settings.");
+            }
+
+            foreach (var videoResolution in resolutionsToEncode)
+            {
+                var newVideoStream = await CreateHlsVariantStream(absoluteRawLocation, inputVideo, videoResolution, inputVideo.CreatedBy);
 
                 await AddNewVideoStream(inputVideo, newVideoStream);
             }
@@ -134,8 +177,19 @@ public class VideoService(
     public async Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
     {
         video.VideoStreams ??= [];
+        
+        // Check if this resolution already exists in the collection to avoid duplicates
+        var existingStream = video.VideoStreams.FirstOrDefault(vs => vs.Resolution == videoStream.Resolution);
+        if (existingStream != null)
+        {
+            logger.LogWarning("VideoStream with resolution {Resolution} already exists for video {VideoId}. Skipping duplicate.", 
+                videoStream.Resolution, video.Id);
+            return existingStream;
+        }
+
         _videoStreamRepository.Add(videoStream);
         videoStream.Video = video;
+        video.VideoStreams.Add(videoStream);
 
         OnVideoStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
         {
@@ -148,7 +202,7 @@ public class VideoService(
     }
 
     public async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
-        VideoResolution targetResolution, int scale = 2)
+        VideoResolution targetResolution, Guid userId, int scale = 2)
     {
         var segmentFolder = Path.Combine(_webRootPath, Path.GetDirectoryName(inputVideo.M3U8Location)!,
             targetResolution.GetDescription());
@@ -184,15 +238,17 @@ public class VideoService(
 
         var resolutionSize = new Size(targetWidth, targetHeight);
 
+        // Get bitrate from user settings
+        var bitrateBps = await videoResolutionService.GetBandwidthForResolutionAsync(targetResolution.GetDescription(), userId);
+        var bitrateKbps = bitrateBps / 1000;
+
         var argumentProcessor = FFMpegArguments
             .FromFileInput(absoluteRawLocation)
             .OutputToFile(absoluteVideoStreamM3U8Location, true,
                 options => options
                     .WithVideoCodec(VideoEncodeSetting.VideoCodec)
                     .WithAudioCodec(VideoEncodeSetting.AudioCodec)
-                    .WithVideoBitrate(
-                        videoResolutionService.GetBandwidthForResolution(targetResolution.GetDescription()) /
-                        1000) //kbps
+                    .WithVideoBitrate(bitrateKbps) //kbps
                     .WithAudioBitrate(AudioQuality.Normal) //128kbps
                     .WithCustomArgument(
                         $"-vf \"scale={resolutionSize.Width}:{resolutionSize.Height},format=yuv420p\"") //handle 10 bit file

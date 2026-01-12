@@ -1,0 +1,144 @@
+@page "/settings/encoding"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Cài đặt Encoding - EzioHost</PageTitle>
+
+<div class="encoding-settings-container">
+    <!-- Header -->
+    <div class="settings-header">
+        <div>
+            <h1 class="settings-title">
+                <i class="bi bi-sliders"></i>
+                Cài đặt Chất lượng Encoding
+            </h1>
+            <p class="settings-subtitle">Cấu hình chất lượng và bitrate cho các độ phân giải video</p>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Đang tải cài đặt...</p>
+        </div>
+    }
+    else if (Settings == null || !Settings.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>Chưa có cài đặt. Đang tạo cài đặt mặc định...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Info Banner -->
+        <div class="info-banner">
+            <i class="bi bi-info-circle"></i>
+            <p>Chọn các độ phân giải sẽ được encode. Chỉ các độ phân giải nhỏ hơn hoặc bằng độ phân giải gốc của video mới được sử dụng khi encode. Bật nhiều độ phân giải sẽ ảnh hưởng đến chi phí encoding.</p>
+        </div>
+
+        <!-- Settings Form -->
+        <div class="settings-card">
+            <div class="settings-section">
+                <h2 class="section-title">
+                    <i class="bi bi-display"></i>
+                    Độ phân giải Encoding
+                </h2>
+                <p class="section-description">Bật/tắt và cấu hình bitrate cho từng độ phân giải</p>
+
+                <div class="resolutions-grid">
+                    @foreach (var setting in AllResolutions)
+                    {
+                        var currentSetting = Settings.FirstOrDefault(s => s.Resolution == setting.Resolution);
+                        var isEnabled = currentSetting?.IsEnabled ?? false;
+                        var bitrate = currentSetting?.BitrateKbps ?? GetDefaultBitrate(setting.Resolution);
+
+                        <div class="resolution-card @(isEnabled ? "enabled" : "disabled")">
+                            <div class="resolution-header">
+                                <label class="resolution-checkbox">
+                                    <input type="checkbox" 
+                                           checked="@isEnabled" 
+                                           @onchange="@((ChangeEventArgs e) => ToggleResolution(setting.Resolution, (bool)(e.Value ?? false)))" />
+                                    <span class="checkmark"></span>
+                                    <span class="resolution-name">@GetResolutionName(setting.Resolution)</span>
+                                </label>
+                            </div>
+                            
+                            <div class="resolution-details">
+                                <div class="resolution-dimensions">
+                                    <i class="bi bi-aspect-ratio"></i>
+                                    <span>@GetResolutionDimensions(setting.Resolution)</span>
+                                </div>
+                                
+                                @if (isEnabled)
+                                {
+                                    <div class="bitrate-input-group">
+                                        <label class="bitrate-label">
+                                            <i class="bi bi-speedometer2"></i>
+                                            Bitrate (kbps):
+                                        </label>
+                                        <input type="number" 
+                                               class="bitrate-input" 
+                                               value="@bitrate" 
+                                               min="100" 
+                                               max="50000" 
+                                               step="100"
+                                               @onchange="@((ChangeEventArgs e) => UpdateBitrate(setting.Resolution, int.TryParse(e.Value?.ToString(), out var val) ? val : bitrate))" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary-section">
+                <h3 class="summary-title">
+                    <i class="bi bi-calculator"></i>
+                    Tóm tắt
+                </h3>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Độ phân giải đã bật:</span>
+                        <span class="stat-value">@EnabledCount / @AllResolutions.Count</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Bitrate trung bình:</span>
+                        <span class="stat-value">@AverageBitrate kbps</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning if no resolutions enabled -->
+            @if (!IsLoading && EnabledCount == 0)
+            {
+                <div class="warning-banner">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <p>Bạn phải chọn ít nhất một độ phân giải để encode!</p>
+                </div>
+            }
+
+            <!-- Actions -->
+            <div class="actions-section">
+                <button class="btn btn-secondary" @onclick="ResetToDefaults" disabled="@(IsSaving || IsLoading)">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Đặt lại mặc định
+                </button>
+                <button class="btn btn-primary" @onclick="SaveSettings" disabled="@(IsSaving || IsLoading || (!IsLoading && EnabledCount == 0))">
+                    @if (IsSaving)
+                    {
+                        <span class="spinner-small"></span>
+                        <span>Đang lưu...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-circle"></i>
+                        <span>Lưu cài đặt</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+</div>

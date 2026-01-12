@@ -48,6 +48,10 @@ internal class Program
             .AddRefitClient<IAuthApi>(refitSettings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseAddress));
 
+        builder.Services
+            .AddRefitClient<IEncodingQualitySettingApi>(refitSettings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseAddress));
+
         await builder.Build().RunAsync();
     }
 }

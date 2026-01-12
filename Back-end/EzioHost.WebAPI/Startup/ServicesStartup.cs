@@ -44,6 +44,9 @@ public static class ServicesStartup
         builder.Services.AddScoped<IM3U8PlaylistService, M3U8PlaylistService>();
         builder.Services.AddScoped<IVideoResolutionService, VideoResolutionService>();
 
+        builder.Services.AddScoped<IEncodingQualitySettingRepository, EncodingQualitySettingSqlServerRepository>();
+        builder.Services.AddScoped<IEncodingQualitySettingService, EncodingQualitySettingService>();
+
         builder.Services.AddScoped<IStorageService, R2StorageService>();
 
         builder.Services.AddScoped<IAmazonS3>(serviceProvider =>

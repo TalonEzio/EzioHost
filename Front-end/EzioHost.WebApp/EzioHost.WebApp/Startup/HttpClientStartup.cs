@@ -51,6 +51,11 @@ public static class HttpClientStartup
             .ConfigureHttpClient(configureClient)
             .AddHttpMessageHandler<RequestCookieHandler>();
 
+        builder.Services
+            .AddRefitClient<IEncodingQualitySettingApi>(refitSettings)
+            .ConfigureHttpClient(configureClient)
+            .AddHttpMessageHandler<RequestCookieHandler>();
+
         return builder;
     }
 }

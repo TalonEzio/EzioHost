@@ -50,5 +50,10 @@ public static class JsRuntimeExtension
         {
             jsRuntime.InvokeVoidAsync("eval", $"window.location.href = '{url}';").GetAwaiter().GetResult();
         }
+
+        public ValueTask<bool> Confirm(string message)
+        {
+            return jsRuntime.InvokeAsync<bool>("confirm", message);
+        }
     }
 }
