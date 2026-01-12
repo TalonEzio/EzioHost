@@ -50,8 +50,6 @@ public partial class VideoUploadPage
     protected override async Task OnInitializedAsync()
     {
         AuthState ??= await AuthStateTask;
-
-
         await base.OnInitializedAsync();
     }
 

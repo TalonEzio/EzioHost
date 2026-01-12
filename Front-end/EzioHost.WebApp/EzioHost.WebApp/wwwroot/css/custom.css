@@ -1,76 +1,31 @@
-/* Custom CSS for EzioHost Video Server */
+/* Custom CSS for EzioHost - Tailwind CSS Compatible */
 
 /* Global Styles */
 :root {
     --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
 }
 
 /* Body and Layout */
-
 body {
     color: #333;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
 }
 
-/* Custom Button Styles */
-
-.btn-primary {
-    background: var(--primary-gradient);
-    border: none;
+/* Upload Zone - Keep for drag and drop functionality */
+.upload-zone {
     transition: all 0.3s ease;
 }
 
-.btn-primary:hover {
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    transform: translateY(-2px);
-}
-
-.btn-success {
-    background: var(--success-gradient);
-    border: none;
-}
-
-.btn-outline-primary {
+.upload-zone.drag-over {
+    background: #e7f1ff;
     border-color: #667eea;
-    color: #667eea;
-}
-
-.btn-outline-primary:hover {
-    background: var(--primary-gradient);
-    border-color: transparent;
-}
-
-/* Card Enhancements */
-
-.card {
-    border-radius: 0.75rem;
-    transition: all 0.3s ease;
-}
-
-.card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-}
-
-/* Video Card Specific */
-
-.video-card {
-    border-radius: 0.75rem;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.video-card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    transform: translateY(-5px);
+    transform: scale(1.02);
 }
 
 /* Video Player Enhancements */
-
 .video-player-container {
     background: #000;
     border-radius: 0.75rem;
@@ -84,219 +39,12 @@ body {
     width: 100%;
 }
 
-/* Navigation Enhancements */
-
-.navbar-brand {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.nav-link {
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.nav-link:hover { color: #667eea !important; }
-
-/* Hero Section */
-
-.hero-section {
-    background: var(--primary-gradient);
-    overflow: hidden;
-    position: relative;
-}
-
-.hero-section::before {
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,0 1000,100 0,80"/></svg>') no-repeat bottom;
-    background-size: cover;
-    bottom: 0;
-    content: '';
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-}
-
-/* Feature Icons */
-
-.feature-icon { transition: all 0.3s ease; }
-
-.card:hover .feature-icon { transform: scale(1.1); }
-
-/* Tech Badges */
-
-.tech-badge { transition: all 0.3s ease; }
-
-.tech-badge:hover { transform: translateY(-5px); }
-
-/* Upload Zone */
-
-.upload-zone {
-    background: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    border-radius: 0.75rem;
-    cursor: pointer;
-    min-height: 300px;
-    transition: all 0.3s ease;
-}
-
-.upload-zone:hover,
-.upload-zone.drag-over {
-    background: #e7f1ff;
-    border-color: #667eea;
-    transform: scale(1.02);
-}
-
-/* Form Enhancements */
-
-.form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Progress Bars */
-
-.progress {
-    border-radius: 0.25rem;
-    height: 0.5rem;
-}
-
-.progress-bar { background: var(--primary-gradient); }
-
-/* Badges */
-
-.badge {
-    font-weight: 500;
-    padding: 0.5em 0.75em;
-}
-
-/* Alerts */
-
-.alert {
-    border: none;
-    border-radius: 0.75rem;
-}
-
-/* Dropdowns */
-
-.dropdown-menu {
-    border: none;
-    border-radius: 0.75rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.dropdown-item { transition: all 0.3s ease; }
-
-.dropdown-item:hover {
-    background-color: #f8f9fa;
-    transform: translateX(5px);
-}
-
-/* Pagination */
-
-.pagination .page-link {
-    border: none;
-    border-radius: 0.5rem;
-    color: #667eea;
-    margin: 0 0.25rem;
-}
-
-.pagination .page-item.active .page-link {
-    background: var(--primary-gradient);
-    border: none;
-}
-
-.pagination .page-link:hover {
-    background-color: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-}
-
-/* Mobile Optimizations */
-
-@media (max-width: 768px) {
-    .container-fluid {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
-    .card-body { padding: 1rem; }
-
-    .btn-lg {
-        font-size: 1rem;
-        padding: 0.75rem 1.5rem;
-    }
-
-    .display-4 { font-size: 2rem; }
-
-    .display-5 { font-size: 1.75rem; }
-
-    .hero-section { padding: 2rem 0; }
-
-    .min-vh-50 { min-height: 40vh; }
-}
-
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-    }
-
-    .card-body { padding: 0.75rem; }
-
-    .btn { font-size: 0.875rem; }
-
-    .display-4 { font-size: 1.75rem; }
-
-    .display-5 { font-size: 1.5rem; }
-
-    .hero-section { padding: 1.5rem 0; }
-
-    .min-vh-50 { min-height: 30vh; }
-
-    .video-card .card-body { padding: 0.75rem; }
-
-    .video-card .card-title { font-size: 0.9rem; }
-}
-
-/* Tablet Optimizations */
-
-@media (min-width: 768px) and (max-width: 1024px) {
-    .container-fluid {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-    }
-
-    .hero-section { padding: 3rem 0; }
-
-    .min-vh-50 { min-height: 45vh; }
-}
-
-/* Desktop Optimizations */
-
-@media (min-width: 1200px) {
-    .container-fluid {
-        padding-left: 2rem;
-        padding-right: 2rem;
-    }
-
-    .hero-section { padding: 4rem 0; }
-
-    .min-vh-50 { min-height: 50vh; }
-}
-
-/* Animation Classes */
-
+/* Animation Classes - Keep for custom animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
         transform: translateY(30px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -305,7 +53,6 @@ body {
 
 @keyframes fadeIn {
     from { opacity: 0; }
-
     to { opacity: 1; }
 }
 
@@ -314,7 +61,6 @@ body {
         opacity: 0;
         transform: translateX(30px);
     }
-
     to {
         opacity: 1;
         transform: translateX(0);
@@ -322,13 +68,10 @@ body {
 }
 
 .fade-in-up { animation: fadeInUp 0.6s ease-out; }
-
 .fade-in { animation: fadeIn 0.6s ease-out; }
-
 .slide-in-right { animation: slideInRight 0.6s ease-out; }
 
 /* Loading States */
-
 .loading-skeleton {
     animation: loading 1.5s infinite;
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -337,47 +80,29 @@ body {
 
 @keyframes loading {
     0% { background-position: 200% 0; }
-
     100% { background-position: -200% 0; }
 }
 
-/* Dark Mode Support */
+/* NavLink active state for Tailwind - Blazor adds "active" class */
+a.active,
+.nav-link.active {
+    color: #4f46e5 !important;
+    background-color: #eef2ff !important;
+}
 
-@media (prefers-color-scheme: dark) {
-    .bg-light { background-color: #1a1a1a !important; }
-
-    .text-muted { color: #adb5bd !important; }
-
-    .card {
-        background-color: #2d2d2d;
-        color: #fff;
-    }
-
-    .form-control {
-        background-color: #2d2d2d;
-        border-color: #495057;
-        color: #fff;
-    }
-
-    .form-control:focus {
-        background-color: #2d2d2d;
-        border-color: #667eea;
-        color: #fff;
+/* Ensure mobile navigation doesn't overlap content */
+@media (max-width: 1024px) {
+    body {
+        padding-bottom: 80px;
     }
 }
 
 /* Print Styles */
-
 @media print {
-    .navbar,
+    nav,
     .mobile-nav,
-    .btn,
-    .dropdown { display: none !important; }
-
-    .container-fluid { padding: 0; }
-
-    .card {
-        border: 1px solid #000;
-        box-shadow: none;
+    button,
+    .dropdown { 
+        display: none !important; 
     }
 }

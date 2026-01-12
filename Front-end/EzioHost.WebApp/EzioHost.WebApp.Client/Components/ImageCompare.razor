@@ -29,7 +29,7 @@
                            step="1"
                            value="@HandleAngle"
                            @oninput="OnAngleInput"/>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAngle">
+                    <button type="button" class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm bg-white" @onclick="ResetAngle">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
                 </div>
@@ -38,25 +38,25 @@
 
         <div class="controls-row">
             <div class="control-buttons">
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(0)">
+                <button type="button" class="px-3 py-1.5 border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors text-sm font-medium bg-white" @onclick="() => SetPosition(0)">
                     <i class="bi bi-arrow-bar-left"></i> Before
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => SetPosition(50)">
+                <button type="button" class="px-3 py-1.5 border-2 border-gray-400 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium bg-white" @onclick="() => SetPosition(50)">
                     <i class="bi bi-dash-circle"></i> 50/50
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => SetPosition(100)">
+                <button type="button" class="px-3 py-1.5 border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors text-sm font-medium bg-white" @onclick="() => SetPosition(100)">
                     After <i class="bi bi-arrow-bar-right"></i>
                 </button>
             </div>
 
             <div class="control-buttons">
-                <button type="button" class="btn btn-sm btn-outline-info" @onclick="ToggleOrientation">
+                <button type="button" class="px-3 py-1.5 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium bg-white" @onclick="ToggleOrientation">
                     <i class="bi bi-arrow-down-up"></i> @(_isVertical ? "Vertical" : "Horizontal")
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="ToggleDirection">
+                <button type="button" class="px-3 py-1.5 border-2 border-yellow-500 text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors text-sm font-medium bg-white @(_isReversed ? "bg-yellow-50" : "")" @onclick="ToggleDirection">
                     <i class="bi bi-arrow-left-right"></i> @(_isReversed ? "Reversed" : "Normal")
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-success" @onclick="SwapImages">
+                <button type="button" class="px-3 py-1.5 border-2 border-green-500 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium bg-white" @onclick="SwapImages">
                     <i class="bi bi-arrow-repeat"></i> Swap
                 </button>
             </div>

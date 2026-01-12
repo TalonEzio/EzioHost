@@ -1,116 +1,116 @@
-﻿@page "/faq"
+@page "/faq"
+@rendermode InteractiveServer
 
-<PageTitle>FAQ - Câu hỏi thường gặp</PageTitle>
+<PageTitle>FAQ - Câu hỏi thường gặp - EzioHost</PageTitle>
 
-<h1>❓ Câu hỏi thường gặp</h1>
+<!-- Hero Section -->
+<section class="bg-gradient-to-br from-primary-600 via-primary-700 to-purple-800 text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h1 class="text-4xl lg:text-5xl font-bold mb-4">❓ Câu hỏi thường gặp</h1>
+            <p class="text-xl text-gray-200 max-w-3xl mx-auto">
+                Tìm câu trả lời cho các câu hỏi phổ biến về EzioHost. Không tìm thấy câu trả lời? Hãy liên hệ với chúng tôi!
+            </p>
+        </div>
+    </div>
+</section>
 
-<div class="accordion" id="faqAccordion">
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingOne">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-                EzioHost là gì?
+<!-- FAQ Content -->
+<section class="py-16 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Search Box -->
+        <div class="mb-8">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="bi bi-search text-gray-400 text-xl"></i>
+                </div>
+                <input type="text" 
+                       id="faq-search"
+                       class="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg" 
+                       placeholder="Tìm kiếm câu hỏi..."
+                       @oninput="OnSearchChanged"/>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="mb-8 flex flex-wrap gap-2 justify-center">
+            <button class="px-4 py-2 rounded-lg font-medium transition-colors @(_selectedCategory == "" ? "bg-primary-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100")" 
+                    @onclick="@(() => SelectCategory(""))">
+                Tất cả
             </button>
-        </h2>
-        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                <strong>EzioHost</strong> là nền tảng video hosting cá nhân được phát triển bằng .NET và Blazor. Hệ thống hỗ trợ upload video, upscale video hoặc ảnh (tối ưu cho anime) bằng AI, và xác thực người dùng qua OpenID Connect sử dụng Keycloak.
+            <button class="px-4 py-2 rounded-lg font-medium transition-colors @(_selectedCategory == "general" ? "bg-primary-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100")" 
+                    @onclick="@(() => SelectCategory("general"))">
+                Tổng quan
+            </button>
+            <button class="px-4 py-2 rounded-lg font-medium transition-colors @(_selectedCategory == "upload" ? "bg-primary-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100")" 
+                    @onclick="@(() => SelectCategory("upload"))">
+                Upload Video
+            </button>
+            <button class="px-4 py-2 rounded-lg font-medium transition-colors @(_selectedCategory == "ai" ? "bg-primary-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100")" 
+                    @onclick="@(() => SelectCategory("ai"))">
+                AI Upscale
+            </button>
+            <button class="px-4 py-2 rounded-lg font-medium transition-colors @(_selectedCategory == "account" ? "bg-primary-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100")" 
+                    @onclick="@(() => SelectCategory("account"))">
+                Tài khoản
+            </button>
+            <button class="px-4 py-2 rounded-lg font-medium transition-colors @(_selectedCategory == "technical" ? "bg-primary-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100")" 
+                    @onclick="@(() => SelectCategory("technical"))">
+                Kỹ thuật
+            </button>
+        </div>
+
+        <!-- FAQ Items -->
+        <div class="space-y-4">
+            @foreach (var faq in FilteredFaqs)
+            {
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
+                            @onclick="() => ToggleFaq(faq.Id)">
+                        <span class="font-semibold text-gray-900 text-lg pr-4">@faq.Question</span>
+                        <i class="bi bi-chevron-down text-gray-500 text-xl transition-transform flex-shrink-0 @(faq.IsOpen ? "rotate-180" : "")"></i>
+                    </button>
+                    @if (faq.IsOpen)
+                    {
+                        <div class="px-6 pb-4 text-gray-700 leading-relaxed">
+                            <div class="prose max-w-none">
+                                @((MarkupString)faq.Answer)
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Empty State -->
+        @if (!FilteredFaqs.Any())
+        {
+            <div class="text-center py-12">
+                <i class="bi bi-search text-gray-400 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Không tìm thấy câu hỏi</h3>
+                <p class="text-gray-500">Thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-200 rounded-2xl p-8 lg:p-12 text-center">
+            <i class="bi bi-question-circle text-primary-600 text-5xl mb-4"></i>
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Vẫn chưa tìm thấy câu trả lời?</h2>
+            <p class="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
+                Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ bạn. Hãy liên hệ với chúng tôi qua email hoặc các kênh hỗ trợ khác.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="mailto:vuthemanh1707@gmail.com" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">
+                    <i class="bi bi-envelope mr-2"></i>vuthemanh1707@gmail.com
+                </a>
+                <a href="/contact" class="inline-flex items-center px-6 py-3 border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium">
+                    <i class="bi bi-chat-dots mr-2"></i>Liên hệ hỗ trợ
+                </a>
             </div>
         </div>
     </div>
-
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingTwo">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-                Làm sao để đăng ký và đăng nhập?
-            </button>
-        </h2>
-        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                EzioHost sử dụng hệ thống xác thực qua <strong>Keycloak</strong> – nền tảng quản lý danh tính mã nguồn mở. Khi nhấn vào "Đăng nhập", bạn sẽ được chuyển hướng tới giao diện Keycloak, nơi bạn có thể tạo tài khoản hoặc đăng nhập bằng thông tin đã có.
-            </div>
-        </div>
-    </div>
-
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingThree">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
-                Những định dạng video nào được hỗ trợ?
-            </button>
-        </h2>
-        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                Hệ thống hỗ trợ các định dạng video phổ biến như:
-                <code>.mp4</code>, <code>.webm</code>, <code>.mkv</code>. Các định dạng không phổ biến khác có thể cần chuyển đổi trước khi upload.
-            </div>
-        </div>
-    </div>
-
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingFour">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
-                Upscale bằng AI hoạt động như thế nào?
-            </button>
-        </h2>
-        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                EzioHost sử dụng <strong>ONNX Runtime</strong> để chạy các mô hình AI được huấn luyện sẵn, giúp nâng cao chất lượng ảnh và video.
-                <br/><br/>
-                Quy trình upscale bao gồm:
-                <ul>
-                    <li>Video/ảnh được chia nhỏ thành các khung hình.</li>
-                    <li>Mỗi khung được xử lý bằng mô hình <code>.onnx</code>.</li>
-                    <li>Các khung sau khi nâng cấp được ghép lại thành video/ảnh hoàn chỉnh.</li>
-                </ul>
-                Người dùng không cần cài đặt gì thêm – mọi quá trình diễn ra tự động sau khi bạn upload nội dung.
-            </div>
-        </div>
-    </div>
-
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingFive">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
-                ONNX Runtime là gì?
-            </button>
-        </h2>
-        <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                <strong>ONNX Runtime</strong> là engine tăng tốc mô hình học sâu (deep learning) do Microsoft phát triển, hỗ trợ đa nền tảng và hiệu năng cao.
-                EzioHost sử dụng ONNX Runtime để thực thi các mô hình AI xử lý ảnh và video trực tiếp từ server .NET mà không cần Python hay framework phụ.
-            </div>
-        </div>
-    </div>
-
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingSix">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix">
-                OpenModelDB là gì?
-            </button>
-        </h2>
-        <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                <strong>
-                    <a href="https://openmodeldb.info/" target="_blank" rel="noopener noreferrer">OpenModelDB</a>
-                </strong>
-                là kho mô hình AI mở, chuyên về xử lý ảnh, video, audio,... Các mô hình trên đây thường ở định dạng <code>ONNX</code> và có thể tích hợp trực tiếp vào các ứng dụng như EzioHost.
-                <br/>
-                Bạn có thể xem thêm chi tiết tại
-                <a href="https://openmodeldb.info/docs/faq" target="_blank" rel="noopener noreferrer">
-                    trang FAQ chính thức của OpenModelDB
-                </a>.
-            </div>
-        </div>
-    </div>
-
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingSeven">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven">
-                Tôi cần hỗ trợ thì liên hệ như thế nào?
-            </button>
-        </h2>
-        <div id="collapseSeven" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-                Bạn có thể liên hệ trực tiếp qua email: <code>support@eziohost.dev</code> hoặc gửi phản hồi trong phần tài khoản cá nhân sau khi đăng nhập.
-            </div>
-        </div>
-    </div>
-</div>
+</section>

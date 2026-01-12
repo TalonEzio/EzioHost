@@ -1,230 +1,192 @@
-﻿@page "/"
+@page "/"
 <PageTitle>EzioHost - Video Hosting Platform</PageTitle>
 
 <!-- Hero Section -->
-<section class="hero-section bg-gradient-primary text-white py-5">
-    <div class="container">
-        <div class="row align-items-center min-vh-50">
-            <div class="col-lg-6">
-                <h1 class="display-4 fw-bold mb-4">
-                    <i class="bi bi-play-circle-fill me-3"></i>
-                    Chào mừng đến với EzioHost
+<section class="relative bg-gradient-to-br from-primary-600 via-primary-700 to-purple-800 text-white overflow-hidden">
+    <div class="absolute inset-0 bg-grid-pattern opacity-10"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="space-y-8">
+                <h1 class="text-5xl lg:text-6xl font-bold leading-tight">
+                    Nền tảng video hosting<br/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">mạnh mẽ nhất</span>
                 </h1>
-                <p class="lead mb-4">
+                <p class="text-xl text-gray-200 leading-relaxed">
                     Nền tảng video hosting cá nhân với AI upscale mạnh mẽ, được phát triển bằng
-                    <span class="badge bg-light text-dark me-1">.NET 10</span>
-                    <span class="badge bg-light text-dark me-1">Blazor</span>
-                    <span class="badge bg-light text-dark">ONNX Runtime</span>
+                    <span class="inline-flex items-center px-3 py-1 mx-1 bg-white/20 rounded-full text-sm font-medium">.NET 10</span>
+                    <span class="inline-flex items-center px-3 py-1 mx-1 bg-white/20 rounded-full text-sm font-medium">Blazor</span>
+                    <span class="inline-flex items-center px-3 py-1 mx-1 bg-white/20 rounded-full text-sm font-medium">ONNX Runtime</span>
                 </p>
-                <div class="d-flex flex-wrap gap-3">
+                <div class="flex flex-wrap gap-4">
                     <AuthorizeView>
                         <Authorized>
-                            <a href="/video" class="btn btn-light btn-lg">
-                                <i class="bi bi-collection-play me-2"></i>Xem Video
+                            <a href="/video" class="inline-flex items-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                                <i class="bi bi-collection-play mr-2"></i>Xem Video
                             </a>
-                            <a href="/video-upload" class="btn btn-outline-light btn-lg">
-                                <i class="bi bi-cloud-upload me-2"></i>Upload Video
+                            <a href="/video-upload" class="inline-flex items-center px-6 py-3 bg-white/10 text-white border-2 border-white/30 font-semibold rounded-lg hover:bg-white/20 transition-all transform hover:scale-105">
+                                <i class="bi bi-cloud-upload mr-2"></i>Upload Video
                             </a>
                         </Authorized>
                         <NotAuthorized>
-                            <a href="/login" class="btn btn-light btn-lg">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
+                            <a href="/login" class="inline-flex items-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                                <i class="bi bi-box-arrow-in-right mr-2"></i>Đăng nhập
                             </a>
-                            <a href="/faq" class="btn btn-outline-light btn-lg">
-                                <i class="bi bi-question-circle me-2"></i>Tìm hiểu thêm
+                            <a href="/faq" class="inline-flex items-center px-6 py-3 bg-white/10 text-white border-2 border-white/30 font-semibold rounded-lg hover:bg-white/20 transition-all transform hover:scale-105">
+                                <i class="bi bi-question-circle mr-2"></i>Tìm hiểu thêm
                             </a>
                         </NotAuthorized>
                     </AuthorizeView>
                 </div>
             </div>
-            <div class="col-lg-6 text-center">
-                <div class="hero-video-placeholder bg-dark rounded-3 p-5">
-                    <i class="bi bi-play-circle display-1 text-primary"></i>
-
+            <div class="hidden lg:block">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-gradient-to-r from-primary-400 to-purple-400 rounded-3xl blur-3xl opacity-50"></div>
+                    <div class="relative bg-white/10 backdrop-blur-sm rounded-3xl p-12 border border-white/20">
+                        <div class="text-center">
+                            <i class="bi bi-play-circle-fill text-9xl text-white/80"></i>
+                            <p class="mt-6 text-xl font-semibold">Video Hosting Platform</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent"></div>
 </section>
 
 <!-- Features Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="row text-center mb-5">
-            <div class="col-lg-8 mx-auto">
-                <h2 class="display-5 fw-bold mb-3">🎬 Tính năng nổi bật</h2>
-                <p class="lead text-muted">Khám phá những tính năng mạnh mẽ của EzioHost</p>
-            </div>
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">🎬 Tính năng nổi bật</h2>
+            <p class="text-xl text-gray-600">Khám phá những tính năng mạnh mẽ của EzioHost</p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="bi bi-cloud-upload text-primary" style="font-size: 2rem;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Upload Video Chất Lượng Cao</h5>
-                        <p class="card-text text-muted">Hỗ trợ upload video với nhiều định dạng khác nhau, tối ưu hóa cho chất lượng cao.</p>
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="group bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="bi bi-cloud-upload text-3xl text-white"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Upload Video Chất Lượng Cao</h3>
+                <p class="text-gray-600">Hỗ trợ upload video với nhiều định dạng khác nhau, tối ưu hóa cho chất lượng cao.</p>
             </div>
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="bi bi-cpu text-success" style="font-size: 2rem;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">AI Upscale với ONNX</h5>
-                        <p class="card-text text-muted">Sử dụng AI để upscale video và hình ảnh, đặc biệt tối ưu cho anime.</p>
-                    </div>
+            <div class="group bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="bi bi-cpu text-3xl text-white"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">AI Upscale với ONNX</h3>
+                <p class="text-gray-600">Sử dụng AI để upscale video và hình ảnh, đặc biệt tối ưu cho anime.</p>
             </div>
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="bi bi-shield-check text-warning" style="font-size: 2rem;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Bảo mật với Keycloak</h5>
-                        <p class="card-text text-muted">Hệ thống xác thực và phân quyền mạnh mẽ với OpenID Connect.</p>
-                    </div>
+            <div class="group bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="bi bi-shield-check text-3xl text-white"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Bảo mật với Keycloak</h3>
+                <p class="text-gray-600">Hệ thống xác thực và phân quyền mạnh mẽ với OpenID Connect.</p>
             </div>
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="bi bi-collection-play text-info" style="font-size: 2rem;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Video Player Tối Ưu</h5>
-                        <p class="card-text text-muted">Trình phát video hiện đại với nhiều tùy chọn chất lượng.</p>
-                    </div>
+            <div class="group bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="bi bi-collection-play text-3xl text-white"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Video Player Tối Ưu</h3>
+                <p class="text-gray-600">Trình phát video hiện đại với nhiều tùy chọn chất lượng.</p>
             </div>
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="bi bi-lightning text-danger" style="font-size: 2rem;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Hiệu suất Cao</h5>
-                        <p class="card-text text-muted">Được tối ưu hóa với .NET 10 và Blazor United cho hiệu suất tối đa.</p>
-                    </div>
+            <div class="group bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="bi bi-lightning text-3xl text-white"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Hiệu suất Cao</h3>
+                <p class="text-gray-600">Được tối ưu hóa với .NET 10 và Blazor United cho hiệu suất tối đa.</p>
             </div>
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon bg-secondary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="bi bi-arrow-repeat text-secondary" style="font-size: 2rem;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Reverse Proxy YARP</h5>
-                        <p class="card-text text-muted">Kiến trúc BFF với YARP để điều hướng thông minh.</p>
-                    </div>
+            <div class="group bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="bi bi-arrow-repeat text-3xl text-white"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Reverse Proxy YARP</h3>
+                <p class="text-gray-600">Kiến trúc BFF với YARP để điều hướng thông minh.</p>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Technology Stack Section -->
-<section class="bg-light py-5">
-    <div class="container">
-        <div class="row text-center mb-5">
-            <div class="col-lg-8 mx-auto">
-                <h2 class="display-5 fw-bold mb-3">🚀 Công nghệ sử dụng</h2>
-                <p class="lead text-muted">Được xây dựng với những công nghệ hiện đại nhất</p>
-            </div>
+<section class="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">🚀 Công nghệ sử dụng</h2>
+            <p class="text-xl text-gray-600">Được xây dựng với những công nghệ hiện đại nhất</p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="tech-badge bg-primary text-white rounded-3 p-4 mb-3">
-                        <i class="bi bi-microsoft" style="font-size: 3rem;"></i>
-                        <h5 class="mt-3 mb-0">.NET 10</h5>
-                    </div>
-                    <p class="text-muted">Framework hiện đại nhất từ Microsoft</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center group">
+                <div class="inline-block bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-2xl p-8 mb-4 transform group-hover:-translate-y-2 transition-all duration-300 shadow-lg group-hover:shadow-xl">
+                    <i class="bi bi-microsoft text-5xl"></i>
+                    <h5 class="mt-4 text-xl font-bold">.NET 10</h5>
                 </div>
+                <p class="text-gray-600">Framework hiện đại nhất từ Microsoft</p>
             </div>
 
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="tech-badge bg-info text-white rounded-3 p-4 mb-3">
-                        <i class="bi bi-lightning" style="font-size: 3rem;"></i>
-                        <h5 class="mt-3 mb-0">Blazor United</h5>
-                    </div>
-                    <p class="text-muted">Full-stack web development với C#</p>
+            <div class="text-center group">
+                <div class="inline-block bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl p-8 mb-4 transform group-hover:-translate-y-2 transition-all duration-300 shadow-lg group-hover:shadow-xl">
+                    <i class="bi bi-lightning text-5xl"></i>
+                    <h5 class="mt-4 text-xl font-bold">Blazor United</h5>
                 </div>
+                <p class="text-gray-600">Full-stack web development với C#</p>
             </div>
 
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="tech-badge bg-success text-white rounded-3 p-4 mb-3">
-                        <i class="bi bi-cpu" style="font-size: 3rem;"></i>
-                        <h5 class="mt-3 mb-0">ONNX Runtime</h5>
-                    </div>
-                    <p class="text-muted">AI inference engine mạnh mẽ</p>
+            <div class="text-center group">
+                <div class="inline-block bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl p-8 mb-4 transform group-hover:-translate-y-2 transition-all duration-300 shadow-lg group-hover:shadow-xl">
+                    <i class="bi bi-cpu text-5xl"></i>
+                    <h5 class="mt-4 text-xl font-bold">ONNX Runtime</h5>
                 </div>
+                <p class="text-gray-600">AI inference engine mạnh mẽ</p>
             </div>
         </div>
     </div>
 </section>
 
 <!-- CTA Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8 mx-auto text-center">
-                <h2 class="display-5 fw-bold mb-4">Sẵn sàng bắt đầu?</h2>
-                <p class="lead text-muted mb-4">
-                    Tham gia EzioHost ngay hôm nay và trải nghiệm nền tảng video hosting mạnh mẽ nhất.
-                </p>
-                <AuthorizeView>
-                    <Authorized>
-                        <div class="d-flex flex-wrap justify-content-center gap-3">
-                            <a href="/video" class="btn btn-primary btn-lg">
-                                <i class="bi bi-collection-play me-2"></i>Khám phá Video
-                            </a>
-                            <a href="/video-upload" class="btn btn-outline-primary btn-lg">
-                                <i class="bi bi-cloud-upload me-2"></i>Upload Video đầu tiên
-                            </a>
-                        </div>
-                    </Authorized>
-                    <NotAuthorized>
-                        <div class="d-flex flex-wrap justify-content-center gap-3">
-                            <a href="/login" class="btn btn-primary btn-lg">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập ngay
-                            </a>
-                            <a href="/faq" class="btn btn-outline-primary btn-lg">
-                                <i class="bi bi-question-circle me-2"></i>Tìm hiểu thêm
-                            </a>
-                        </div>
-                    </NotAuthorized>
-                </AuthorizeView>
-            </div>
-        </div>
+<section class="py-20 bg-gradient-to-r from-primary-600 to-purple-700 text-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Sẵn sàng bắt đầu?</h2>
+        <p class="text-xl text-gray-200 mb-8">
+            Tham gia EzioHost ngay hôm nay và trải nghiệm nền tảng video hosting mạnh mẽ nhất.
+        </p>
+        <AuthorizeView>
+            <Authorized>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <a href="/video" class="inline-flex items-center px-8 py-4 bg-white text-primary-700 font-semibold rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                        <i class="bi bi-collection-play mr-2"></i>Khám phá Video
+                    </a>
+                    <a href="/video-upload" class="inline-flex items-center px-8 py-4 bg-white/10 text-white border-2 border-white/30 font-semibold rounded-lg hover:bg-white/20 transition-all transform hover:scale-105">
+                        <i class="bi bi-cloud-upload mr-2"></i>Upload Video đầu tiên
+                    </a>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <a href="/login" class="inline-flex items-center px-8 py-4 bg-white text-primary-700 font-semibold rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                        <i class="bi bi-box-arrow-in-right mr-2"></i>Đăng nhập ngay
+                    </a>
+                    <a href="/faq" class="inline-flex items-center px-8 py-4 bg-white/10 text-white border-2 border-white/30 font-semibold rounded-lg hover:bg-white/20 transition-all transform hover:scale-105">
+                        <i class="bi bi-question-circle mr-2"></i>Tìm hiểu thêm
+                    </a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
 </section>
 
 <style>
-	.hero-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-
-	.min-vh-50 { min-height: 50vh; }
-
-	.feature-icon { transition: transform 0.3s ease; }
-
-	.card:hover .feature-icon { transform: scale(1.1); }
-
-	.tech-badge { transition: transform 0.3s ease; }
-
-	.tech-badge:hover { transform: translateY(-5px); }
-
-	.hero-video-demo { box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .bg-grid-pattern {
+        background-image: 
+            linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+    }
 </style>

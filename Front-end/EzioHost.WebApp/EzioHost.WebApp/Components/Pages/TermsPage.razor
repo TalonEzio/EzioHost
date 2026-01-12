@@ -1,0 +1,26 @@
+@page "/terms"
+@rendermode InteractiveServer
+
+<PageTitle>Điều khoản sử dụng - EzioHost</PageTitle>
+
+<!-- Hero Section -->
+<section class="bg-gradient-to-br from-primary-600 via-primary-700 to-purple-800 text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h1 class="text-4xl lg:text-5xl font-bold mb-4">📜 Điều khoản sử dụng</h1>
+            <p class="text-xl text-gray-200 max-w-3xl mx-auto">
+                Vui lòng đọc kỹ các điều khoản này trước khi sử dụng dịch vụ EzioHost. Bằng việc sử dụng dịch vụ, bạn đồng ý với các điều khoản này.
+            </p>
+            <p class="text-sm text-gray-300 mt-4">Cập nhật lần cuối: @LastUpdated</p>
+        </div>
+    </div>
+</section>
+
+<!-- Content -->
+<section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="prose prose-lg max-w-none">
+            @((MarkupString)Content)
+        </div>
+    </div>
+</section>

@@ -9,119 +9,107 @@
 
 @if (RendererInfo.IsInteractive)
 {
-    <div class="container py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <h1 class="h2 fw-bold mb-2">
-                    <i class="bi bi-cloud-upload me-2"></i>
-                    Upload Video
-                </h1>
-                <p class="text-muted">Tải lên video của bạn</p>
-            </div>
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                <i class="bi bi-cloud-upload mr-2 text-primary-600"></i>
+                Upload Video
+            </h1>
+            <p class="text-gray-600">Tải lên video của bạn</p>
         </div>
 
-        <div class="row">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Upload Section -->
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <!-- File Selection -->
-                        <div class="upload-zone @(IsDragOver ? "drag-over" : "")"
-                             @ref="_dropZone"
-                             @ondragover:preventDefault="true"
-                             @ondragenter:preventDefault="true"
-                             @ondragleave:preventDefault="true"
-                             @ondrop:preventDefault="true">
-                            <SeekableInputFile OnChanged="OnFilesChanged"
-                                               class="d-none" id="videoFileInput" accept="video/*" multiple/>
+            <div class="lg:col-span-2">
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                    <!-- File Selection -->
+                    <div class="border-2 border-dashed rounded-xl p-8 transition-all @(IsDragOver ? "border-primary-500 bg-primary-50" : "border-gray-300 hover:border-primary-400")"
+                         @ref="_dropZone"
+                         @ondragover:preventDefault="true"
+                         @ondragenter:preventDefault="true"
+                         @ondragleave:preventDefault="true"
+                         @ondrop:preventDefault="true">
+                        <SeekableInputFile OnChanged="OnFilesChanged"
+                                           class="hidden" id="videoFileInput" accept="video/*" multiple/>
 
-                            @if (SelectedFiles.Any())
-                            {
-                                <div class="uploaded-files mt-3">
-                                    <h5 class="mb-3">Files đã chọn: </h5>
-                                    @foreach (var file in SelectedFiles)
-                                    {
-                                        <div class="file-item d-flex align-items-center justify-content-between p-3 bg-light rounded mb-2"
-                                             @onclick="() => SelectFile(file)"
-                                             style="cursor: pointer;">
-                                            <div class="d-flex align-items-center flex-grow-1">
-                                                <i class="bi bi-file-earmark-play text-primary me-3" style="font-size: 1.5rem;"></i>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-bold">@file.Name</div>
-                                                    <small class="text-muted">@FormatFileSize(file.Size)</small>
-                                                    @if (!string.IsNullOrEmpty(file.Checksum))
-                                                    {
-                                                        <div>
-                                                            <small class="text-muted">Checksum: @file.Checksum.Substring(0, Math.Min(16, file.Checksum.Length))...</small>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </div>
-                                            <button class="btn btn-outline-danger btn-sm"
-                                                    @onclick="() => RemoveFile(file)"
-                                                    @onclick:stopPropagation="true"
-                                                    disabled="@IsUploading">
-                                                <i class="bi bi-x"></i>
-                                            </button>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="upload-placeholder text-center py-5">
-                                    <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
-                                    <h4 class="mb-3">Kéo thả video vào đây</h4>
-                                    <p class="text-muted mb-4">Hoặc click để chọn file</p>
-                                    <button class="btn btn-primary btn-lg" @onclick="TriggerFileInput" @onclick:preventDefault="true" type="button">
-                                        <i class="bi bi-folder2-open me-2"></i>Chọn Video
-                                    </button>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Upload Progress -->
-                        @if (IsUploading)
+                        @if (SelectedFiles.Any())
                         {
-                            <div class="mt-4">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold">Đang upload...</span>
-                                    <span class="text-muted">@UploadProgress%</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                         role="progressbar"
-                                         style="width: @UploadProgress%">
+                            <div class="space-y-3">
+                                <h5 class="font-semibold text-gray-900 mb-4">Files đã chọn: </h5>
+                                @foreach (var file in SelectedFiles)
+                                {
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                                         @onclick="() => SelectFile(file)">
+                                        <div class="flex items-center flex-grow-1 min-w-0">
+                                            <i class="bi bi-file-earmark-play text-primary-600 mr-3 text-2xl flex-shrink-0"></i>
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="font-semibold text-gray-900 truncate">@file.Name</div>
+                                                <div class="text-sm text-gray-600">@FormatFileSize(file.Size)</div>
+                                                @if (!string.IsNullOrEmpty(file.Checksum))
+                                                {
+                                                    <div class="text-xs text-gray-500 truncate">Checksum: @file.Checksum.Substring(0, Math.Min(16, file.Checksum.Length))...</div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <button class="ml-4 px-3 py-1 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm flex-shrink-0"
+                                                @onclick="() => RemoveFile(file)"
+                                                @onclick:stopPropagation="true"
+                                                disabled="@IsUploading">
+                                            <i class="bi bi-x"></i>
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="mt-2">
-                                    <small class="text-muted">@CurrentUploadFileName</small>
-                                </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-8">
+                                <i class="bi bi-cloud-upload text-gray-400 text-6xl mb-4"></i>
+                                <h4 class="text-xl font-semibold text-gray-900 mb-2">Kéo thả video vào đây</h4>
+                                <p class="text-gray-600 mb-6">Hoặc click để chọn file</p>
+                                <button class="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium" @onclick="TriggerFileInput" @onclick:preventDefault="true" type="button">
+                                    <i class="bi bi-folder2-open mr-2"></i>Chọn Video
+                                </button>
                             </div>
                         }
                     </div>
+
+                    <!-- Upload Progress -->
+                    @if (IsUploading)
+                    {
+                        <div class="mt-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-gray-900">Đang upload...</span>
+                                <span class="text-gray-600">@UploadProgress%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-primary-600 h-2.5 rounded-full transition-all duration-300" style="width: @UploadProgress%"></div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-gray-600">@CurrentUploadFileName</small>
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 <!-- Video Settings -->
                 @if (SelectedFiles.Any())
                 {
-                    <div class="card border-0 shadow-sm mt-4">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">
-                                <i class="bi bi-gear me-2"></i>Cài đặt Video
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm mt-6">
+                        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 rounded-t-xl">
+                            <h5 class="text-lg font-semibold text-gray-900 flex items-center">
+                                <i class="bi bi-gear mr-2"></i>Cài đặt Video
                             </h5>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label">Tiêu đề</label>
-                                    <input type="text" class="form-control" @bind="VideoTitle" placeholder="Nhập tiêu đề video hoặc click vào file để tự động điền" disabled="@IsUploading"/>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Mô tả</label>
-                                    <textarea class="form-control" rows="3" @bind="VideoDescription" placeholder="Mô tả video (tùy chọn)" disabled="@IsUploading"></textarea>
-                                </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tiêu đề</label>
+                                <input type="text" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" @bind="VideoTitle" placeholder="Nhập tiêu đề video hoặc click vào file để tự động điền" disabled="@IsUploading"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
+                                <textarea class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" rows="3" @bind="VideoDescription" placeholder="Mô tả video (tùy chọn)" disabled="@IsUploading"></textarea>
                             </div>
                         </div>
                     </div>
@@ -129,27 +117,36 @@
             </div>
 
             <!-- Sidebar -->
-            <div class="col-lg-4">
+            <div class="lg:col-span-1">
                 <!-- Upload Guidelines -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0">
-                            <i class="bi bi-info-circle me-2"></i>Hướng dẫn Upload
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm mb-6">
+                    <div class="px-6 py-4 bg-primary-600 text-white rounded-t-xl">
+                        <h6 class="font-semibold flex items-center">
+                            <i class="bi bi-info-circle mr-2"></i>Hướng dẫn Upload
                         </h6>
                     </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle text-success me-2"></i>
-                                <strong>Định dạng hỗ trợ:</strong> MP4, AVI, MOV, MKV
+                    <div class="p-6">
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i class="bi bi-check-circle text-green-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <div>
+                                    <strong class="text-gray-900">Định dạng hỗ trợ:</strong>
+                                    <span class="text-gray-600"> MP4, AVI, MOV, MKV</span>
+                                </div>
                             </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle text-success me-2"></i>
-                                <strong>Kích thước tối đa:</strong> 2GB mỗi file
+                            <li class="flex items-start">
+                                <i class="bi bi-check-circle text-green-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <div>
+                                    <strong class="text-gray-900">Kích thước tối đa:</strong>
+                                    <span class="text-gray-600"> 2GB mỗi file</span>
+                                </div>
                             </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle text-success me-2"></i>
-                                <strong>Chất lượng:</strong> Không quá 4K
+                            <li class="flex items-start">
+                                <i class="bi bi-check-circle text-green-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <div>
+                                    <strong class="text-gray-900">Chất lượng:</strong>
+                                    <span class="text-gray-600"> Không quá 4K</span>
+                                </div>
                             </li>
                         </ul>
                     </div>
@@ -158,24 +155,24 @@
                 <!-- Upload Actions -->
                 @if (SelectedFiles.Any())
                 {
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="mb-3">Hành động</h6>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-primary" @onclick="StartUpload" disabled="@IsUploading">
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm">
+                        <div class="p-6">
+                            <h6 class="font-semibold text-gray-900 mb-4">Hành động</h6>
+                            <div class="space-y-3">
+                                <button class="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" @onclick="StartUpload" disabled="@IsUploading">
                                     @if (IsUploading)
                                     {
-                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
                                         <span>Đang upload...</span>
                                     }
                                     else
                                     {
-                                        <i class="bi bi-cloud-upload me-2"></i>
+                                        <i class="bi bi-cloud-upload mr-2"></i>
                                         <span>Bắt đầu Upload</span>
                                     }
                                 </button>
-                                <button class="btn btn-outline-secondary" @onclick="ClearFiles" disabled="@IsUploading">
-                                    <i class="bi bi-x-circle me-2"></i>Xóa tất cả
+                                <button class="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" @onclick="ClearFiles" disabled="@IsUploading">
+                                    <i class="bi bi-x-circle mr-2"></i>Xóa tất cả
                                 </button>
                             </div>
                         </div>
@@ -187,10 +184,8 @@
 }
 else
 {
-    <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="text-muted mt-3">Loading page...</p>
+    <div class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <p class="text-gray-600 mt-4">Loading page...</p>
     </div>
 }
