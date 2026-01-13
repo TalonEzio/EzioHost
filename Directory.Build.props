@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura,json</CoverletOutputFormat>
+    <CoverletOutput>$(MSBuildProjectDirectory)\TestResults\</CoverletOutput>
+    <Threshold>0</Threshold>
+    <ThresholdType>line,branch,method</ThresholdType>
+    <!-- Enable branch coverage (C1) in addition to statement coverage (C0) -->
+    <CoverletCollect>true</CoverletCollect>
+    <ExcludeByFile>**/Program.cs,**/Startup.cs,**/Migrations/**</ExcludeByFile>
+    <Exclude>[*.Test]*,[*.Tests]*</Exclude>
+  </PropertyGroup>
+</Project>

@@ -21,11 +21,11 @@ public class StaticPathResolver(IConfiguration configuration) : IMemberValueReso
         try
         {
             var finalUri = new Uri(DumpUri, combinedPath);
-            return finalUri.AbsolutePath;
+            return finalUri.AbsolutePath.Replace("//", "/");
         }
         catch (UriFormatException)
         {
-            return combinedPath;
+            return combinedPath.Replace("//", "/");
         }
     }
 }

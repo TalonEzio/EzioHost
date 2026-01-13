@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CoverletThreshold>0</CoverletThreshold>
+    <CoverletThresholdType>line,branch,method</CoverletThresholdType>
+    <CoverletThresholdStat>minimum</CoverletThresholdStat>
+    <CoverletSkipAutoProps>true</CoverletSkipAutoProps>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.msbuild" Version="6.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Back-end\EzioHost.Core\EzioHost.Core.csproj" />
+    <ProjectReference Include="..\..\Back-end\EzioHost.Domain\EzioHost.Domain.csproj" />
+    <ProjectReference Include="..\..\Back-end\EzioHost.Infrastructure.SqlServer\EzioHost.Infrastructure.SqlServer.csproj" />
+    <ProjectReference Include="..\..\Back-end\EzioHost.Infrastructure.Storage\EzioHost.Infrastructure.Storage.CloudFlare.csproj" />
+    <ProjectReference Include="..\..\Utility\EzioHost.Shared\EzioHost.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
