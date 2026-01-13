@@ -18,23 +18,23 @@
     <div class="upscale-content">
         @if (RendererInfo.IsInteractive)
         {
-            <div class="upscale-card">
-                <div class="model-selector-section">
-                    <label class="model-selector-label">
-                        <i class="bi bi-cpu"></i>
-                        Chọn mô hình AI
-                    </label>
-                    <select @onchange="OnOnnxModelChange" class="model-select">
-                        @foreach (var model in OnnxModels)
-                        {
-                            <option value="@model.Id">@model.Name</option>
-                        }
-                    </select>
-                    <p class="model-selector-hint">Chọn mô hình AI để nâng cấp video</p>
-                </div>
+            @if (OnnxModels.Any() && _selectedModel != null)
+            {
+                <div class="upscale-card">
+                    <div class="model-selector-section">
+                        <label class="model-selector-label">
+                            <i class="bi bi-cpu"></i>
+                            Chọn mô hình AI
+                        </label>
+                        <select @onchange="OnOnnxModelChange" class="model-select">
+                            @foreach (var model in OnnxModels)
+                            {
+                                <option value="@model.Id">@model.Name</option>
+                            }
+                        </select>
+                        <p class="model-selector-hint">Chọn mô hình AI để nâng cấp video</p>
+                    </div>
 
-                @if (_selectedModel != null)
-                {
                     <div class="model-details-card">
                         <h3 class="model-details-title">
                             <i class="bi bi-info-circle"></i>
@@ -70,8 +70,28 @@
                             Xử lý Upscale
                         </button>
                     </div>
-                }
-            </div>
+                </div>
+            }
+            else
+            {
+                <div class="upscale-card">
+                    <div class="no-preview-message">
+                        <div class="no-preview-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="no-preview-title">Không có mô hình AI có preview</h3>
+                        <p class="no-preview-text">
+                            Bạn cần tạo preview cho ít nhất một mô hình AI trước khi có thể upscale video.
+                            <br/>
+                            Vui lòng vào trang quản lý ONNX Models để tạo preview.
+                        </p>
+                        <button class="upscale-button" @onclick="@(() => JsRuntime.NavigateTo("/onnx"))">
+                            <i class="bi bi-arrow-left"></i>
+                            Đi đến trang ONNX Models
+                        </button>
+                    </div>
+                </div>
+            }
         }
         else
         {

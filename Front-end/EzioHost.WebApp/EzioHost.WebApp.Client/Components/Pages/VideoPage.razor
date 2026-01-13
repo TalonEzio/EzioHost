@@ -240,24 +240,24 @@
     </div>
 }
 
-<!-- Edit Modal -->
+<!-- Edit Video Sidebar -->
 @if (EditingVideo != null)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" @onclick="CloseEditModal">
-        <div class="bg-white rounded-xl max-w-md w-full" @onclick:stopPropagation="true">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200">
-                <h5 class="text-lg font-semibold text-gray-900">Chỉnh sửa Video</h5>
-                <button type="button" class="text-gray-400 hover:text-gray-600" @onclick="CloseEditModal">
-                    <i class="bi bi-x-lg text-xl"></i>
+    <div class="edit-video-overlay" @onclick="CloseEditModal">
+        <div class="edit-video-sidebar" @onclick:stopPropagation="true">
+            <div class="edit-video-header">
+                <h5 class="edit-video-title">Chỉnh sửa Video</h5>
+                <button type="button" class="edit-video-close" @onclick="CloseEditModal">
+                    <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-            <div class="p-4 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Tiêu đề</label>
+            <div class="edit-video-content">
+                <div class="edit-video-section">
+                    <label class="edit-video-label">Tiêu đề</label>
                     <InputText @bind-Value="EditingVideo.Title" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"/>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Loại chia sẻ</label>
+                <div class="edit-video-section">
+                    <label class="edit-video-label">Loại chia sẻ</label>
                     <InputSelect @bind-Value="EditingVideo.ShareType" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                         @foreach (var value in Enum.GetValues<VideoEnum.VideoShareType>())
                         {
@@ -265,13 +265,14 @@
                         }
                     </InputSelect>
                 </div>
-                <div class="border-t border-gray-200 pt-4">
+                <div class="edit-video-section">
+                    <div class="edit-video-divider"></div>
                     <VideoSubtitleManager VideoId="@EditingVideo.Id" OnSubtitleChanged="HandleSubtitleChanged" />
                 </div>
             </div>
-            <div class="flex justify-end gap-2 p-4 border-t border-gray-200">
-                <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" @onclick="CloseEditModal">Hủy</button>
-                <button type="button" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors" @onclick="() => UpdateVideo(EditingVideo)">Lưu</button>
+            <div class="edit-video-footer">
+                <button type="button" class="edit-video-btn-cancel" @onclick="CloseEditModal">Hủy</button>
+                <button type="button" class="edit-video-btn-save" @onclick="() => UpdateVideo(EditingVideo)">Lưu</button>
             </div>
         </div>
     </div>
