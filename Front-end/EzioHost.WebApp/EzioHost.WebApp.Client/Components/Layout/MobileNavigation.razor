@@ -37,7 +37,7 @@
             <AuthorizeView>
                 <Authorized>
                     <div class="relative">
-                        <button @onclick="ToggleAccountMenu" class="w-full h-full flex flex-col items-center justify-center @(IsActivePage("/profile") || IsActivePage("/settings") ? "text-primary-600 bg-primary-50" : "text-gray-600 hover:text-primary-600 hover:bg-gray-50") transition-colors">
+                        <button @onclick="ToggleAccountMenu" class="w-full h-full flex flex-col items-center justify-center @(IsActivePage("/profile") || IsActivePage("/settings") || IsActivePage("/statistics") ? "text-primary-600 bg-primary-50" : "text-gray-600 hover:text-primary-600 hover:bg-gray-50") transition-colors">
                             <i class="bi bi-person-circle text-xl mb-1"></i>
                             <small class="text-xs font-medium">Tài khoản</small>
                         </button>
@@ -46,6 +46,9 @@
                             <div class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
                                 <a href="/profile" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors" @onclick="() => _showAccountMenu = false">
                                     <i class="bi bi-person mr-2"></i>Hồ sơ
+                                </a>
+                                <a href="/statistics" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors" @onclick="() => _showAccountMenu = false">
+                                    <i class="bi bi-graph-up-arrow mr-2"></i>Thống kê
                                 </a>
                                 <a href="/settings" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors" @onclick="() => _showAccountMenu = false">
                                     <i class="bi bi-gear mr-2"></i>Cài đặt

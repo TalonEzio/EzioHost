@@ -23,4 +23,10 @@ public interface IVideoApi
 
     [Post("/api/video/{videoId}/upscale/{modelId}")]
     Task UpscaleVideo(Guid videoId, Guid modelId);
+
+    [Get("/api/Video/statistics")]
+    Task<VideoStatisticsDto> GetStatistics();
+
+    [Get("/api/Video/statistics/detailed")]
+    Task<VideoDetailedStatisticsDto> GetDetailedStatistics();
 }

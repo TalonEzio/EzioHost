@@ -191,7 +191,7 @@ public partial class VideoPage : IAsyncDisposable
 
         if (_jsObjectReference != null)
         {
-            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.PlayerJsMetadata);
+            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.PlayerJsMetadata, video.SubtitleMetadata);
         }
     }
 

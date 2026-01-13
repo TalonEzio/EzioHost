@@ -33,6 +33,7 @@
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
     margin-bottom: 3rem;
+    align-items: stretch;
 }
 
 .settings-card-link {
@@ -53,7 +54,7 @@
     gap: 1rem;
     position: relative;
     cursor: pointer;
-    min-height: 200px;
+    height: 100%;
 }
 
 .settings-card-link:hover .settings-card {
@@ -81,6 +82,38 @@
 
 .settings-card-icon.encoding-icon {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.settings-card-icon.account-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.settings-card-icon.security-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.settings-card-icon.storage-icon {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+.settings-card-icon.notifications-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.settings-card-icon.api-keys-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.settings-card-icon.appearance-icon {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+.settings-card-icon.integrations-icon {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+}
+
+.settings-card-icon.advanced-icon {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
 }
 
 .settings-card-icon {

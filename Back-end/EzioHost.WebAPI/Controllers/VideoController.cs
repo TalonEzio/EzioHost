@@ -282,4 +282,322 @@ public class VideoController(
 
         return Created();
     }
+
+    [HttpGet("statistics")]
+    [Authorize]
+    public async Task<IActionResult> GetStatistics()
+    {
+        try
+        {
+            var userId = User.UserId;
+            if (userId == Guid.Empty)
+                return Unauthorized("User ID not found");
+
+            // Get all videos for the user (with a large page size to get all)
+            // Include VideoStreams and VideoUpscales to calculate storage
+            var videos = (await videoService.GetVideos(
+                1,
+                10000, // Large page size to get all videos
+                x => x.CreatedBy == userId,
+                [x => x.VideoStreams, x => x.VideoUpscales])).ToList();
+
+            var totalVideos = videos.Count;
+            var readyVideos = videos.Count(v => v.Status == VideoEnum.VideoStatus.Ready);
+            long totalStorageUsed = 0;
+
+            // Calculate total storage used
+            foreach (var video in videos)
+            {
+                // Calculate storage for raw video file
+                if (!string.IsNullOrEmpty(video.RawLocation))
+                {
+                    var rawFilePath = Path.Combine(WebRootPath, video.RawLocation);
+                    if (System.IO.File.Exists(rawFilePath))
+                    {
+                        var fileInfo = new FileInfo(rawFilePath);
+                        totalStorageUsed += fileInfo.Length;
+                    }
+                }
+
+                // Calculate storage for video streams (HLS segments)
+                if (video.VideoStreams != null)
+                {
+                    foreach (var stream in video.VideoStreams)
+                    {
+                        if (!string.IsNullOrEmpty(stream.M3U8Location))
+                        {
+                            var m3U8Path = Path.Combine(WebRootPath, Uri.UnescapeDataString(stream.M3U8Location));
+                            var streamDirectory = Path.GetDirectoryName(m3U8Path);
+                            if (Directory.Exists(streamDirectory))
+                            {
+                                var tsFiles = Directory.GetFiles(streamDirectory, "*.ts");
+                                foreach (var tsFile in tsFiles)
+                                {
+                                    var tsFileInfo = new FileInfo(tsFile);
+                                    totalStorageUsed += tsFileInfo.Length;
+                                }
+                                
+                                // Also include m3u8 file
+                                if (System.IO.File.Exists(m3U8Path))
+                                {
+                                    var m3U8FileInfo = new FileInfo(m3U8Path);
+                                    totalStorageUsed += m3U8FileInfo.Length;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Calculate storage for upscaled videos
+                if (video.VideoUpscales != null)
+                {
+                    foreach (var upscale in video.VideoUpscales)
+                    {
+                        if (!string.IsNullOrEmpty(upscale.OutputLocation))
+                        {
+                            var upscaleFilePath = Path.Combine(WebRootPath, upscale.OutputLocation);
+                            if (System.IO.File.Exists(upscaleFilePath))
+                            {
+                                var upscaleFileInfo = new FileInfo(upscaleFilePath);
+                                totalStorageUsed += upscaleFileInfo.Length;
+                            }
+                        }
+                    }
+                }
+
+                // Calculate storage for thumbnails
+                if (!string.IsNullOrEmpty(video.Thumbnail))
+                {
+                    var thumbnailPath = Path.Combine(WebRootPath, video.Thumbnail);
+                    if (System.IO.File.Exists(thumbnailPath))
+                    {
+                        var thumbnailFileInfo = new FileInfo(thumbnailPath);
+                        totalStorageUsed += thumbnailFileInfo.Length;
+                    }
+                }
+            }
+
+            var statistics = new VideoStatisticsDto
+            {
+                TotalVideos = totalVideos,
+                ReadyVideos = readyVideos,
+                TotalStorageUsedBytes = totalStorageUsed
+            };
+
+            return Ok(statistics);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error occurred while retrieving statistics: {ex.Message}");
+        }
+    }
+
+    [HttpGet("statistics/detailed")]
+    [Authorize]
+    public async Task<IActionResult> GetDetailedStatistics()
+    {
+        try
+        {
+            var userId = User.UserId;
+            if (userId == Guid.Empty)
+                return Unauthorized("User ID not found");
+
+            // Get all videos for the user
+            var videos = (await videoService.GetVideos(
+                1,
+                10000,
+                x => x.CreatedBy == userId,
+                [x => x.VideoStreams, x => x.VideoUpscales])).ToList();
+
+            if (!videos.Any())
+            {
+                return Ok(new VideoDetailedStatisticsDto());
+            }
+
+            // Determine time grouping (day, week, or month)
+            var oldestVideo = videos.Min(v => v.CreatedAt);
+            var newestVideo = videos.Max(v => v.CreatedAt);
+            var daysDiff = (newestVideo - oldestVideo).TotalDays;
+            
+            string dateFormat;
+            Func<DateTime, DateTime> groupByFunc;
+            
+            if (daysDiff <= 30)
+            {
+                // Group by day
+                dateFormat = "dd/MM/yyyy";
+                groupByFunc = d => new DateTime(d.Year, d.Month, d.Day);
+            }
+            else if (daysDiff <= 180)
+            {
+                // Group by week
+                dateFormat = "dd/MM/yyyy";
+                groupByFunc = d =>
+                {
+                    var startOfWeek = d.AddDays(-(int)d.DayOfWeek);
+                    return new DateTime(startOfWeek.Year, startOfWeek.Month, startOfWeek.Day);
+                };
+            }
+            else
+            {
+                // Group by month
+                dateFormat = "MM/yyyy";
+                groupByFunc = d => new DateTime(d.Year, d.Month, 1);
+            }
+
+            // Build video timeline (cumulative count)
+            var videoTimeline = videos
+                .GroupBy(v => groupByFunc(v.CreatedAt))
+                .OrderBy(g => g.Key)
+                .Select((g, index) => new VideoTimeSeriesDto
+                {
+                    Date = g.Key.ToString(dateFormat),
+                    Count = videos.Count(v => groupByFunc(v.CreatedAt) <= g.Key)
+                })
+                .ToList();
+
+            // Build storage timeline (cumulative storage)
+            var storageTimeline = new List<VideoTimeSeriesDto>();
+            long cumulativeStorage = 0;
+            
+            foreach (var dateGroup in videos
+                .GroupBy(v => groupByFunc(v.CreatedAt))
+                .OrderBy(g => g.Key))
+            {
+                // Calculate storage for videos created on this date
+                foreach (var video in dateGroup)
+                {
+                    cumulativeStorage += CalculateVideoStorage(video);
+                }
+
+                storageTimeline.Add(new VideoTimeSeriesDto
+                {
+                    Date = dateGroup.Key.ToString(dateFormat),
+                    Count = (int)cumulativeStorage,
+                    StorageBytes = cumulativeStorage
+                });
+            }
+
+            // Build resolution distribution
+            var resolutionDistribution = videos
+                .GroupBy(v => v.Resolution)
+                .Select(g => new VideoDistributionDto
+                {
+                    Label = g.Key.GetDescription(),
+                    Count = g.Count(),
+                    Percentage = videos.Count > 0 ? Math.Round((double)g.Count() / videos.Count * 100, 1) : 0
+                })
+                .OrderByDescending(d => d.Count)
+                .ToList();
+
+            // Build status distribution
+            var statusDistribution = videos
+                .GroupBy(v => v.Status)
+                .Select(g => new VideoDistributionDto
+                {
+                    Label = g.Key.GetDescription(),
+                    Count = g.Count(),
+                    Percentage = videos.Count > 0 ? Math.Round((double)g.Count() / videos.Count * 100, 1) : 0
+                })
+                .OrderByDescending(d => d.Count)
+                .ToList();
+
+            var detailedStatistics = new VideoDetailedStatisticsDto
+            {
+                VideoTimeline = videoTimeline,
+                StorageTimeline = storageTimeline,
+                ResolutionDistribution = resolutionDistribution,
+                StatusDistribution = statusDistribution
+            };
+
+            return Ok(detailedStatistics);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error occurred while retrieving detailed statistics: {ex.Message}");
+        }
+    }
+
+    private long CalculateVideoStorage(Domain.Entities.Video video)
+    {
+        long storage = 0;
+
+        // Calculate storage for raw video file
+        if (!string.IsNullOrEmpty(video.RawLocation))
+        {
+            var rawFilePath = Path.Combine(WebRootPath, video.RawLocation);
+            if (System.IO.File.Exists(rawFilePath))
+            {
+                var fileInfo = new FileInfo(rawFilePath);
+                storage += fileInfo.Length;
+            }
+        }
+
+        // Calculate storage for video streams (HLS segments)
+        if (video.VideoStreams != null)
+        {
+            foreach (var stream in video.VideoStreams)
+            {
+                if (!string.IsNullOrEmpty(stream.M3U8Location))
+                {
+                    var m3U8Path = Path.Combine(WebRootPath, Uri.UnescapeDataString(stream.M3U8Location));
+                    var streamDirectory = Path.GetDirectoryName(m3U8Path);
+                    if (Directory.Exists(streamDirectory))
+                    {
+                        var tsFiles = Directory.GetFiles(streamDirectory, "*.ts");
+                        foreach (var tsFile in tsFiles)
+                        {
+                            var tsFileInfo = new FileInfo(tsFile);
+                            storage += tsFileInfo.Length;
+                        }
+                        
+                        // Also include m3u8 file
+                        if (System.IO.File.Exists(m3U8Path))
+                        {
+                            var m3U8FileInfo = new FileInfo(m3U8Path);
+                            storage += m3U8FileInfo.Length;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Calculate storage for upscaled videos
+        if (video.VideoUpscales != null)
+        {
+            foreach (var upscale in video.VideoUpscales)
+            {
+                if (!string.IsNullOrEmpty(upscale.OutputLocation))
+                {
+                    var upscaleFilePath = Path.Combine(WebRootPath, upscale.OutputLocation);
+                    if (System.IO.File.Exists(upscaleFilePath))
+                    {
+                        var upscaleFileInfo = new FileInfo(upscaleFilePath);
+                        storage += upscaleFileInfo.Length;
+                    }
+                }
+            }
+        }
+
+        // Calculate storage for thumbnails
+        if (!string.IsNullOrEmpty(video.Thumbnail))
+        {
+            var thumbnailPath = Path.Combine(WebRootPath, video.Thumbnail);
+            if (System.IO.File.Exists(thumbnailPath))
+            {
+                var thumbnailFileInfo = new FileInfo(thumbnailPath);
+                storage += thumbnailFileInfo.Length;
+            }
+        }
+
+        return storage;
+    }
 }

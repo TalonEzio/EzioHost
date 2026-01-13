@@ -11,7 +11,6 @@ namespace EzioHost.WebApp.Client.Components.Pages;
 public partial class SettingsPage : IAsyncDisposable
 {
     [Inject] public IEncodingQualitySettingApi EncodingApi { get; set; } = null!;
-    [Inject] public IVideoApi VideoApi { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public NavigationManager NavigationManager { get; set; } = null!;
 

@@ -1,76 +1,84 @@
 ﻿@page "/video-upscale/{VideoId:guid}"
 @rendermode InteractiveServer
 @attribute [Authorize]
-<PageTitle>Upscale Video</PageTitle>
+<PageTitle>Upscale Video - EzioHost</PageTitle>
 <HeadContent>
     <link rel="stylesheet" href="https://unpkg.com/slick-image-compare/dist/slick-image-compare.css">
 </HeadContent>
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-info text-white">
-                    <h3 class="mb-0">Video Upscaling</h3>
-                </div>
+<div class="upscale-page-container">
+    <div class="upscale-header">
+        <h1 class="upscale-title">
+            <i class="bi bi-stars"></i>
+            Video Upscaling
+        </h1>
+        <p class="upscale-subtitle">Nâng cấp chất lượng video với AI</p>
+    </div>
 
-                <div class="card-body p-4">
-                    @if (RendererInfo.IsInteractive)
-                    {
-                        <div class="mb-4">
-                            <label class="form-label fw-bold mb-2">Select Upscaling Model</label>
-                            <select @onchange="OnOnnxModelChange" class="form-select form-select-lg">
-                                @foreach (var model in OnnxModels)
-                                {
-                                    <option value="@model.Id">@model.Name</option>
-                                }
-                            </select>
-                            <div class="form-text">Choose AI model for video enhancement</div>
-                        </div>
-
-                        @if (_selectedModel != null)
+    <div class="upscale-content">
+        @if (RendererInfo.IsInteractive)
+        {
+            <div class="upscale-card">
+                <div class="model-selector-section">
+                    <label class="model-selector-label">
+                        <i class="bi bi-cpu"></i>
+                        Chọn mô hình AI
+                    </label>
+                    <select @onchange="OnOnnxModelChange" class="model-select">
+                        @foreach (var model in OnnxModels)
                         {
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h4 class="mb-3">Model Details</h4>
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label text-muted small">Model Name</label>
-                                        <div class="fw-medium">@_selectedModel.Name</div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label text-muted small">Upscale Factor</label>
-                                        <div class="fw-medium">@_selectedModel.Scale</div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label text-muted small mb-2">Sample Comparison</label>
-                                    <div class="border rounded overflow-hidden">
-                                        <ImageCompare @ref="ImageCompareComponent"
-                                                      BeforeImage="@_selectedModel.DemoInput"
-                                                      AfterImage="@_selectedModel.DemoOutput"/>
-                                    </div>
-                                </div>
-
-                                <div class="d-grid">
-                                    <button class="btn btn-primary btn-lg py-3 fw-bold d-flex align-items-center justify-content-center"
-                                            @onclick="RequestUpscaleVideo">
-                                        <i class="bi bi-stars me-2"></i> PROCESS UPSCALE
-                                    </button>
-                                </div>
-                            </div>
+                            <option value="@model.Id">@model.Name</option>
                         }
-                    }
-                    else
-                    {
-                        <div class="d-flex justify-content-center align-items-center py-5">
-                            <div class="spinner-border text-info me-3" role="status"></div>
-                            <div class="fw-medium">Initializing upscaler components...</div>
-                        </div>
-                    }
+                    </select>
+                    <p class="model-selector-hint">Chọn mô hình AI để nâng cấp video</p>
                 </div>
+
+                @if (_selectedModel != null)
+                {
+                    <div class="model-details-card">
+                        <h3 class="model-details-title">
+                            <i class="bi bi-info-circle"></i>
+                            Chi tiết mô hình
+                        </h3>
+
+                        <div class="model-details-grid">
+                            <div class="model-detail-item">
+                                <label class="model-detail-label">Tên mô hình</label>
+                                <div class="model-detail-value">@_selectedModel.Name</div>
+                            </div>
+                            <div class="model-detail-item">
+                                <label class="model-detail-label">Hệ số upscale</label>
+                                <div class="model-detail-value">@_selectedModel.Scale x</div>
+                            </div>
+                        </div>
+
+                        <div class="comparison-section">
+                            <label class="comparison-label">
+                                <i class="bi bi-images"></i>
+                                So sánh mẫu
+                            </label>
+                            <div class="comparison-container">
+                                <ImageCompare @ref="ImageCompareComponent"
+                                              BeforeImage="@_selectedModel.DemoInput"
+                                              AfterImage="@_selectedModel.DemoOutput"/>
+                            </div>
+                        </div>
+
+                        <button class="upscale-button"
+                                @onclick="RequestUpscaleVideo">
+                            <i class="bi bi-stars"></i>
+                            Xử lý Upscale
+                        </button>
+                    </div>
+                }
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Đang khởi tạo thành phần upscaler...</p>
+            </div>
+        }
     </div>
 </div>

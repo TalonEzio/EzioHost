@@ -1,0 +1,109 @@
+.settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.settings-header {
+    margin-bottom: 2rem;
+}
+
+.settings-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.settings-title i {
+    color: #2563eb;
+    font-size: 1.75rem;
+}
+
+.settings-subtitle {
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+.placeholder-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.placeholder-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.placeholder-card:hover {
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.placeholder-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.placeholder-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+}
+
+.placeholder-description {
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    flex: 1;
+}
+
+.placeholder-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .settings-container {
+        padding: 1rem 0.5rem;
+    }
+
+    .settings-title {
+        font-size: 1.75rem;
+    }
+
+    .placeholder-content {
+        grid-template-columns: 1fr;
+    }
+}

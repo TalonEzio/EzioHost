@@ -1,0 +1,131 @@
+@page "/statistics"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Thống kê - EzioHost</PageTitle>
+
+<div class="statistics-page-container">
+    <!-- Header -->
+    <div class="statistics-header">
+        <div>
+            <h1 class="statistics-title">
+                <i class="bi bi-graph-up-arrow"></i>
+                Thống kê Video
+            </h1>
+            <p class="statistics-subtitle">Xem phân tích và xu hướng video của bạn</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats-section">
+        <h2 class="section-title">
+            <i class="bi bi-graph-up"></i>
+            Thống kê nhanh
+        </h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon video-icon">
+                    <i class="bi bi-collection-play"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">@TotalVideos</div>
+                    <div class="stat-label">Video đã upload</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon storage-icon">
+                    <i class="bi bi-hdd"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">@StorageUsedDisplay</div>
+                    <div class="stat-label">Dung lượng đã dùng</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon ready-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">@ReadyVideos</div>
+                    <div class="stat-label">Video đã sẵn sàng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Đang tải dữ liệu thống kê...</p>
+        </div>
+    }
+    else if (HasError)
+    {
+        <div class="error-container">
+            <i class="bi bi-exclamation-triangle"></i>
+            <p>Không thể tải dữ liệu thống kê. Vui lòng thử lại sau.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Video Upload Timeline -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-calendar-event"></i>
+                        Video Upload Timeline
+                    </h3>
+                    <p class="chart-description">Số lượng video đã upload theo thời gian</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="videoTimelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Storage Growth Timeline -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-hdd-stack"></i>
+                        Storage Growth Timeline
+                    </h3>
+                    <p class="chart-description">Dung lượng lưu trữ tăng theo thời gian</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="storageTimelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Resolution Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-aspect-ratio"></i>
+                        Resolution Distribution
+                    </h3>
+                    <p class="chart-description">Phân bố video theo độ phân giải</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="resolutionPieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Status Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-info-circle"></i>
+                        Status Distribution
+                    </h3>
+                    <p class="chart-description">Phân bố video theo trạng thái</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="statusPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    }
+</div>
