@@ -9,8 +9,8 @@ namespace EzioHost.WebApp.Client.Components.Pages;
 public partial class VideoUpscalePage
 {
     private OnnxModelDto? _selectedModel;
-    private bool _shouldRedirectToOnnx;
     private Guid _selectedModelId;
+    private bool _shouldRedirectToOnnx;
     [Parameter] public Guid VideoId { get; set; }
     [Inject] public IVideoApi VideoApi { get; set; } = null!;
     [Inject] public IOnnxModelApi OnnxModelApi { get; set; } = null!;
@@ -26,7 +26,7 @@ public partial class VideoUpscalePage
         if (Video == null) throw new Exception($"Video Id {VideoId} not found");
 
         var allModels = await OnnxModelApi.GetOnnxModels(true) ?? [];
-        
+
         OnnxModels = allModels.Where(m => m.CanPreview).ToList();
 
         if (!OnnxModels.Any())
@@ -43,7 +43,8 @@ public partial class VideoUpscalePage
     {
         if (firstRender && _shouldRedirectToOnnx)
         {
-            await JsRuntime.ShowWarningToast("Không có mô hình AI nào có preview. Vui lòng tạo preview trước khi upscale video.");
+            await JsRuntime.ShowWarningToast(
+                "Không có mô hình AI nào có preview. Vui lòng tạo preview trước khi upscale video.");
             await Task.Delay(2000);
             await JsRuntime.NavigateToAsync("/onnx");
         }

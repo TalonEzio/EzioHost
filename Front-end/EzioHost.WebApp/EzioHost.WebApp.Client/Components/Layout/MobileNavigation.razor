@@ -75,7 +75,7 @@
 @code {
     [Inject] private NavigationManager Navigation { get; set; } = null!;
 
-    private bool _showAccountMenu = false;
+    private bool _showAccountMenu;
 
     private string CurrentPath => Navigation.Uri.Replace(Navigation.BaseUri, "").TrimStart('/');
 
@@ -91,4 +91,5 @@
     {
         _showAccountMenu = !_showAccountMenu;
     }
+
 }

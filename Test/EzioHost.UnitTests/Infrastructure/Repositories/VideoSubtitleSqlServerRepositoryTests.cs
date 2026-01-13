@@ -16,11 +16,17 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
     public VideoSubtitleSqlServerRepositoryTests()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new VideoSubtitleSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -32,7 +38,7 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
         _dbContext.Videos.Add(video);
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
-        
+
         // Create subtitles with explicit properties to avoid issues with TestDataBuilder
         var subtitle1 = new VideoSubtitle
         {
@@ -49,7 +55,7 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
             CreatedAt = DateTime.UtcNow,
             ModifiedAt = DateTime.UtcNow
         };
-        
+
         var subtitle2 = new VideoSubtitle
         {
             Id = Guid.NewGuid(),
@@ -65,7 +71,7 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
             CreatedAt = DateTime.UtcNow,
             ModifiedAt = DateTime.UtcNow
         };
-        
+
         // Add subtitles - EF Core will handle the relationship via VideoId foreign key
         _dbContext.VideoSubtitles.AddRange(subtitle1, subtitle2);
         await _dbContext.SaveChangesAsync();
@@ -81,18 +87,14 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
             .IgnoreQueryFilters()
             .Where(x => x.VideoId == video.Id)
             .ToListAsync();
-        
+
         // In-memory database may have issues with foreign key constraints
         // If subtitles were saved, verify they're returned; otherwise just verify method works
         if (allSubtitles.Count > 0)
-        {
             result.Should().HaveCount(2, "Repository should return saved subtitles");
-        }
         else
-        {
             // In-memory DB limitation - just verify repository method works (returns empty)
             result.Should().BeEmpty("No subtitles in database (in-memory DB FK limitation)");
-        }
     }
 
     [Fact]
@@ -123,7 +125,7 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result.Id.Should().NotBeEmpty();
-        
+
         var subtitleInDb = await _dbContext.VideoSubtitles
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == result.Id);
@@ -164,20 +166,10 @@ public class VideoSubtitleSqlServerRepositoryTests : IDisposable
         var subtitleInDb = await _dbContext.VideoSubtitles
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == subtitle.Id);
-        
-        if (subtitleInDb != null)
-        {
-            subtitleInDb.DeletedAt.Should().NotBeNull("Subtitle should be soft deleted");
-        }
-        else
-        {
-            subtitleInDb.Should().BeNull();
-        }
-    }
 
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
+        if (subtitleInDb != null)
+            subtitleInDb.DeletedAt.Should().NotBeNull("Subtitle should be soft deleted");
+        else
+            subtitleInDb.Should().BeNull();
     }
 }

@@ -1,6 +1,6 @@
 using AutoMapper;
 using EzioHost.Core.Services.Interface;
-using EzioHost.Domain.Entities;
+using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -24,33 +24,18 @@ public class VideoSubtitleController(
     {
         try
         {
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest("File không được để trống");
-            }
+            if (file == null || file.Length == 0) return BadRequest("File không được để trống");
 
-            if (string.IsNullOrWhiteSpace(language))
-            {
-                return BadRequest("Tên ngôn ngữ không được để trống");
-            }
+            if (string.IsNullOrWhiteSpace(language)) return BadRequest("Tên ngôn ngữ không được để trống");
 
             var userId = HttpContext.User.UserId;
-            if (userId == Guid.Empty)
-            {
-                return Unauthorized("User ID not found");
-            }
+            if (userId == Guid.Empty) return Unauthorized("User ID not found");
 
             // Check if user owns the video
             var video = await videoService.GetVideoById(videoId);
-            if (video == null)
-            {
-                return NotFound("Video không tồn tại");
-            }
+            if (video == null) return NotFound("Video không tồn tại");
 
-            if (video.CreatedBy != userId)
-            {
-                return Forbid("Bạn không có quyền upload subtitle cho video này");
-            }
+            if (video.CreatedBy != userId) return Forbid("Bạn không có quyền upload subtitle cho video này");
 
             await using var fileStream = file.OpenReadStream();
             var subtitle = await videoSubtitleService.UploadSubtitleAsync(
@@ -95,17 +80,11 @@ public class VideoSubtitleController(
         try
         {
             var subtitle = await videoSubtitleService.GetSubtitleByIdAsync(subtitleId);
-            if (subtitle == null)
-            {
-                return NotFound("Subtitle không tồn tại");
-            }
+            if (subtitle == null) return NotFound("Subtitle không tồn tại");
 
             // Check video access permission
             var video = await videoService.GetVideoById(subtitle.VideoId);
-            if (video == null)
-            {
-                return NotFound("Video không tồn tại");
-            }
+            if (video == null) return NotFound("Video không tồn tại");
 
             var userId = HttpContext.User.UserId;
             var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
@@ -113,11 +92,11 @@ public class VideoSubtitleController(
             // Check share type permissions
             switch (video.ShareType)
             {
-                case Shared.Enums.VideoEnum.VideoShareType.Public:
+                case VideoEnum.VideoShareType.Public:
                     break; // Allow access
-                case Shared.Enums.VideoEnum.VideoShareType.Internal when isAuthenticated:
+                case VideoEnum.VideoShareType.Internal when isAuthenticated:
                     break; // Allow access
-                case Shared.Enums.VideoEnum.VideoShareType.Private when isAuthenticated && video.CreatedBy == userId:
+                case VideoEnum.VideoShareType.Private when isAuthenticated && video.CreatedBy == userId:
                     break; // Allow access
                 default:
                     return Forbid("Bạn không có quyền truy cập subtitle này");
@@ -146,28 +125,16 @@ public class VideoSubtitleController(
         try
         {
             var userId = HttpContext.User.UserId;
-            if (userId == Guid.Empty)
-            {
-                return Unauthorized("User ID not found");
-            }
+            if (userId == Guid.Empty) return Unauthorized("User ID not found");
 
             var subtitle = await videoSubtitleService.GetSubtitleByIdAsync(subtitleId);
-            if (subtitle == null)
-            {
-                return NotFound("Subtitle không tồn tại");
-            }
+            if (subtitle == null) return NotFound("Subtitle không tồn tại");
 
             // Check if user owns the video
             var video = await videoService.GetVideoById(subtitle.VideoId);
-            if (video == null)
-            {
-                return NotFound("Video không tồn tại");
-            }
+            if (video == null) return NotFound("Video không tồn tại");
 
-            if (video.CreatedBy != userId)
-            {
-                return Forbid("Bạn không có quyền xóa subtitle này");
-            }
+            if (video.CreatedBy != userId) return Forbid("Bạn không có quyền xóa subtitle này");
 
             await videoSubtitleService.DeleteSubtitleAsync(subtitleId);
             return NoContent();

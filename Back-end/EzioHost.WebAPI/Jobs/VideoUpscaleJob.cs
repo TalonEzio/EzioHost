@@ -31,6 +31,8 @@ public class VideoUpscaleJob(
 
         upscaleService.OnVideoUpscaleStreamAdded += UpscaleService_OnVideoUpscaleStreamAdded;
 
+        // Notify that upscale has started
+        videoHub.Clients.User(_userId.ToString()).ReceiveVideoUpscaleStarted(videoUpscale.VideoId).SafeFireAndForget();
 
         await upscaleService.UpscaleVideo(videoUpscale);
     }

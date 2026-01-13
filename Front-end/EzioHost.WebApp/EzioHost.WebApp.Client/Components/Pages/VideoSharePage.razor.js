@@ -1,4 +1,4 @@
-(function () {
+(function() {
     // 1. Initialize video player
     function initializePlayer() {
         try {
@@ -27,7 +27,7 @@
     }
 
     // 2. Generate embed link and iframe code
-    window.generateEmbedInfo = function () {
+    window.generateEmbedInfo = function() {
         try {
             const videoIdElement = document.getElementById("videoId");
             if (!videoIdElement) return;
@@ -37,7 +37,8 @@
 
             const origin = window.location.origin;
             const embedLink = `${origin}/video-embed/${videoId}`;
-            const iframeCode = `<iframe src="${embedLink}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`;
+            const iframeCode =
+                `<iframe src="${embedLink}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`;
 
             const embedLinkInput = document.getElementById("embedLink");
             if (embedLinkInput) embedLinkInput.value = embedLink;
@@ -51,7 +52,7 @@
     };
 
     // 3. Copy to clipboard function (NEW API)
-    window.copyToClipboard = function (elementId) {
+    window.copyToClipboard = function(elementId) {
         try {
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -87,16 +88,18 @@
         }
 
         button.innerHTML = '<i class="bi bi-check-lg"></i> Đã sao chép!';
-        button.className = 'btn btn-success';
+        button.className = "btn btn-success";
 
         setTimeout(() => {
-            button.innerHTML = button.dataset.originalHtml;
-            button.className = button.dataset.originalClass;
-        }, 2000);
+                button.innerHTML = button.dataset.originalHtml;
+                button.className = button.dataset.originalClass;
+            },
+            2000);
     }
+
     function fallbackCopyText(element) {
         element.select();
-        document.execCommand('copy');
+        document.execCommand("copy");
         showCopyFeedback(element);
     }
 
@@ -106,8 +109,8 @@
         generateEmbedInfo();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializePage);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializePage);
     } else {
         setTimeout(initializePage, 100);
     }

@@ -1,0 +1,59 @@
+@startuml
+title Video Upscaling Flow
+
+actor User as user
+participant "VideoController" as controller
+participant "UpscaleService" as service
+participant "VideoUpscaleJob" as job
+participant "FFmpeg" as ffmpeg
+participant "ImageOpenCvUpscaler" as upscaler
+participant "VideoHub (SignalR)" as hub
+
+== Upscale Initiation ==
+user -> controller : POST /api/Video/{videoId}/upscale/{modelId}
+activate controller
+controller -> service : AddNewVideoUpscale()
+activate service
+service --> controller : VideoUpscale created
+deactivate service
+controller --> user : 201 Created
+deactivate controller
+
+== Background Processing ==
+job -> service : GetVideoNeedUpscale()
+activate service
+service --> job : VideoUpscale
+deactivate service
+
+job -> service : UpscaleVideo(videoUpscale)
+activate service
+
+== Video Processing ==
+service -> ffmpeg : Extract frames + audio
+activate ffmpeg
+ffmpeg --> service : Frames extracted
+deactivate ffmpeg
+
+loop For each frame
+    service -> upscaler : UpscaleImage(frame)
+    activate upscaler
+    upscaler -> upscaler : AI Upscaling
+    upscaler --> service : Upscaled frame
+    deactivate upscaler
+end
+
+service -> ffmpeg : Re-encode video
+activate ffmpeg
+ffmpeg --> service : Upscaled video
+deactivate ffmpeg
+
+== Finalization ==
+service -> service : CreateHLS stream
+service -> service : Update DB (Status=Ready)
+service -> hub : Notify completion
+activate hub
+hub --> user : VideoProcessingDone
+deactivate hub
+service --> job : Upscale complete
+deactivate service
+@enduml

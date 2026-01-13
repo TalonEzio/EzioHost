@@ -5,10 +5,10 @@ export function playVideo(id, metadata, subtitle) {
         file: metadata,
         hls: 1
     };
-    
-    if (subtitle && subtitle.trim() !== '') {
+
+    if (subtitle && subtitle.trim() !== "") {
         playerConfig.subtitle = subtitle;
     }
-    
+
     const player = new window.Playerjs(playerConfig);
 }

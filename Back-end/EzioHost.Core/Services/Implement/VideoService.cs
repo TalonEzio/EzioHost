@@ -125,14 +125,13 @@ public class VideoService(
 
             // Ensure at least one resolution is encoded
             if (resolutionsToEncode.Count == 0 && !inputVideo.VideoStreams.Any())
-            {
                 throw new InvalidOperationException(
                     $"Cannot encode video {inputVideo.Id}: No resolutions available for encoding. Please enable at least one resolution in settings.");
-            }
 
             foreach (var videoResolution in resolutionsToEncode)
             {
-                var newVideoStream = await CreateHlsVariantStream(absoluteRawLocation, inputVideo, videoResolution, inputVideo.CreatedBy);
+                var newVideoStream = await CreateHlsVariantStream(absoluteRawLocation, inputVideo, videoResolution,
+                    inputVideo.CreatedBy);
 
                 await AddNewVideoStream(inputVideo, newVideoStream);
             }
@@ -164,12 +163,13 @@ public class VideoService(
     public async Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
     {
         video.VideoStreams ??= [];
-        
+
         // Check if this resolution already exists in the collection to avoid duplicates
         var existingStream = video.VideoStreams.FirstOrDefault(vs => vs.Resolution == videoStream.Resolution);
         if (existingStream != null)
         {
-            logger.LogWarning("VideoStream with resolution {Resolution} already exists for video {VideoId}. Skipping duplicate.", 
+            logger.LogWarning(
+                "VideoStream with resolution {Resolution} already exists for video {VideoId}. Skipping duplicate.",
                 videoStream.Resolution, video.Id);
             return existingStream;
         }
@@ -225,7 +225,8 @@ public class VideoService(
         var resolutionSize = new Size(targetWidth, targetHeight);
 
         // Get bitrate from user settings
-        var bitrateBps = await videoResolutionService.GetBandwidthForResolutionAsync(targetResolution.GetDescription(), userId);
+        var bitrateBps =
+            await videoResolutionService.GetBandwidthForResolutionAsync(targetResolution.GetDescription(), userId);
         var bitrateKbps = bitrateBps / 1000;
 
         var argumentProcessor = FFMpegArguments
@@ -306,12 +307,10 @@ public class VideoService(
     public async Task<string> GenerateThumbnail(Video video)
     {
         var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
-        var upscaleLocation = Path.Combine(_webRootPath, video.VideoUpscales.FirstOrDefault()?.OutputLocation ?? string.Empty);
+        var upscaleLocation = Path.Combine(_webRootPath,
+            video.VideoUpscales.FirstOrDefault()?.OutputLocation ?? string.Empty);
 
-        if (!string.IsNullOrEmpty(upscaleLocation) && File.Exists(upscaleLocation))
-        {
-            rawLocation = upscaleLocation;
-        }
+        if (!string.IsNullOrEmpty(upscaleLocation) && File.Exists(upscaleLocation)) rawLocation = upscaleLocation;
 
         var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
         var duration = mediaInfo.Duration;
@@ -336,8 +335,8 @@ public class VideoService(
     public async Task<VideoBackupStatus> BackupVideo(Video video)
     {
         var localVideoPath = Path.Combine(_webRootPath, video.RawLocation);
-        string fileName = Path.GetFileName(localVideoPath);
-        string key = $"videos/{video.Id}/{fileName}";
+        var fileName = Path.GetFileName(localVideoPath);
+        var key = $"videos/{video.Id}/{fileName}";
 
         await storageService.UploadLargeFileAsync(localVideoPath, key, "application/octet-stream"); //default
 
@@ -359,25 +358,21 @@ public class VideoService(
 
     public async Task UploadSegmentsToStorageAsync(VideoStream videoStream)
     {
-        string relativePath = Uri.UnescapeDataString(videoStream.M3U8Location);
+        var relativePath = Uri.UnescapeDataString(videoStream.M3U8Location);
 
         var fullFilePath = Path.Combine(_webRootPath, relativePath);
         var folderPath = Path.GetDirectoryName(fullFilePath)!;
 
-        if (!Directory.Exists(folderPath))
-        {
-            return;
-        }
+        if (!Directory.Exists(folderPath)) return;
 
         var tsFiles = Directory.GetFiles(folderPath, "*.ts");
 
         await Parallel.ForEachAsync(tsFiles, async (filePath, ct) =>
         {
-            string fileName = Path.GetFileName(filePath);
-            string key = $"videos/{videoStream.Video.Id}/{(int)videoStream.Resolution}/{fileName}";
+            var fileName = Path.GetFileName(filePath);
+            var key = $"videos/{videoStream.Video.Id}/{(int)videoStream.Resolution}/{fileName}";
 
             await storageService.UploadFileAsync(filePath, key, "video/MP2T");
         });
     }
-
 }

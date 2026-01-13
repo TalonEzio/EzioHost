@@ -4,13 +4,13 @@ namespace EzioHost.WebApp.Components.Pages;
 
 public partial class FaqPage : ComponentBase
 {
+    private List<FaqItem> _allFaqs = new();
     private string _searchTerm = "";
     private string _selectedCategory = "";
-    private List<FaqItem> _allFaqs = new();
 
     private List<FaqItem> FilteredFaqs => _allFaqs
         .Where(f => (_selectedCategory == "" || f.Category == _selectedCategory) &&
-                    (_searchTerm == "" || 
+                    (_searchTerm == "" ||
                      f.Question.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
                      f.Answer.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)))
         .ToList();
@@ -24,7 +24,8 @@ public partial class FaqPage : ComponentBase
                 Id = 1,
                 Category = "general",
                 Question = "EzioHost là gì?",
-                Answer = @"<p><strong>EzioHost</strong> là nền tảng video hosting cá nhân được phát triển bằng .NET 10 và Blazor United. Hệ thống cung cấp các tính năng mạnh mẽ bao gồm:</p>
+                Answer =
+                    @"<p><strong>EzioHost</strong> là nền tảng video hosting cá nhân được phát triển bằng .NET 10 và Blazor United. Hệ thống cung cấp các tính năng mạnh mẽ bao gồm:</p>
                 <ul class='list-disc pl-6 mt-3 space-y-2'>
                     <li>Upload và quản lý video với nhiều định dạng khác nhau</li>
                     <li>Upscale video hoặc ảnh bằng AI (tối ưu cho anime) sử dụng ONNX Runtime</li>
@@ -39,7 +40,8 @@ public partial class FaqPage : ComponentBase
                 Id = 2,
                 Category = "account",
                 Question = "Làm sao để đăng ký và đăng nhập?",
-                Answer = @"<p>EzioHost sử dụng hệ thống xác thực qua <strong>Keycloak</strong> – nền tảng quản lý danh tính mã nguồn mở hàng đầu. Quy trình đăng ký và đăng nhập rất đơn giản:</p>
+                Answer =
+                    @"<p>EzioHost sử dụng hệ thống xác thực qua <strong>Keycloak</strong> – nền tảng quản lý danh tính mã nguồn mở hàng đầu. Quy trình đăng ký và đăng nhập rất đơn giản:</p>
                 <ol class='list-decimal pl-6 mt-3 space-y-2'>
                     <li>Nhấn vào nút <strong>""Đăng nhập""</strong> ở góc trên bên phải</li>
                     <li>Bạn sẽ được chuyển hướng tới giao diện Keycloak</li>
@@ -101,7 +103,8 @@ public partial class FaqPage : ComponentBase
                 Id = 6,
                 Category = "ai",
                 Question = "Upscale bằng AI hoạt động như thế nào?",
-                Answer = @"<p>EzioHost sử dụng <strong>ONNX Runtime</strong> để chạy các mô hình AI được huấn luyện sẵn, giúp nâng cao chất lượng ảnh và video một cách tự động.</p>
+                Answer =
+                    @"<p>EzioHost sử dụng <strong>ONNX Runtime</strong> để chạy các mô hình AI được huấn luyện sẵn, giúp nâng cao chất lượng ảnh và video một cách tự động.</p>
                 <h4 class='font-semibold mt-4 mb-2'>Quy trình upscale:</h4>
                 <ol class='list-decimal pl-6 space-y-2'>
                     <li><strong>Phân tích:</strong> Video/ảnh được phân tích và chia nhỏ thành các khung hình (frames)</li>
@@ -122,7 +125,8 @@ public partial class FaqPage : ComponentBase
                 Id = 7,
                 Category = "ai",
                 Question = "Mô hình AI nào được sử dụng để upscale?",
-                Answer = @"<p>EzioHost hỗ trợ nhiều mô hình AI khác nhau từ <strong>OpenModelDB</strong>. Bạn có thể quản lý và chọn mô hình trong trang <strong>AI Models</strong>.</p>
+                Answer =
+                    @"<p>EzioHost hỗ trợ nhiều mô hình AI khác nhau từ <strong>OpenModelDB</strong>. Bạn có thể quản lý và chọn mô hình trong trang <strong>AI Models</strong>.</p>
                 <p class='mt-3'>Các mô hình phổ biến bao gồm:</p>
                 <ul class='list-disc pl-6 mt-2 space-y-2'>
                     <li><strong>Real-ESRGAN:</strong> Tốt cho ảnh và video thực tế</li>
@@ -158,7 +162,8 @@ public partial class FaqPage : ComponentBase
                 Id = 9,
                 Category = "technical",
                 Question = "ONNX Runtime là gì?",
-                Answer = @"<p><strong>ONNX Runtime</strong> là engine tăng tốc mô hình học sâu (deep learning) do Microsoft phát triển, được thiết kế để chạy các mô hình AI hiệu quả trên nhiều nền tảng khác nhau.</p>
+                Answer =
+                    @"<p><strong>ONNX Runtime</strong> là engine tăng tốc mô hình học sâu (deep learning) do Microsoft phát triển, được thiết kế để chạy các mô hình AI hiệu quả trên nhiều nền tảng khác nhau.</p>
                 <h4 class='font-semibold mt-4 mb-2'>Ưu điểm của ONNX Runtime:</h4>
                 <ul class='list-disc pl-6 space-y-2'>
                     <li><strong>Đa nền tảng:</strong> Chạy trên Windows, Linux, macOS, và các thiết bị di động</li>
@@ -173,7 +178,8 @@ public partial class FaqPage : ComponentBase
                 Id = 10,
                 Category = "technical",
                 Question = "OpenModelDB là gì?",
-                Answer = @"<p><strong><a href='https://openmodeldb.info/' target='_blank' rel='noopener noreferrer' class='text-primary-600 hover:underline'>OpenModelDB</a></strong> là kho mô hình AI mở, chuyên về xử lý ảnh, video, audio và các tác vụ AI khác.</p>
+                Answer =
+                    @"<p><strong><a href='https://openmodeldb.info/' target='_blank' rel='noopener noreferrer' class='text-primary-600 hover:underline'>OpenModelDB</a></strong> là kho mô hình AI mở, chuyên về xử lý ảnh, video, audio và các tác vụ AI khác.</p>
                 <h4 class='font-semibold mt-4 mb-2'>Tại sao sử dụng OpenModelDB?</h4>
                 <ul class='list-disc pl-6 space-y-2'>
                     <li><strong>Nguồn mở:</strong> Tất cả mô hình đều miễn phí và mã nguồn mở</li>
@@ -220,7 +226,8 @@ public partial class FaqPage : ComponentBase
                 Id = 13,
                 Category = "general",
                 Question = "EzioHost có miễn phí không?",
-                Answer = @"<p>EzioHost hiện tại đang trong giai đoạn phát triển và có thể cung cấp dịch vụ miễn phí cho người dùng. Tuy nhiên, có một số giới hạn:</p>
+                Answer =
+                    @"<p>EzioHost hiện tại đang trong giai đoạn phát triển và có thể cung cấp dịch vụ miễn phí cho người dùng. Tuy nhiên, có một số giới hạn:</p>
                 <ul class='list-disc pl-6 mt-3 space-y-2'>
                     <li><strong>Dung lượng lưu trữ:</strong> Có giới hạn tùy thuộc vào cấu hình server</li>
                     <li><strong>Băng thông:</strong> Có thể có giới hạn để đảm bảo chất lượng dịch vụ</li>
@@ -312,10 +319,7 @@ public partial class FaqPage : ComponentBase
     private void ToggleFaq(int id)
     {
         var faq = _allFaqs.FirstOrDefault(f => f.Id == id);
-        if (faq != null)
-        {
-            faq.IsOpen = !faq.IsOpen;
-        }
+        if (faq != null) faq.IsOpen = !faq.IsOpen;
     }
 
     private void OnSearchChanged(ChangeEventArgs e)
@@ -334,6 +338,6 @@ public partial class FaqPage : ComponentBase
         public string Category { get; set; } = "";
         public string Question { get; set; } = "";
         public string Answer { get; set; } = "";
-        public bool IsOpen { get; set; } = false;
+        public bool IsOpen { get; set; }
     }
 }

@@ -1,10 +1,8 @@
-using Moq;
-using EzioHost.Core.Repositories;
 using EzioHost.Core.Providers;
+using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
-using EzioHost.Domain.Entities;
-using System.Linq.Expressions;
+using Moq;
 
 namespace EzioHost.UnitTests.TestHelpers;
 

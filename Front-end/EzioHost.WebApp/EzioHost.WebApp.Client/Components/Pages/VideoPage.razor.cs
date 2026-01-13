@@ -1,3 +1,4 @@
+using EzioHost.Shared.Enums;
 using EzioHost.Shared.Events;
 using EzioHost.Shared.Extensions;
 using EzioHost.Shared.HubActions;
@@ -165,6 +166,22 @@ public partial class VideoPage : IAsyncDisposable
                 await InvokeAsync(StateHasChanged);
                 await JsRuntime.ShowSuccessToast($"Video {video.Title} đã xử lý xong");
             });
+
+            _hubConnection.On<Guid>(nameof(IVideoHubAction.ReceiveVideoUpscaleStarted), async videoId =>
+            {
+                var video = Videos.FirstOrDefault(x => x.Id == videoId);
+                if (video != null)
+                {
+                    // Reload video to get updated upscale status
+                    var updatedVideo = await VideoApi.GetVideoById(videoId);
+                    var index = Videos.FindIndex(v => v.Id == videoId);
+                    if (index >= 0) Videos[index] = updatedVideo;
+
+                    ApplyFilters();
+                    await InvokeAsync(StateHasChanged);
+                }
+            });
+
             try
             {
                 await _hubConnection.StartAsync();
@@ -190,9 +207,8 @@ public partial class VideoPage : IAsyncDisposable
         await Task.Delay(100);
 
         if (_jsObjectReference != null)
-        {
-            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.PlayerJsMetadata, video.SubtitleMetadata);
-        }
+            await _jsObjectReference.InvokeVoidAsync("playVideo", "player", video.PlayerJsMetadata,
+                video.SubtitleMetadata);
     }
 
     private async Task UpdateVideo(VideoDto video)
@@ -261,13 +277,15 @@ public partial class VideoPage : IAsyncDisposable
             if (index >= 0)
             {
                 Videos[index] = updatedVideo;
-                if (EditingVideo.Id == updatedVideo.Id)
-                {
-                    EditingVideo = updatedVideo;
-                }
+                if (EditingVideo.Id == updatedVideo.Id) EditingVideo = updatedVideo;
             }
-            ApplyFilters();
 
+            ApplyFilters();
         }
+    }
+
+    private bool IsVideoUpscaling(VideoDto video)
+    {
+        return video.VideoUpscales?.Any(u => u.Status == VideoEnum.VideoUpscaleStatus.Queue) ?? false;
     }
 }

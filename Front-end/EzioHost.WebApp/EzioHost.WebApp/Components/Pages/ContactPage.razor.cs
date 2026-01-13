@@ -7,33 +7,33 @@ namespace EzioHost.WebApp.Components.Pages;
 
 public partial class ContactPage : ComponentBase
 {
-    [Inject] private IJSRuntime JsRuntime { get; set; } = null!;
-
     private ContactFormModel _contactForm = new();
-    private bool _isSubmitting = false;
+    private bool _isSubmitting;
+    [Inject] private IJSRuntime JsRuntime { get; set; } = null!;
 
     private async Task HandleSubmit()
     {
         _isSubmitting = true;
-        
+
         try
         {
             // TODO: Implement actual email sending logic here
             // For now, we'll just simulate a delay
             await Task.Delay(1000);
-            
+
             // In a real implementation, you would:
             // 1. Call an API endpoint to send the email
             // 2. Show success/error message to user
             // 3. Reset the form on success
-            
+
             // Example: await ContactApi.SendContactEmail(_contactForm);
-            
+
             // Reset form
             _contactForm = new ContactFormModel();
-            
+
             // Show success message
-            await JsRuntime.ShowSuccessToast("Tin nhắn đã được gửi thành công! Chúng tôi sẽ phản hồi trong vòng 24-48 giờ.");
+            await JsRuntime.ShowSuccessToast(
+                "Tin nhắn đã được gửi thành công! Chúng tôi sẽ phản hồi trong vòng 24-48 giờ.");
         }
         catch (Exception ex)
         {

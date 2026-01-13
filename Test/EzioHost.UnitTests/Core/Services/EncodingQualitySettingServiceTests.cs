@@ -2,7 +2,6 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
-using EzioHost.Shared.Models;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Moq;
@@ -45,7 +44,7 @@ public class EncodingQualitySettingServiceTests
         var userId = Guid.NewGuid();
         var settings = new List<EncodingQualitySetting>
         {
-            new EncodingQualitySetting
+            new()
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -74,7 +73,7 @@ public class EncodingQualitySettingServiceTests
         var userId = Guid.NewGuid();
         var activeSettings = new List<EncodingQualitySetting>
         {
-            new EncodingQualitySetting
+            new()
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,

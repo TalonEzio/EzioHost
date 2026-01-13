@@ -1,12 +1,10 @@
+using System.Net;
+using System.Net.Http.Json;
 using EzioHost.Domain.Entities;
-using EzioHost.IntegrationTests.WebAPI;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Shared.Enums;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Json;
 using Xunit;
 
 namespace EzioHost.IntegrationTests.WebAPI.Controllers;
@@ -50,7 +48,7 @@ public class UploadControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var fileUpload = new FileUpload
         {
@@ -77,7 +75,7 @@ public class UploadControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var fileUpload = new FileUpload
         {
@@ -95,7 +93,8 @@ public class UploadControllerTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.DeleteAsync($"/api/Upload/{fileUpload.Id}");
 
         // Assert
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
+        response.StatusCode.Should()
+            .BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -104,7 +103,7 @@ public class UploadControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var fileUpload = new FileUpload
         {
@@ -141,7 +140,7 @@ public class UploadControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var existingUpload = new FileUpload
         {

@@ -14,8 +14,8 @@
                 file: videoData,
                 hls: 1
             };
-            
-            if (subtitleData && subtitleData.trim() !== '') {
+
+            if (subtitleData && subtitleData.trim() !== "") {
                 playerConfig.subtitle = subtitleData;
             }
 

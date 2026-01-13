@@ -1,8 +1,5 @@
-@using EzioHost.Shared.Models
 @using EzioHost.WebApp.Client.Services
-@using Microsoft.AspNetCore.Components.Forms
 @using Refit
-
 <div class="space-y-4">
     <div class="flex justify-between items-center">
         <h6 class="text-sm font-semibold text-gray-900">Quản lý Subtitle</h6>
@@ -19,7 +16,7 @@
                         <span class="text-sm font-medium text-gray-900">@subtitle.Language</span>
                         <span class="text-xs text-gray-500 ml-2">@subtitle.FileName</span>
                     </div>
-                    <button type="button" 
+                    <button type="button"
                             class="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
                             @onclick="() => DeleteSubtitle(subtitle.Id)"
                             disabled="@IsDeleting">
@@ -38,27 +35,27 @@
     <div class="border-t border-gray-200 pt-4">
         <h6 class="text-sm font-semibold text-gray-900 mb-3">Thêm Subtitle mới</h6>
         <EditForm Model="@UploadModel" OnValidSubmit="HandleUpload">
-            <DataAnnotationsValidator />
+            <DataAnnotationsValidator/>
             <div class="space-y-3">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Ngôn ngữ</label>
-                    <InputText @bind-Value="UploadModel.Language" 
+                    <InputText @bind-Value="UploadModel.Language"
                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                placeholder="Ví dụ: Vietnamese, English"/>
-                    <ValidationMessage For="@(() => UploadModel.Language)" />
+                    <ValidationMessage For="@(() => UploadModel.Language)"/>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">File Subtitle (.vtt)</label>
-                    <InputFile OnChange="HandleFileSelected" 
+                    <InputFile OnChange="HandleFileSelected"
                                accept=".vtt"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"/>
-                    <ValidationMessage For="@(() => UploadModel.File)" />
+                    <ValidationMessage For="@(() => UploadModel.File)"/>
                     @if (SelectedFileName != null)
                     {
                         <p class="text-xs text-gray-600 mt-1">Đã chọn: @SelectedFileName</p>
                     }
                 </div>
-                <button type="submit" 
+                <button type="submit"
                         class="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
                         disabled="@(IsUploading || SelectedFile == null)">
                     @if (IsUploading)
@@ -156,11 +153,11 @@
 
         try
         {
-            await using var stream = SelectedFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); // 5MB
+            await using var stream = SelectedFile.OpenReadStream(5 * 1024 * 1024); // 5MB
             var streamPart = new StreamPart(stream, SelectedFile.Name, SelectedFile.ContentType);
 
             await VideoSubtitleApi.UploadSubtitle(VideoId, UploadModel.Language, streamPart);
-            
+
             SuccessMessage = "Upload subtitle thành công!";
             UploadModel = new UploadSubtitleModel();
             SelectedFile = null;
@@ -210,4 +207,5 @@
         public string Language { get; set; } = string.Empty;
         public IBrowserFile? File { get; set; }
     }
+
 }

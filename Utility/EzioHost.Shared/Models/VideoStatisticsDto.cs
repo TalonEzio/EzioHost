@@ -5,7 +5,7 @@ public class VideoStatisticsDto
     public int TotalVideos { get; set; }
     public int ReadyVideos { get; set; }
     public long TotalStorageUsedBytes { get; set; }
-    
+
     public string TotalStorageUsedDisplay
     {
         get

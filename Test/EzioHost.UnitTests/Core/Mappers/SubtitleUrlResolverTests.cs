@@ -1,5 +1,4 @@
 using EzioHost.Core.Mappers;
-using EzioHost.Domain.Entities;
 using EzioHost.Shared.Models;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;

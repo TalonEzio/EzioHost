@@ -5,269 +5,269 @@
 <PageTitle>Cài đặt - EzioHost</PageTitle>
 
 <div class="settings-page-container">
-    <!-- Header -->
-    <div class="settings-header">
-        <div>
-            <h1 class="settings-title">
-                <i class="bi bi-gear"></i>
-                Cài đặt
-            </h1>
-            <p class="settings-subtitle">Quản lý cài đặt và cấu hình hệ thống</p>
+<!-- Header -->
+<div class="settings-header">
+    <div>
+        <h1 class="settings-title">
+            <i class="bi bi-gear"></i>
+            Cài đặt
+        </h1>
+        <p class="settings-subtitle">Quản lý cài đặt và cấu hình hệ thống</p>
+    </div>
+</div>
+
+<!-- Settings Cards Grid -->
+<div class="settings-grid">
+<!-- Encoding Settings Card -->
+<a href="/settings/encoding" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon encoding-icon">
+            <i class="bi bi-sliders"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Chất lượng Encoding</h3>
+            <p class="settings-card-description">
+                Cấu hình chất lượng và bitrate cho các độ phân giải video. Chọn các độ phân giải sẽ được encode và điều chỉnh bitrate cho từng độ phân giải.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-check-circle"></i>
+                    Cấu hình bitrate
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-toggle-on"></i>
+                    Bật/tắt resolutions
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
         </div>
     </div>
+</a>
 
-    <!-- Settings Cards Grid -->
-    <div class="settings-grid">
-        <!-- Encoding Settings Card -->
-        <a href="/settings/encoding" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon encoding-icon">
-                    <i class="bi bi-sliders"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Chất lượng Encoding</h3>
-                    <p class="settings-card-description">
-                        Cấu hình chất lượng và bitrate cho các độ phân giải video. Chọn các độ phân giải sẽ được encode và điều chỉnh bitrate cho từng độ phân giải.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-check-circle"></i>
-                            Cấu hình bitrate
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-toggle-on"></i>
-                            Bật/tắt resolutions
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- Security Settings Card -->
-        <a href="/settings/security" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon security-icon">
-                    <i class="bi bi-shield-lock"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Bảo mật</h3>
-                    <p class="settings-card-description">
-                        Cấu hình các tùy chọn bảo mật và quyền truy cập.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-shield-check"></i>
-                            Xác thực 2FA
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-key"></i>
-                            Mật khẩu
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- Storage Settings Card -->
-        <a href="/settings/storage" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon storage-icon">
-                    <i class="bi bi-cloud"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Lưu trữ</h3>
-                    <p class="settings-card-description">
-                        Quản lý cài đặt lưu trữ và backup.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-hdd-stack"></i>
-                            Dung lượng
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-cloud-upload"></i>
-                            Backup
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- Notifications Settings Card -->
-        <a href="/settings/notifications" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon notifications-icon">
-                    <i class="bi bi-bell"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Thông báo</h3>
-                    <p class="settings-card-description">
-                        Cấu hình các tùy chọn thông báo và email.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-envelope"></i>
-                            Email
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-bell-fill"></i>
-                            In-app
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- Account Settings Card -->
-        <a href="/profile" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon account-icon">
-                    <i class="bi bi-person-circle"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Tài khoản</h3>
-                    <p class="settings-card-description">
-                        Quản lý thông tin tài khoản, hồ sơ cá nhân và cài đặt người dùng.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-check-circle"></i>
-                            Thông tin cá nhân
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-key"></i>
-                            Quyền truy cập
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- API Keys Card -->
-        <a href="/settings/api-keys" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon api-keys-icon">
+<!-- Security Settings Card -->
+<a href="/settings/security" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon security-icon">
+            <i class="bi bi-shield-lock"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Bảo mật</h3>
+            <p class="settings-card-description">
+                Cấu hình các tùy chọn bảo mật và quyền truy cập.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-shield-check"></i>
+                    Xác thực 2FA
+                </span>
+                <span class="meta-item">
                     <i class="bi bi-key"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">API Keys</h3>
-                    <p class="settings-card-description">
-                        Quản lý API keys để tích hợp với các dịch vụ bên thứ ba.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-key-fill"></i>
-                            Tạo key
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-shield-lock"></i>
-                            Bảo mật
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
+                    Mật khẩu
+                </span>
             </div>
-        </a>
-
-        <!-- Appearance Card -->
-        <a href="/settings/appearance" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon appearance-icon">
-                    <i class="bi bi-palette"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Giao diện</h3>
-                    <p class="settings-card-description">
-                        Tùy chỉnh theme, ngôn ngữ và các tùy chọn hiển thị.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-brightness-high"></i>
-                            Theme
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-translate"></i>
-                            Ngôn ngữ
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- Integrations Card -->
-        <a href="/settings/integrations" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon integrations-icon">
-                    <i class="bi bi-plug"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Tích hợp</h3>
-                    <p class="settings-card-description">
-                        Kết nối với các dịch vụ bên thứ ba và quản lý tích hợp.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-google"></i>
-                            Google
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-youtube"></i>
-                            YouTube
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-
-        <!-- Advanced Card -->
-        <a href="/settings/advanced" class="settings-card-link">
-            <div class="settings-card">
-                <div class="settings-card-icon advanced-icon">
-                    <i class="bi bi-gear-wide-connected"></i>
-                </div>
-                <div class="settings-card-content">
-                    <h3 class="settings-card-title">Nâng cao</h3>
-                    <p class="settings-card-description">
-                        Các tùy chọn cấu hình nâng cao và cài đặt hệ thống.
-                    </p>
-                    <div class="settings-card-meta">
-                        <span class="meta-item">
-                            <i class="bi bi-cpu"></i>
-                            Hiệu năng
-                        </span>
-                        <span class="meta-item">
-                            <i class="bi bi-bug"></i>
-                            Debug
-                        </span>
-                    </div>
-                </div>
-                <div class="settings-card-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
     </div>
+</a>
+
+<!-- Storage Settings Card -->
+<a href="/settings/storage" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon storage-icon">
+            <i class="bi bi-cloud"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Lưu trữ</h3>
+            <p class="settings-card-description">
+                Quản lý cài đặt lưu trữ và backup.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-hdd-stack"></i>
+                    Dung lượng
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-cloud-upload"></i>
+                    Backup
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+
+<!-- Notifications Settings Card -->
+<a href="/settings/notifications" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon notifications-icon">
+            <i class="bi bi-bell"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Thông báo</h3>
+            <p class="settings-card-description">
+                Cấu hình các tùy chọn thông báo và email.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-envelope"></i>
+                    Email
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-bell-fill"></i>
+                    In-app
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+
+<!-- Account Settings Card -->
+<a href="/profile" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon account-icon">
+            <i class="bi bi-person-circle"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Tài khoản</h3>
+            <p class="settings-card-description">
+                Quản lý thông tin tài khoản, hồ sơ cá nhân và cài đặt người dùng.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-check-circle"></i>
+                    Thông tin cá nhân
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-key"></i>
+                    Quyền truy cập
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+
+<!-- API Keys Card -->
+<a href="/settings/api-keys" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon api-keys-icon">
+            <i class="bi bi-key"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">API Keys</h3>
+            <p class="settings-card-description">
+                Quản lý API keys để tích hợp với các dịch vụ bên thứ ba.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-key-fill"></i>
+                    Tạo key
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-shield-lock"></i>
+                    Bảo mật
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+
+<!-- Appearance Card -->
+<a href="/settings/appearance" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon appearance-icon">
+            <i class="bi bi-palette"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Giao diện</h3>
+            <p class="settings-card-description">
+                Tùy chỉnh theme, ngôn ngữ và các tùy chọn hiển thị.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-brightness-high"></i>
+                    Theme
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-translate"></i>
+                    Ngôn ngữ
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+
+<!-- Integrations Card -->
+<a href="/settings/integrations" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon integrations-icon">
+            <i class="bi bi-plug"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Tích hợp</h3>
+            <p class="settings-card-description">
+                Kết nối với các dịch vụ bên thứ ba và quản lý tích hợp.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-google"></i>
+                    Google
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-youtube"></i>
+                    YouTube
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+
+<!-- Advanced Card -->
+<a href="/settings/advanced" class="settings-card-link">
+    <div class="settings-card">
+        <div class="settings-card-icon advanced-icon">
+            <i class="bi bi-gear-wide-connected"></i>
+        </div>
+        <div class="settings-card-content">
+            <h3 class="settings-card-title">Nâng cao</h3>
+            <p class="settings-card-description">
+                Các tùy chọn cấu hình nâng cao và cài đặt hệ thống.
+            </p>
+            <div class="settings-card-meta">
+                <span class="meta-item">
+                    <i class="bi bi-cpu"></i>
+                    Hiệu năng
+                </span>
+                <span class="meta-item">
+                    <i class="bi bi-bug"></i>
+                    Debug
+                </span>
+            </div>
+        </div>
+        <div class="settings-card-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </div>
+</a>
+</div>
 </div>

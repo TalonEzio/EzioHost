@@ -1,4 +1,3 @@
-using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.UnitTests.TestHelpers;
@@ -16,11 +15,17 @@ public class OnnxModelSqlServerRepositoryTests : IDisposable
     public OnnxModelSqlServerRepositoryTests()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new OnnxModelSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -79,7 +84,7 @@ public class OnnxModelSqlServerRepositoryTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result.Id.Should().NotBeEmpty();
-        
+
         var modelInDb = await _dbContext.OnnxModels.FindAsync(result.Id);
         modelInDb.Should().NotBeNull();
     }
@@ -100,7 +105,7 @@ public class OnnxModelSqlServerRepositoryTests : IDisposable
 
         // Assert
         result.Name.Should().Be("Updated Model");
-        
+
         var modelInDb = await _dbContext.OnnxModels.FindAsync(model.Id);
         modelInDb.Should().NotBeNull();
         modelInDb!.Name.Should().Be("Updated Model");
@@ -124,17 +129,13 @@ public class OnnxModelSqlServerRepositoryTests : IDisposable
         var modelInDb = await _dbContext.OnnxModels
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == model.Id);
-        
+
         // If soft delete, DeletedAt should be set; if hard delete, should be null
         if (modelInDb != null)
-        {
             modelInDb.DeletedAt.Should().NotBeNull("Model should be soft deleted");
-        }
         else
-        {
             // Model was physically removed
             modelInDb.Should().BeNull();
-        }
     }
 
     [Fact]
@@ -155,22 +156,12 @@ public class OnnxModelSqlServerRepositoryTests : IDisposable
         var modelInDb = await _dbContext.OnnxModels
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == model.Id);
-        
+
         // If soft delete, DeletedAt should be set; if hard delete, should be null
         if (modelInDb != null)
-        {
             modelInDb.DeletedAt.Should().NotBeNull("Model should be soft deleted");
-        }
         else
-        {
             // Model was physically removed
             modelInDb.Should().BeNull();
-        }
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
     }
 }

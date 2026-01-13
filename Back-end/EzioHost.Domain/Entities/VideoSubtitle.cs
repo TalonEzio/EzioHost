@@ -8,8 +8,7 @@ public class VideoSubtitle : BaseAuditableEntityWithUserId<Guid>
 {
     public Guid Id { get; set; }
 
-    [ForeignKey(nameof(Video))] 
-    public Guid VideoId { get; set; }
+    [ForeignKey(nameof(Video))] public Guid VideoId { get; set; }
 
     public Video Video { get; set; } = new();
 

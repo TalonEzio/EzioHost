@@ -1,10 +1,10 @@
+using System.Linq.Expressions;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
 using EzioHost.Domain.Entities;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Moq;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace EzioHost.UnitTests.Core.Services;
@@ -25,7 +25,7 @@ public class UserServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var expectedUser = TestDataBuilder.CreateUser(id: userId);
+        var expectedUser = TestDataBuilder.CreateUser(userId);
         Expression<Func<User, bool>> expression = u => u.Id == userId;
 
         _userRepositoryMock
@@ -64,7 +64,7 @@ public class UserServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var expectedUser = TestDataBuilder.CreateUser(id: userId);
+        var expectedUser = TestDataBuilder.CreateUser(userId);
         Expression<Func<User, bool>> expression = u => u.Id == userId;
         Expression<Func<User, object>>[] includes = [u => u.Id];
 

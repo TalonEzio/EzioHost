@@ -1,16 +1,16 @@
-﻿using AutoMapper;
+﻿using System.Linq.Expressions;
+using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
+using EzioHost.Domain.Settings;
 using EzioHost.Shared.Enums;
+using EzioHost.Shared.Extensions;
 using EzioHost.Shared.Models;
 using EzioHost.WebAPI.Extensions;
+using EzioHost.WebAPI.Startup;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq.Expressions;
-using EzioHost.Domain.Settings;
-using EzioHost.Shared.Extensions;
-using EzioHost.WebAPI.Startup;
 using Microsoft.Extensions.Options;
 
 namespace EzioHost.WebAPI.Controllers;
@@ -28,6 +28,7 @@ public class VideoController(
     private string WebRootPath => directoryProvider.GetWebRootPath();
 
     private StorageSettings StorageSettings => appSettings.Value.Storage;
+
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetVideos(
@@ -76,9 +77,10 @@ public class VideoController(
         }
         catch (Exception)
         {
-            return StatusCode(500, $"Internal server error occurred while retrieving videos.");
+            return StatusCode(500, "Internal server error occurred while retrieving videos.");
         }
     }
+
     [HttpGet("download/{videoId:guid}")]
     [Authorize]
     public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
@@ -249,9 +251,9 @@ public class VideoController(
         if (!System.IO.File.Exists(physicalPath))
             return NotFound("File manifest gốc chưa được tạo");
 
-        string content = await System.IO.File.ReadAllTextAsync(physicalPath);
+        var content = await System.IO.File.ReadAllTextAsync(physicalPath);
 
-        string cdnBaseUrl = $"{StorageSettings.PublicDomain.TrimEnd('/')}/videos/{videoId}/{resolution}/";
+        var cdnBaseUrl = $"{StorageSettings.PublicDomain.TrimEnd('/')}/videos/{videoId}/{resolution}/";
 
         var resolutionDescription = resEnum.GetDescription();
         content = content.Replace(resolutionDescription, $"{cdnBaseUrl}{resolutionDescription}");
@@ -321,9 +323,7 @@ public class VideoController(
 
                 // Calculate storage for video streams (HLS segments)
                 if (video.VideoStreams != null)
-                {
                     foreach (var stream in video.VideoStreams)
-                    {
                         if (!string.IsNullOrEmpty(stream.M3U8Location))
                         {
                             var m3U8Path = Path.Combine(WebRootPath, Uri.UnescapeDataString(stream.M3U8Location));
@@ -336,7 +336,7 @@ public class VideoController(
                                     var tsFileInfo = new FileInfo(tsFile);
                                     totalStorageUsed += tsFileInfo.Length;
                                 }
-                                
+
                                 // Also include m3u8 file
                                 if (System.IO.File.Exists(m3U8Path))
                                 {
@@ -345,14 +345,10 @@ public class VideoController(
                                 }
                             }
                         }
-                    }
-                }
 
                 // Calculate storage for upscaled videos
                 if (video.VideoUpscales != null)
-                {
                     foreach (var upscale in video.VideoUpscales)
-                    {
                         if (!string.IsNullOrEmpty(upscale.OutputLocation))
                         {
                             var upscaleFilePath = Path.Combine(WebRootPath, upscale.OutputLocation);
@@ -362,8 +358,6 @@ public class VideoController(
                                 totalStorageUsed += upscaleFileInfo.Length;
                             }
                         }
-                    }
-                }
 
                 // Calculate storage for thumbnails
                 if (!string.IsNullOrEmpty(video.Thumbnail))
@@ -413,19 +407,16 @@ public class VideoController(
                 x => x.CreatedBy == userId,
                 [x => x.VideoStreams, x => x.VideoUpscales])).ToList();
 
-            if (!videos.Any())
-            {
-                return Ok(new VideoDetailedStatisticsDto());
-            }
+            if (!videos.Any()) return Ok(new VideoDetailedStatisticsDto());
 
             // Determine time grouping (day, week, or month)
             var oldestVideo = videos.Min(v => v.CreatedAt);
             var newestVideo = videos.Max(v => v.CreatedAt);
             var daysDiff = (newestVideo - oldestVideo).TotalDays;
-            
+
             string dateFormat;
             Func<DateTime, DateTime> groupByFunc;
-            
+
             if (daysDiff <= 30)
             {
                 // Group by day
@@ -463,16 +454,13 @@ public class VideoController(
             // Build storage timeline (cumulative storage)
             var storageTimeline = new List<VideoTimeSeriesDto>();
             long cumulativeStorage = 0;
-            
+
             foreach (var dateGroup in videos
-                .GroupBy(v => groupByFunc(v.CreatedAt))
-                .OrderBy(g => g.Key))
+                         .GroupBy(v => groupByFunc(v.CreatedAt))
+                         .OrderBy(g => g.Key))
             {
                 // Calculate storage for videos created on this date
-                foreach (var video in dateGroup)
-                {
-                    cumulativeStorage += CalculateVideoStorage(video);
-                }
+                foreach (var video in dateGroup) cumulativeStorage += CalculateVideoStorage(video);
 
                 storageTimeline.Add(new VideoTimeSeriesDto
                 {
@@ -522,11 +510,12 @@ public class VideoController(
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error occurred while retrieving detailed statistics: {ex.Message}");
+            return StatusCode(500,
+                $"Internal server error occurred while retrieving detailed statistics: {ex.Message}");
         }
     }
 
-    private long CalculateVideoStorage(Domain.Entities.Video video)
+    private long CalculateVideoStorage(Video video)
     {
         long storage = 0;
 
@@ -543,9 +532,7 @@ public class VideoController(
 
         // Calculate storage for video streams (HLS segments)
         if (video.VideoStreams != null)
-        {
             foreach (var stream in video.VideoStreams)
-            {
                 if (!string.IsNullOrEmpty(stream.M3U8Location))
                 {
                     var m3U8Path = Path.Combine(WebRootPath, Uri.UnescapeDataString(stream.M3U8Location));
@@ -558,7 +545,7 @@ public class VideoController(
                             var tsFileInfo = new FileInfo(tsFile);
                             storage += tsFileInfo.Length;
                         }
-                        
+
                         // Also include m3u8 file
                         if (System.IO.File.Exists(m3U8Path))
                         {
@@ -567,14 +554,10 @@ public class VideoController(
                         }
                     }
                 }
-            }
-        }
 
         // Calculate storage for upscaled videos
         if (video.VideoUpscales != null)
-        {
             foreach (var upscale in video.VideoUpscales)
-            {
                 if (!string.IsNullOrEmpty(upscale.OutputLocation))
                 {
                     var upscaleFilePath = Path.Combine(WebRootPath, upscale.OutputLocation);
@@ -584,8 +567,6 @@ public class VideoController(
                         storage += upscaleFileInfo.Length;
                     }
                 }
-            }
-        }
 
         // Calculate storage for thumbnails
         if (!string.IsNullOrEmpty(video.Thumbnail))

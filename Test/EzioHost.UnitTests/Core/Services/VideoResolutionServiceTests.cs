@@ -63,7 +63,7 @@ public class VideoResolutionServiceTests
         var userId = Guid.NewGuid();
         _encodingQualitySettingServiceMock
             .Setup(x => x.GetActiveSettingsForEncoding(userId))
-            .ReturnsAsync(new List<Shared.Models.EncodingQualitySettingDto>());
+            .ReturnsAsync(new List<EncodingQualitySettingDto>());
 
         // Act
         var result = await _service.GetBandwidthForResolutionAsync("720p", userId);

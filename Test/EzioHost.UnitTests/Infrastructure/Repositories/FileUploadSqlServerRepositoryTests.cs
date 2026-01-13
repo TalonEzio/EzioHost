@@ -1,10 +1,10 @@
+using System.Linq.Expressions;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Shared.Enums;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace EzioHost.UnitTests.Infrastructure.Repositories;
@@ -17,11 +17,17 @@ public class FileUploadSqlServerRepositoryTests : IDisposable
     public FileUploadSqlServerRepositoryTests()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new FileUploadSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -133,11 +139,5 @@ public class FileUploadSqlServerRepositoryTests : IDisposable
         // Assert
         var fileInDb = await _dbContext.FileUploads.FindAsync(fileUpload.Id);
         fileInDb.Should().BeNull();
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
     }
 }

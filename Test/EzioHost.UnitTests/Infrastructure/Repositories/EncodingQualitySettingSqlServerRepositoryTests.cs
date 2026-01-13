@@ -16,11 +16,17 @@ public class EncodingQualitySettingSqlServerRepositoryTests : IDisposable
     public EncodingQualitySettingSqlServerRepositoryTests()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new EncodingQualitySettingSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -145,11 +151,5 @@ public class EncodingQualitySettingSqlServerRepositoryTests : IDisposable
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == result.Id);
         settingInDb.Should().NotBeNull();
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
     }
 }

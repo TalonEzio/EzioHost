@@ -5,7 +5,6 @@ using EzioHost.Core.Services.Implement;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
-using EzioHost.Shared.Enums;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -17,15 +16,15 @@ namespace EzioHost.UnitTests.Core.Services;
 public class UpscaleServiceTests
 {
     private readonly Mock<IDirectoryProvider> _directoryProviderMock;
+    private readonly Mock<ILogger<UpscaleService>> _loggerMock;
+    private readonly Mock<IM3U8PlaylistService> _m3U8PlaylistServiceMock;
+    private readonly Mock<IMapper> _mapperMock;
+    private readonly UpscaleService _service;
     private readonly Mock<ISettingProvider> _settingProviderMock;
     private readonly Mock<IUpscaleRepository> _upscaleRepositoryMock;
+    private readonly Mock<IVideoRepository> _videoRepositoryMock;
     private readonly Mock<IVideoService> _videoServiceMock;
     private readonly Mock<IVideoUnitOfWork> _videoUnitOfWorkMock;
-    private readonly Mock<IMapper> _mapperMock;
-    private readonly Mock<IM3U8PlaylistService> _m3U8PlaylistServiceMock;
-    private readonly Mock<ILogger<UpscaleService>> _loggerMock;
-    private readonly Mock<IVideoRepository> _videoRepositoryMock;
-    private readonly UpscaleService _service;
 
     public UpscaleServiceTests()
     {
@@ -37,10 +36,10 @@ public class UpscaleServiceTests
         _mapperMock = new Mock<IMapper>();
         _m3U8PlaylistServiceMock = TestMockFactory.CreateM3U8PlaylistServiceMock();
         _loggerMock = new Mock<ILogger<UpscaleService>>();
-        
+
         _videoRepositoryMock = TestMockFactory.CreateVideoRepositoryMock();
         _videoUnitOfWorkMock.Setup(x => x.VideoRepository).Returns(_videoRepositoryMock.Object);
-        
+
         _service = new UpscaleService(
             _directoryProviderMock.Object,
             _settingProviderMock.Object,
@@ -74,7 +73,7 @@ public class UpscaleServiceTests
     {
         // Arrange
         var upscaleId = Guid.NewGuid();
-        var expectedUpscale = TestDataBuilder.CreateVideoUpscale(id: upscaleId);
+        var expectedUpscale = TestDataBuilder.CreateVideoUpscale(upscaleId);
         _upscaleRepositoryMock
             .Setup(x => x.GetVideoUpscaleById(upscaleId))
             .ReturnsAsync(expectedUpscale);

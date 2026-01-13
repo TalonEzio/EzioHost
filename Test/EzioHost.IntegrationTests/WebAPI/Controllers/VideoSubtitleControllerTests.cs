@@ -1,19 +1,17 @@
+using System.Net;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
+using EzioHost.Shared.Enums;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Json;
 using Xunit;
 
 namespace EzioHost.IntegrationTests.WebAPI.Controllers;
 
 public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly TestWebApplicationFactory _factory;
 
     public VideoSubtitleControllerTests(TestWebApplicationFactory factory)
     {
@@ -27,7 +25,7 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -35,8 +33,8 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
             Title = "Test Video",
             RawLocation = "videos/test.mp4",
             M3U8Location = "videos/test.m3u8",
-            Resolution = EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
-            Status = EzioHost.Shared.Enums.VideoEnum.VideoStatus.Ready,
+            Resolution = VideoEnum.VideoResolution._720p,
+            Status = VideoEnum.VideoStatus.Ready,
             CreatedBy = testUserId,
             CreatedAt = DateTime.UtcNow
         };
@@ -73,7 +71,7 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -81,15 +79,15 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
             Title = "Test Video",
             RawLocation = "videos/test.mp4",
             M3U8Location = "videos/test.m3u8",
-            Resolution = EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
-            Status = EzioHost.Shared.Enums.VideoEnum.VideoStatus.Ready,
+            Resolution = VideoEnum.VideoResolution._720p,
+            Status = VideoEnum.VideoStatus.Ready,
             CreatedBy = testUserId,
             CreatedAt = DateTime.UtcNow,
             DeletedAt = null // Ensure not soft deleted
         };
         dbContext.Videos.Add(video);
         await dbContext.SaveChangesAsync();
-        
+
         var subtitle = new VideoSubtitle
         {
             Id = Guid.NewGuid(),
@@ -103,7 +101,7 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
         };
         dbContext.VideoSubtitles.Add(subtitle);
         await dbContext.SaveChangesAsync();
-        
+
         // Verify entities are saved
         var savedSubtitle = await dbContext.VideoSubtitles.FindAsync(subtitle.Id);
         savedSubtitle.Should().NotBeNull();
@@ -115,7 +113,8 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
         // Note: If subtitle is not found by service, it returns NotFound
         // If found but user doesn't own video, returns Forbid
         // If successful, returns NoContent
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound, HttpStatusCode.Forbidden);
+        response.StatusCode.Should()
+            .BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound, HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -134,25 +133,25 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var ownerUserId = Guid.NewGuid(); // Different user
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        
+
         var video = new Video
         {
             Id = Guid.NewGuid(),
             Title = "Test Video",
             RawLocation = "videos/test.mp4",
             M3U8Location = "videos/test.m3u8",
-            Resolution = EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
-            Status = EzioHost.Shared.Enums.VideoEnum.VideoStatus.Ready,
+            Resolution = VideoEnum.VideoResolution._720p,
+            Status = VideoEnum.VideoStatus.Ready,
             CreatedBy = ownerUserId, // Different owner
             CreatedAt = DateTime.UtcNow,
             DeletedAt = null // Ensure not soft deleted
         };
         dbContext.Videos.Add(video);
         await dbContext.SaveChangesAsync();
-        
+
         var subtitle = new VideoSubtitle
         {
             Id = Guid.NewGuid(),
@@ -166,7 +165,7 @@ public class VideoSubtitleControllerTests : IClassFixture<TestWebApplicationFact
         };
         dbContext.VideoSubtitles.Add(subtitle);
         await dbContext.SaveChangesAsync();
-        
+
         // Verify entities are saved
         var savedSubtitle = await dbContext.VideoSubtitles.FindAsync(subtitle.Id);
         savedSubtitle.Should().NotBeNull();

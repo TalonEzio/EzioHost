@@ -34,5 +34,4 @@ public interface IVideoService
 
     Task<Video?> GetVideoBackup();
     Task<VideoBackupStatus> BackupVideo(Video video);
-
 }

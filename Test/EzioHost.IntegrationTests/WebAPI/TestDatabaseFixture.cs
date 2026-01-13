@@ -1,12 +1,10 @@
-using Microsoft.EntityFrameworkCore;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace EzioHost.IntegrationTests.WebAPI;
 
 public class TestDatabaseFixture : IDisposable
 {
-    public EzioHostDbContext DbContext { get; private set; }
-
     public TestDatabaseFixture()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
@@ -16,6 +14,8 @@ public class TestDatabaseFixture : IDisposable
         DbContext = new EzioHostDbContext(options);
         DbContext.Database.EnsureCreated();
     }
+
+    public EzioHostDbContext DbContext { get; }
 
     public void Dispose()
     {

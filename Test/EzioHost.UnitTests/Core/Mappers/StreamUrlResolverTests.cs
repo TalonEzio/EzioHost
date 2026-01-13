@@ -1,5 +1,4 @@
 using EzioHost.Core.Mappers;
-using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.UnitTests.TestHelpers;
@@ -54,7 +53,8 @@ public class StreamUrlResolverTests
     {
         // Arrange
         var videoId = Guid.NewGuid();
-        var videoStream = TestDataBuilder.CreateVideoStream(videoId: videoId, resolution: VideoEnum.VideoResolution._720p);
+        var videoStream =
+            TestDataBuilder.CreateVideoStream(videoId: videoId, resolution: VideoEnum.VideoResolution._720p);
 
         // Act
         var result = _resolver.Resolve(videoStream, new VideoStreamDto(), "stream.m3u8", "dest", null!);

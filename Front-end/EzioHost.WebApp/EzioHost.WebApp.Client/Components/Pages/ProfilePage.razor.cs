@@ -7,11 +7,10 @@ namespace EzioHost.WebApp.Client.Components.Pages;
 
 public partial class ProfilePage : ComponentBase
 {
-    [CascadingParameter]
-    public Task<AuthenticationState> AuthStateTask { get; set; } = null!;
-
     private AuthenticationState? _authState;
     private bool _showAllClaims = false;
+
+    [CascadingParameter] public Task<AuthenticationState> AuthStateTask { get; set; } = null!;
 
     // User Information
     private string FullName => GetClaimValue(ClaimTypes.Name) ?? "N/A";
@@ -21,29 +20,23 @@ public partial class ProfilePage : ComponentBase
     private string Username => GetClaimValue("preferred_username") ?? "N/A";
     private string UserId => GetClaimValue(ClaimTypes.NameIdentifier) ?? "N/A";
     private bool IsEmailVerified => GetClaimValue("email_verified")?.ToLower() == "true";
-    
+
     // Initials for avatar
     private string Initials
     {
         get
         {
-            if (!string.IsNullOrEmpty(GivenName) && !string.IsNullOrEmpty(Surname) && GivenName != "N/A" && Surname != "N/A")
-            {
-                return $"{GivenName[0]}{Surname[0]}".ToUpper();
-            }
+            if (!string.IsNullOrEmpty(GivenName) && !string.IsNullOrEmpty(Surname) && GivenName != "N/A" &&
+                Surname != "N/A") return $"{GivenName[0]}{Surname[0]}".ToUpper();
             if (!string.IsNullOrEmpty(FullName) && FullName != "N/A")
             {
                 var parts = FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length >= 2)
-                {
-                    return $"{parts[0][0]}{parts[1][0]}".ToUpper();
-                }
+                if (parts.Length >= 2) return $"{parts[0][0]}{parts[1][0]}".ToUpper();
                 return FullName[0].ToString().ToUpper();
             }
+
             if (!string.IsNullOrEmpty(Username) && Username != "N/A")
-            {
                 return Username.Substring(0, Math.Min(2, Username.Length)).ToUpper();
-            }
             return "U";
         }
     }
@@ -57,7 +50,8 @@ public partial class ProfilePage : ComponentBase
                 return new List<string>();
 
             return _authState.User.Claims
-                .Where(c => c.Type == ClaimTypes.Role || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+                .Where(c => c.Type == ClaimTypes.Role ||
+                            c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
                 .Select(c => c.Value)
                 .Distinct()
                 .ToList();
@@ -88,7 +82,7 @@ public partial class ProfilePage : ComponentBase
             var authTime = GetClaimValue("auth_time");
             if (string.IsNullOrEmpty(authTime) || !long.TryParse(authTime, out var timestamp))
                 return "N/A";
-            
+
             var dateTime = DateTimeOffset.FromUnixTimeSeconds(timestamp);
             return dateTime.LocalDateTime.ToString("dd/MM/yyyy HH:mm:ss");
         }
@@ -101,17 +95,17 @@ public partial class ProfilePage : ComponentBase
             var exp = GetClaimValue("exp");
             if (string.IsNullOrEmpty(exp) || !long.TryParse(exp, out var timestamp))
                 return "N/A";
-            
+
             var dateTime = DateTimeOffset.FromUnixTimeSeconds(timestamp);
             var timeRemaining = dateTime.LocalDateTime - DateTime.Now;
-            
+
             if (timeRemaining.TotalDays >= 1)
                 return $"{dateTime.LocalDateTime:dd/MM/yyyy HH:mm:ss} ({timeRemaining.Days} ngày còn lại)";
             if (timeRemaining.TotalHours >= 1)
                 return $"{dateTime.LocalDateTime:dd/MM/yyyy HH:mm:ss} ({timeRemaining.Hours} giờ còn lại)";
             if (timeRemaining.TotalMinutes >= 1)
                 return $"{dateTime.LocalDateTime:dd/MM/yyyy HH:mm:ss} ({timeRemaining.Minutes} phút còn lại)";
-            
+
             return "Đã hết hạn";
         }
     }

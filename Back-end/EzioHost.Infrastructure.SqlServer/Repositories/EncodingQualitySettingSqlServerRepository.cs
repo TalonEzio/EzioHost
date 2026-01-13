@@ -28,7 +28,8 @@ public class EncodingQualitySettingSqlServerRepository(EzioHostDbContext dbConte
                 .ToList());
     }
 
-    public Task<EncodingQualitySetting?> GetSettingByUserIdAndResolution(Guid userId, VideoEnum.VideoResolution resolution)
+    public Task<EncodingQualitySetting?> GetSettingByUserIdAndResolution(Guid userId,
+        VideoEnum.VideoResolution resolution)
     {
         return _settings
             .FirstOrDefaultAsync(s => s.UserId == userId && s.Resolution == resolution && !s.DeletedAt.HasValue);

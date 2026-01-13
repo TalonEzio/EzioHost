@@ -12,17 +12,42 @@ namespace EzioHost.WebApp.Client.Components.Pages;
 [Authorize]
 public partial class EncodingSettingsPage : IAsyncDisposable
 {
+    private IJSObjectReference? _jsModule;
     [Inject] public IEncodingQualitySettingApi EncodingApi { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
     [Inject] public NavigationManager NavigationManager { get; set; } = null!;
 
     private List<EncodingQualitySettingDto> Settings { get; set; } = [];
     private bool IsLoading { get; set; } = true;
-    private bool IsSaving { get; set; } = false;
-    private IJSObjectReference? _jsModule;
+    private bool IsSaving { get; set; }
 
     // All available resolutions
     private List<ResolutionInfo> AllResolutions { get; set; } = [];
+
+    private int EnabledCount => Settings?.Count(s => s.IsEnabled) ?? 0;
+
+    private int AverageBitrate
+    {
+        get
+        {
+            var enabledSettings = Settings.Where(s => s.IsEnabled).ToList();
+            if (!enabledSettings.Any()) return 0;
+            return (int)enabledSettings.Average(s => s.BitrateKbps);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule != null)
+            try
+            {
+                await _jsModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore
+            }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,9 +75,8 @@ public partial class EncodingSettingsPage : IAsyncDisposable
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
-        {
-            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Pages/EncodingSettingsPage.razor.js");
-        }
+            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import",
+                "./Components/Pages/EncodingSettingsPage.razor.js");
     }
 
     private async Task LoadSettings()
@@ -60,12 +84,10 @@ public partial class EncodingSettingsPage : IAsyncDisposable
         try
         {
             Settings = await EncodingApi.GetSettings() ?? [];
-            
+
             // Ensure all resolutions have a setting entry
             foreach (var resolution in AllResolutions)
-            {
                 if (!Settings.Any(s => s.Resolution == resolution.Resolution))
-                {
                     Settings.Add(new EncodingQualitySettingDto
                     {
                         Id = Guid.NewGuid(),
@@ -73,8 +95,6 @@ public partial class EncodingSettingsPage : IAsyncDisposable
                         BitrateKbps = GetDefaultBitrate(resolution.Resolution),
                         IsEnabled = false
                     });
-                }
-            }
         }
         catch (Exception ex)
         {
@@ -86,11 +106,8 @@ public partial class EncodingSettingsPage : IAsyncDisposable
     {
         var setting = Settings.FirstOrDefault(s => s.Resolution == resolution);
         if (setting != null)
-        {
             setting.IsEnabled = isEnabled;
-        }
         else
-        {
             Settings.Add(new EncodingQualitySettingDto
             {
                 Id = Guid.NewGuid(),
@@ -98,7 +115,6 @@ public partial class EncodingSettingsPage : IAsyncDisposable
                 BitrateKbps = GetDefaultBitrate(resolution),
                 IsEnabled = isEnabled
             });
-        }
         StateHasChanged();
     }
 
@@ -106,11 +122,8 @@ public partial class EncodingSettingsPage : IAsyncDisposable
     {
         var setting = Settings.FirstOrDefault(s => s.Resolution == resolution);
         if (setting != null)
-        {
             setting.BitrateKbps = Math.Max(100, Math.Min(50000, bitrate));
-        }
         else
-        {
             Settings.Add(new EncodingQualitySettingDto
             {
                 Id = Guid.NewGuid(),
@@ -118,7 +131,6 @@ public partial class EncodingSettingsPage : IAsyncDisposable
                 BitrateKbps = Math.Max(100, Math.Min(50000, bitrate)),
                 IsEnabled = true
             });
-        }
         StateHasChanged();
     }
 
@@ -153,10 +165,7 @@ public partial class EncodingSettingsPage : IAsyncDisposable
             Settings = await EncodingApi.UpdateSettings(request) ?? [];
             await JsRuntime.ShowSuccessToast("Đã lưu cài đặt thành công!");
 
-            if (_jsModule != null)
-            {
-                await _jsModule.InvokeVoidAsync("onSettingsSaved");
-            }
+            if (_jsModule != null) await _jsModule.InvokeVoidAsync("onSettingsSaved");
         }
         catch (Exception ex)
         {
@@ -171,17 +180,14 @@ public partial class EncodingSettingsPage : IAsyncDisposable
 
     private async Task ResetToDefaults()
     {
-        if (!await JsRuntime.Confirm("Bạn có chắc muốn đặt lại tất cả cài đặt về mặc định?"))
-        {
-            return;
-        }
+        if (!await JsRuntime.Confirm("Bạn có chắc muốn đặt lại tất cả cài đặt về mặc định?")) return;
 
         Settings.Clear();
         foreach (var resolution in AllResolutions)
         {
-            var defaultEnabled = resolution.Resolution is 
-                VideoEnum.VideoResolution._360p or 
-                VideoEnum.VideoResolution._480p or 
+            var defaultEnabled = resolution.Resolution is
+                VideoEnum.VideoResolution._360p or
+                VideoEnum.VideoResolution._480p or
                 VideoEnum.VideoResolution._720p;
 
             Settings.Add(new EncodingQualitySettingDto
@@ -230,33 +236,6 @@ public partial class EncodingSettingsPage : IAsyncDisposable
             VideoEnum.VideoResolution._2160p => "3840 x 2160",
             _ => "N/A"
         };
-    }
-
-    private int EnabledCount => Settings?.Count(s => s.IsEnabled) ?? 0;
-
-    private int AverageBitrate
-    {
-        get
-        {
-            var enabledSettings = Settings.Where(s => s.IsEnabled).ToList();
-            if (!enabledSettings.Any()) return 0;
-            return (int)enabledSettings.Average(s => s.BitrateKbps);
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_jsModule != null)
-        {
-            try
-            {
-                await _jsModule.DisposeAsync();
-            }
-            catch
-            {
-                // Ignore
-            }
-        }
     }
 
     private class ResolutionInfo

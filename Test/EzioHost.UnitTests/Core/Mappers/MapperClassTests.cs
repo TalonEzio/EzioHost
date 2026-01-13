@@ -1,3 +1,4 @@
+using AutoMapper;
 using EzioHost.Core.Mappers;
 using FluentAssertions;
 using Xunit;
@@ -23,6 +24,6 @@ public class MapperClassTests
         var mapperClass = new MapperClass();
 
         // Assert
-        mapperClass.Should().BeAssignableTo<AutoMapper.Profile>();
+        mapperClass.Should().BeAssignableTo<Profile>();
     }
 }

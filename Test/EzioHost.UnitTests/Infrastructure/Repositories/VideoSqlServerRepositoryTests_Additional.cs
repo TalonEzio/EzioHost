@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
-using EzioHost.Shared.Enums;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -18,11 +17,17 @@ public class VideoSqlServerRepositoryTests_Additional : IDisposable
     public VideoSqlServerRepositoryTests_Additional()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new VideoSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -92,11 +97,5 @@ public class VideoSqlServerRepositoryTests_Additional : IDisposable
 
         // Assert
         result.Should().BeNull();
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
     }
 }

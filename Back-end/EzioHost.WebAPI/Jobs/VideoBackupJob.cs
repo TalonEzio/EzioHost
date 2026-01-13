@@ -27,13 +27,9 @@ public class VideoBackupJob(
             var backupStatus = await videoService.BackupVideo(videosToBackup);
 
             if (backupStatus == VideoEnum.VideoBackupStatus.BackedUp)
-            {
                 logger.LogInformation("[VideoBackupJob] Successfully backed up video {VideoId}", videosToBackup.Id);
-            }
             else
-            {
                 logger.LogWarning("[VideoBackupJob] Failed to backup video {VideoId}", videosToBackup.Id);
-            }
 
             logger.LogInformation("[VideoBackupJob] Completed video backup scan.");
         }

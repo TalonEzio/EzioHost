@@ -1,12 +1,10 @@
+using System.Net;
+using System.Net.Http.Json;
 using EzioHost.Domain.Entities;
-using EzioHost.IntegrationTests.WebAPI;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Shared.Enums;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Json;
 using Xunit;
 
 namespace EzioHost.IntegrationTests.WebAPI.Controllers;
@@ -28,7 +26,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -58,7 +56,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -100,7 +98,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -130,7 +128,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -160,7 +158,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -190,7 +188,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -207,14 +205,14 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         };
         dbContext.Videos.Add(video);
         await dbContext.SaveChangesAsync();
-        
+
         // Verify video is saved and can be retrieved
         var savedVideo = await dbContext.Videos.FindAsync(video.Id);
         savedVideo.Should().NotBeNull();
 
         var updateDto = new
         {
-            Id = video.Id,
+            video.Id,
             Title = "Updated Title",
             ShareType = VideoEnum.VideoShareType.Private
         };
@@ -251,7 +249,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -268,7 +266,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         };
         dbContext.Videos.Add(video);
         await dbContext.SaveChangesAsync();
-        
+
         // Verify video is saved and can be retrieved
         var savedVideo = await dbContext.Videos.FindAsync(video.Id);
         savedVideo.Should().NotBeNull();
@@ -297,7 +295,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var video = new Video
         {
@@ -330,7 +328,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var video = new Video
         {
             Id = Guid.NewGuid(),
@@ -346,7 +344,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         };
         dbContext.Videos.Add(video);
         await dbContext.SaveChangesAsync();
-        
+
         // Verify video is saved and can be retrieved
         var savedVideo = await dbContext.Videos.FindAsync(video.Id);
         savedVideo.Should().NotBeNull();
@@ -366,7 +364,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var ownerUserId = Guid.NewGuid(); // Different user
         var video = new Video
         {
@@ -398,7 +396,7 @@ public class VideoControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var video = new Video
         {
             Id = Guid.NewGuid(),

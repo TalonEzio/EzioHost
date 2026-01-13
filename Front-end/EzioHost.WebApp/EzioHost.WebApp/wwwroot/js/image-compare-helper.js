@@ -3,7 +3,7 @@ window.getPercentagePosition = function(element, clientX, clientY, isVertical) {
     if (!element) return 50;
 
     const rect = element.getBoundingClientRect();
-    
+
     if (isVertical) {
         // Vertical orientation: use Y coordinate (top-bottom)
         const y = clientY - rect.top;

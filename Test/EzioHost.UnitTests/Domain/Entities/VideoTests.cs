@@ -1,4 +1,3 @@
-using EzioHost.Domain.Entities;
 using EzioHost.Domain.Exceptions;
 using EzioHost.Shared.Enums;
 using EzioHost.UnitTests.TestHelpers;

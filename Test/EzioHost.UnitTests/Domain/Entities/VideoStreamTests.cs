@@ -1,4 +1,3 @@
-using EzioHost.Domain.Entities;
 using EzioHost.Domain.Exceptions;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;

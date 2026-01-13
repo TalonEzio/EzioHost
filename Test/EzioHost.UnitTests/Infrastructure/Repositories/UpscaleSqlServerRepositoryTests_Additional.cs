@@ -1,4 +1,3 @@
-using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.Shared.Enums;
@@ -17,11 +16,17 @@ public class UpscaleSqlServerRepositoryTests_Additional : IDisposable
     public UpscaleSqlServerRepositoryTests_Additional()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new UpscaleSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -33,10 +38,10 @@ public class UpscaleSqlServerRepositoryTests_Additional : IDisposable
         _dbContext.Videos.Add(video);
         _dbContext.OnnxModels.Add(model);
         await _dbContext.SaveChangesAsync();
-        
+
         var upscale = TestDataBuilder.CreateVideoUpscale(
-            videoId: video.Id, 
-            modelId: model.Id, 
+            videoId: video.Id,
+            modelId: model.Id,
             status: VideoEnum.VideoUpscaleStatus.Queue);
         upscale.Video = video;
         upscale.Model = model;
@@ -61,7 +66,7 @@ public class UpscaleSqlServerRepositoryTests_Additional : IDisposable
         _dbContext.Videos.Add(video);
         _dbContext.OnnxModels.Add(model);
         await _dbContext.SaveChangesAsync();
-        
+
         var upscale = TestDataBuilder.CreateVideoUpscale(videoId: video.Id, modelId: model.Id);
         upscale.Video = video;
         upscale.Model = model;
@@ -76,20 +81,10 @@ public class UpscaleSqlServerRepositoryTests_Additional : IDisposable
         var upscaleInDb = await _dbContext.VideoUpscales
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == upscale.Id);
-        
-        if (upscaleInDb != null)
-        {
-            upscaleInDb.DeletedAt.Should().NotBeNull("Upscale should be soft deleted");
-        }
-        else
-        {
-            upscaleInDb.Should().BeNull();
-        }
-    }
 
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
+        if (upscaleInDb != null)
+            upscaleInDb.DeletedAt.Should().NotBeNull("Upscale should be soft deleted");
+        else
+            upscaleInDb.Should().BeNull();
     }
 }

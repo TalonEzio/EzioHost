@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Implement;
@@ -6,17 +7,16 @@ using EzioHost.Domain.Entities;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Moq;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace EzioHost.UnitTests.Core.Services;
 
 public class FileUploadServiceTests
 {
-    private readonly Mock<IFileUploadRepository> _fileUploadRepositoryMock;
     private readonly Mock<IDirectoryProvider> _directoryProviderMock;
-    private readonly Mock<IVideoService> _videoServiceMock;
+    private readonly Mock<IFileUploadRepository> _fileUploadRepositoryMock;
     private readonly FileUploadService _fileUploadService;
+    private readonly Mock<IVideoService> _videoServiceMock;
 
     public FileUploadServiceTests()
     {

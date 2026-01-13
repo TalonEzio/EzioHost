@@ -1,11 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using EzioHost.Domain.Entities;
-using EzioHost.IntegrationTests.WebAPI;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Shared.Models;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -13,8 +11,8 @@ namespace EzioHost.IntegrationTests.WebAPI.Controllers;
 
 public class UserControllerTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly TestWebApplicationFactory _factory;
 
     public UserControllerTests(TestWebApplicationFactory factory)
     {
@@ -40,7 +38,7 @@ public class UserControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var result = await response.Content.ReadFromJsonAsync<User>();
         result.Should().NotBeNull();
         result!.Email.Should().Be(userDto.Email);
@@ -53,7 +51,7 @@ public class UserControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var existingUser = new User
         {
             Id = Guid.NewGuid(),
@@ -82,7 +80,7 @@ public class UserControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         // Reload from database to get updated values
         dbContext.Entry(existingUser).Reload();
         var updatedUser = await dbContext.Users.FindAsync(existingUser.Id);

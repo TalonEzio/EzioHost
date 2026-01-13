@@ -26,7 +26,7 @@ public class VideoResolutionService(
     public async Task<int> GetBandwidthForResolutionAsync(string resolution, Guid userId)
     {
         VideoEnum.VideoResolution resolutionEnum;
-        bool parsed = false;
+        var parsed = false;
 
         // Try to parse resolution to enum
         if (resolution == "AI Upscaled")
@@ -37,27 +37,23 @@ public class VideoResolutionService(
         else
         {
             var cleanResolution = resolution.Replace("p", "").Replace(" ", "");
-            parsed = Enum.TryParse<VideoEnum.VideoResolution>(cleanResolution, true, out resolutionEnum) ||
-                     Enum.TryParse<VideoEnum.VideoResolution>($"_{cleanResolution}", true, out resolutionEnum);
+            parsed = Enum.TryParse(cleanResolution, true, out resolutionEnum) ||
+                     Enum.TryParse($"_{cleanResolution}", true, out resolutionEnum);
         }
 
         if (!parsed)
-        {
             // Fallback to default if resolution can't be parsed
             return GetBandwidthForResolution(resolution);
-        }
 
         // Get user settings
         var activeSettings = await encodingQualitySettingService.GetActiveSettingsForEncoding(userId);
-        
+
         // Find matching setting
         var setting = activeSettings.FirstOrDefault(s => s.Resolution == resolutionEnum);
 
         if (setting != null)
-        {
             // Convert kbps to bps
             return setting.BitrateKbps * 1000;
-        }
 
         // Fallback to default hardcoded value
         return GetBandwidthForResolution(resolution);

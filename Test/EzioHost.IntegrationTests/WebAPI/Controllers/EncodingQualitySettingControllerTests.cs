@@ -1,18 +1,19 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
+using EzioHost.Shared.Enums;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
 using Xunit;
 
 namespace EzioHost.IntegrationTests.WebAPI.Controllers;
 
 public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly TestWebApplicationFactory _factory;
 
     public EncodingQualitySettingControllerTests(TestWebApplicationFactory factory)
     {
@@ -26,13 +27,13 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var setting = new EncodingQualitySetting
         {
             Id = Guid.NewGuid(),
             UserId = testUserId,
-            Resolution = EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
+            Resolution = VideoEnum.VideoResolution._720p,
             BitrateKbps = 2500,
             IsEnabled = true,
             CreatedBy = testUserId,
@@ -57,13 +58,13 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var setting = new EncodingQualitySetting
         {
             Id = Guid.NewGuid(),
             UserId = testUserId,
-            Resolution = EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
+            Resolution = VideoEnum.VideoResolution._720p,
             BitrateKbps = 2500,
             IsEnabled = true,
             CreatedBy = testUserId,
@@ -85,13 +86,13 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var setting = new EncodingQualitySetting
         {
             Id = Guid.NewGuid(),
             UserId = testUserId,
-            Resolution = EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
+            Resolution = VideoEnum.VideoResolution._720p,
             BitrateKbps = 2500,
             IsEnabled = true,
             CreatedBy = testUserId,
@@ -106,13 +107,13 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
             {
                 new
                 {
-                    Resolution = (int)EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
+                    Resolution = (int)VideoEnum.VideoResolution._720p,
                     BitrateKbps = 3000,
                     IsEnabled = true
                 },
                 new
                 {
-                    Resolution = (int)EzioHost.Shared.Enums.VideoEnum.VideoResolution._1080p,
+                    Resolution = (int)VideoEnum.VideoResolution._1080p,
                     BitrateKbps = 5000,
                     IsEnabled = true
                 }
@@ -120,8 +121,8 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         };
 
         // Act
-        var response = await _client.PutAsync("/api/EncodingQualitySetting", 
-            System.Net.Http.Json.JsonContent.Create(updateRequest));
+        var response = await _client.PutAsync("/api/EncodingQualitySetting",
+            JsonContent.Create(updateRequest));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -137,8 +138,8 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         };
 
         // Act
-        var response = await _client.PutAsync("/api/EncodingQualitySetting", 
-            System.Net.Http.Json.JsonContent.Create(updateRequest));
+        var response = await _client.PutAsync("/api/EncodingQualitySetting",
+            JsonContent.Create(updateRequest));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -154,7 +155,7 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
             {
                 new
                 {
-                    Resolution = (int)EzioHost.Shared.Enums.VideoEnum.VideoResolution._720p,
+                    Resolution = (int)VideoEnum.VideoResolution._720p,
                     BitrateKbps = 3000,
                     IsEnabled = false
                 }
@@ -162,8 +163,8 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         };
 
         // Act
-        var response = await _client.PutAsync("/api/EncodingQualitySetting", 
-            System.Net.Http.Json.JsonContent.Create(updateRequest));
+        var response = await _client.PutAsync("/api/EncodingQualitySetting",
+            JsonContent.Create(updateRequest));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -176,7 +177,7 @@ public class EncodingQualitySettingControllerTests : IClassFixture<TestWebApplic
         // Note: Sending null body might result in different status codes depending on model binding
         var request = new HttpRequestMessage(HttpMethod.Put, "/api/EncodingQualitySetting")
         {
-            Content = new StringContent("null", System.Text.Encoding.UTF8, "application/json")
+            Content = new StringContent("null", Encoding.UTF8, "application/json")
         };
         var response = await _client.SendAsync(request);
 

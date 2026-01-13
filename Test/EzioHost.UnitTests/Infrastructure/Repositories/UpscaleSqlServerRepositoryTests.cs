@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
@@ -5,7 +6,6 @@ using EzioHost.Shared.Enums;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace EzioHost.UnitTests.Infrastructure.Repositories;
@@ -18,11 +18,17 @@ public class UpscaleSqlServerRepositoryTests : IDisposable
     public UpscaleSqlServerRepositoryTests()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new UpscaleSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -51,7 +57,7 @@ public class UpscaleSqlServerRepositoryTests : IDisposable
         _dbContext.Videos.Add(video);
         _dbContext.OnnxModels.Add(model);
         await _dbContext.SaveChangesAsync();
-        
+
         var upscale = TestDataBuilder.CreateVideoUpscale(videoId: video.Id, modelId: model.Id);
         upscale.Video = video;
         upscale.Model = model;
@@ -93,9 +99,11 @@ public class UpscaleSqlServerRepositoryTests : IDisposable
         _dbContext.Videos.Add(video);
         _dbContext.OnnxModels.Add(model);
         await _dbContext.SaveChangesAsync();
-        
-        var upscale1 = TestDataBuilder.CreateVideoUpscale(videoId: video.Id, modelId: model.Id, status: VideoEnum.VideoUpscaleStatus.Queue);
-        var upscale2 = TestDataBuilder.CreateVideoUpscale(videoId: video.Id, modelId: model.Id, status: VideoEnum.VideoUpscaleStatus.Ready);
+
+        var upscale1 = TestDataBuilder.CreateVideoUpscale(videoId: video.Id, modelId: model.Id,
+            status: VideoEnum.VideoUpscaleStatus.Queue);
+        var upscale2 = TestDataBuilder.CreateVideoUpscale(videoId: video.Id, modelId: model.Id,
+            status: VideoEnum.VideoUpscaleStatus.Ready);
         upscale1.Video = video;
         upscale1.Model = model;
         upscale2.Video = video;
@@ -112,11 +120,5 @@ public class UpscaleSqlServerRepositoryTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result.Should().Contain(u => u.Status == VideoEnum.VideoUpscaleStatus.Queue);
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
     }
 }

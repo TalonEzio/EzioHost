@@ -12,7 +12,7 @@
                     Chi tiết Video
                 </h2>
             </div>
-            
+
             <div class="p-6">
                 @if (Video == null)
                 {
@@ -33,7 +33,7 @@
                             </p>
                         </div>
                         <div class="flex-shrink-0">
-                            <a href="/api/video/download/@Video.Id" target="_blank" 
+                            <a href="/api/video/download/@Video.Id" target="_blank"
                                class="inline-flex items-center px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg">
                                 <i class="bi bi-download mr-2"></i>
                                 Download
@@ -43,13 +43,26 @@
 
                     <!-- Video Player Section -->
                     <div class="mb-6">
-                        <div class="bg-black rounded-xl overflow-hidden shadow-2xl">
+                        <div class="bg-black rounded-xl overflow-hidden shadow-2xl relative">
+                            @{
+                                var statusMessage = GetVideoStatusMessage(Video);
+                            }
+                            @if (statusMessage != null)
+                            {
+                                <div class="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-10">
+                                    <div class="text-center">
+                                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                                        <p class="text-white text-xl font-semibold">@statusMessage</p>
+                                    </div>
+                                </div>
+                            }
                             <div id="player"
                                  data-video-player="@Video.PlayerJsMetadata"
                                  data-video-poster="@Video.Thumbnail"
                                  data-video-subtitles="@Video.SubtitleMetadata"
                                  class="w-full"
-                                 style="min-height: 400px; aspect-ratio: 16/9;"></div>
+                                 style="aspect-ratio: 16/9; min-height: 400px;">
+                            </div>
                         </div>
                         <div id="videoId" data-video-id="@Video.Id" class="hidden"></div>
                     </div>
@@ -69,13 +82,13 @@
                                     Link nhúng:
                                 </label>
                                 <div class="flex gap-2">
-                                    <input type="text" 
-                                           class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm font-mono" 
-                                           value="" 
-                                           readonly 
+                                    <input type="text"
+                                           class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm font-mono"
+                                           value=""
+                                           readonly
                                            id="embedLink">
-                                    <button class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 font-medium flex items-center whitespace-nowrap shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0" 
-                                            type="button" 
+                                    <button class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 font-medium flex items-center whitespace-nowrap shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0"
+                                            type="button"
                                             onclick="copyToClipboard('embedLink')">
                                         <i class="bi bi-clipboard mr-2"></i>
                                         Sao chép
@@ -94,8 +107,8 @@
                                               rows="3" 
                                               readonly 
                                               id="iframeCode"></textarea>
-                                    <button class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 font-medium flex items-start whitespace-nowrap shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0" 
-                                            type="button" 
+                                    <button class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 font-medium flex items-start whitespace-nowrap shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0"
+                                            type="button"
                                             onclick="copyToClipboard('iframeCode')">
                                         <i class="bi bi-clipboard mr-2"></i>
                                         Sao chép

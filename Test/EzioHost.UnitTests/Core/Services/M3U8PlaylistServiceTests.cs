@@ -11,8 +11,8 @@ namespace EzioHost.UnitTests.Core.Services;
 
 public class M3U8PlaylistServiceTests
 {
-    private readonly Mock<IVideoResolutionService> _videoResolutionServiceMock;
     private readonly M3U8PlaylistService _service;
+    private readonly Mock<IVideoResolutionService> _videoResolutionServiceMock;
 
     public M3U8PlaylistServiceTests()
     {
@@ -21,7 +21,7 @@ public class M3U8PlaylistServiceTests
             .Returns(2800000);
         _videoResolutionServiceMock.Setup(x => x.GetResolutionDimensions(It.IsAny<string>()))
             .Returns("1280x720");
-        
+
         _service = new M3U8PlaylistService(_videoResolutionServiceMock.Object);
     }
 
@@ -31,9 +31,10 @@ public class M3U8PlaylistServiceTests
         // Arrange
         var video = TestDataBuilder.CreateVideo();
         var stream1 = TestDataBuilder.CreateVideoStream(videoId: video.Id, resolution: VideoEnum.VideoResolution._720p);
-        var stream2 = TestDataBuilder.CreateVideoStream(videoId: video.Id, resolution: VideoEnum.VideoResolution._1080p);
+        var stream2 =
+            TestDataBuilder.CreateVideoStream(videoId: video.Id, resolution: VideoEnum.VideoResolution._1080p);
         video.VideoStreams = new List<VideoStream> { stream1, stream2 };
-        
+
         var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "playlist.m3u8");
         Directory.CreateDirectory(Path.GetDirectoryName(tempPath)!);
 
@@ -64,7 +65,7 @@ public class M3U8PlaylistServiceTests
         // Arrange
         var video = TestDataBuilder.CreateVideo();
         var stream = TestDataBuilder.CreateVideoStream(videoId: video.Id, resolution: VideoEnum.VideoResolution._720p);
-        
+
         var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "playlist.m3u8");
         Directory.CreateDirectory(Path.GetDirectoryName(tempPath)!);
         await File.WriteAllTextAsync(tempPath, "#EXTM3U\n");

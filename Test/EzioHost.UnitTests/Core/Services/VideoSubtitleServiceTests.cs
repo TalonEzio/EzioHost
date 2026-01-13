@@ -1,4 +1,3 @@
-using System.IO;
 using System.Text;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
@@ -14,11 +13,11 @@ namespace EzioHost.UnitTests.Core.Services;
 
 public class VideoSubtitleServiceTests
 {
-    private readonly Mock<IVideoSubtitleRepository> _videoSubtitleRepositoryMock;
-    private readonly Mock<IVideoRepository> _videoRepositoryMock;
     private readonly Mock<IDirectoryProvider> _directoryProviderMock;
-    private readonly Mock<IStorageService> _storageServiceMock;
     private readonly VideoSubtitleService _service;
+    private readonly Mock<IStorageService> _storageServiceMock;
+    private readonly Mock<IVideoRepository> _videoRepositoryMock;
+    private readonly Mock<IVideoSubtitleRepository> _videoSubtitleRepositoryMock;
 
     public VideoSubtitleServiceTests()
     {
@@ -26,10 +25,10 @@ public class VideoSubtitleServiceTests
         _videoRepositoryMock = new Mock<IVideoRepository>();
         _directoryProviderMock = TestMockFactory.CreateDirectoryProviderMock();
         _storageServiceMock = TestMockFactory.CreateStorageServiceMock();
-        
+
         _directoryProviderMock.Setup(x => x.GetWebRootPath()).Returns("wwwroot");
         _directoryProviderMock.Setup(x => x.GetBaseVideoFolder()).Returns("videos");
-        
+
         _service = new VideoSubtitleService(
             _videoSubtitleRepositoryMock.Object,
             _videoRepositoryMock.Object,
@@ -66,7 +65,7 @@ public class VideoSubtitleServiceTests
     {
         // Arrange
         var subtitleId = Guid.NewGuid();
-        var expectedSubtitle = TestDataBuilder.CreateVideoSubtitle(id: subtitleId);
+        var expectedSubtitle = TestDataBuilder.CreateVideoSubtitle(subtitleId);
 
         _videoSubtitleRepositoryMock
             .Setup(x => x.GetSubtitleById(subtitleId))
@@ -104,9 +103,9 @@ public class VideoSubtitleServiceTests
     {
         // Arrange
         var videoId = Guid.NewGuid();
-        var video = TestDataBuilder.CreateVideo(id: videoId);
+        var video = TestDataBuilder.CreateVideo(videoId);
         var invalidFileStream = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
-        
+
         _videoRepositoryMock
             .Setup(x => x.GetVideoById(videoId))
             .ReturnsAsync(video);
@@ -125,10 +124,10 @@ public class VideoSubtitleServiceTests
     {
         // Arrange
         var videoId = Guid.NewGuid();
-        var video = TestDataBuilder.CreateVideo(id: videoId);
+        var video = TestDataBuilder.CreateVideo(videoId);
         var fileStream = new MemoryStream(Encoding.UTF8.GetBytes("WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nTest"));
         var largeFileSize = 6 * 1024 * 1024; // 6MB > 5MB limit
-        
+
         _videoRepositoryMock
             .Setup(x => x.GetVideoById(videoId))
             .ReturnsAsync(video);
@@ -147,9 +146,9 @@ public class VideoSubtitleServiceTests
     {
         // Arrange
         var videoId = Guid.NewGuid();
-        var video = TestDataBuilder.CreateVideo(id: videoId);
+        var video = TestDataBuilder.CreateVideo(videoId);
         var fileStream = new MemoryStream(Encoding.UTF8.GetBytes("WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nTest"));
-        
+
         _videoRepositoryMock
             .Setup(x => x.GetVideoById(videoId))
             .ReturnsAsync(video);
@@ -169,7 +168,7 @@ public class VideoSubtitleServiceTests
         // Arrange
         var videoId = Guid.NewGuid();
         var fileStream = new MemoryStream(Encoding.UTF8.GetBytes("WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nTest"));
-        
+
         _videoRepositoryMock
             .Setup(x => x.GetVideoById(videoId))
             .ReturnsAsync((Video?)null);
@@ -206,29 +205,29 @@ public class VideoSubtitleServiceTests
     {
         // Arrange
         var subtitleId = Guid.NewGuid();
-        
+
         // Create a temporary file for testing FIRST
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
-        
+
         // Create the file with a simple path that will match after normalization
         var expectedLocalPath = "test.vtt"; // Simple path that won't be changed by normalization
         var tempPath = Path.Combine(tempDir, expectedLocalPath);
         await File.WriteAllTextAsync(tempPath, "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nTest");
-        
+
         // Setup mock BEFORE creating service
         var directoryProviderMock = new Mock<IDirectoryProvider>();
         directoryProviderMock.Setup(x => x.GetWebRootPath()).Returns(tempDir);
         directoryProviderMock.Setup(x => x.GetBaseVideoFolder()).Returns(tempDir);
-        
+
         // Create a new service with the mocked directory provider
         var service = new VideoSubtitleService(
             _videoSubtitleRepositoryMock.Object,
             _videoRepositoryMock.Object,
             directoryProviderMock.Object,
             _storageServiceMock.Object);
-        
-        var subtitle = TestDataBuilder.CreateVideoSubtitle(id: subtitleId);
+
+        var subtitle = TestDataBuilder.CreateVideoSubtitle(subtitleId);
         subtitle.LocalPath = expectedLocalPath; // Set to match file path
         _videoSubtitleRepositoryMock
             .Setup(x => x.GetSubtitleById(subtitleId))
@@ -258,7 +257,7 @@ public class VideoSubtitleServiceTests
     {
         // Arrange
         var subtitleId = Guid.NewGuid();
-        var subtitle = TestDataBuilder.CreateVideoSubtitle(id: subtitleId);
+        var subtitle = TestDataBuilder.CreateVideoSubtitle(subtitleId);
         subtitle.LocalPath = "subtitles/nonexistent.vtt";
         _videoSubtitleRepositoryMock
             .Setup(x => x.GetSubtitleById(subtitleId))

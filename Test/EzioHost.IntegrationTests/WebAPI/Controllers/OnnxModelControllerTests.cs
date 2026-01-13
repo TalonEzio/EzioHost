@@ -1,18 +1,17 @@
+using System.Net;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
+using EzioHost.Shared.Enums;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
 using Xunit;
 
 namespace EzioHost.IntegrationTests.WebAPI.Controllers;
 
 public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly TestWebApplicationFactory _factory;
 
     public OnnxModelControllerTests(TestWebApplicationFactory factory)
     {
@@ -26,7 +25,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var model = new OnnxModel
         {
@@ -36,7 +35,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
             Scale = 2,
             MustInputWidth = 256,
             MustInputHeight = 256,
-            ElementType = EzioHost.Shared.Enums.TensorElementType.Float,
+            ElementType = TensorElementType.Float,
             CreatedBy = testUserId,
             CreatedAt = DateTime.UtcNow
         };
@@ -56,7 +55,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var modelWithDemo = new OnnxModel
         {
             Id = Guid.NewGuid(),
@@ -65,13 +64,13 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
             Scale = 2,
             MustInputWidth = 256,
             MustInputHeight = 256,
-            ElementType = EzioHost.Shared.Enums.TensorElementType.Float,
+            ElementType = TensorElementType.Float,
             DemoInput = "demo/input.jpg",
             DemoOutput = "demo/output.jpg",
             CreatedBy = Guid.NewGuid(),
             CreatedAt = DateTime.UtcNow
         };
-        
+
         var modelWithoutDemo = new OnnxModel
         {
             Id = Guid.NewGuid(),
@@ -80,13 +79,13 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
             Scale = 2,
             MustInputWidth = 256,
             MustInputHeight = 256,
-            ElementType = EzioHost.Shared.Enums.TensorElementType.Float,
+            ElementType = TensorElementType.Float,
             DemoInput = string.Empty,
             DemoOutput = string.Empty,
             CreatedBy = Guid.NewGuid(),
             CreatedAt = DateTime.UtcNow
         };
-        
+
         dbContext.OnnxModels.AddRange(modelWithDemo, modelWithoutDemo);
         await dbContext.SaveChangesAsync();
 
@@ -103,7 +102,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var model = new OnnxModel
         {
@@ -113,7 +112,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
             Scale = 2,
             MustInputWidth = 256,
             MustInputHeight = 256,
-            ElementType = EzioHost.Shared.Enums.TensorElementType.Float,
+            ElementType = TensorElementType.Float,
             DemoInput = "demo/input.jpg",
             DemoOutput = "demo/output.jpg",
             CreatedBy = testUserId,
@@ -146,7 +145,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<EzioHostDbContext>();
-        
+
         var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var model = new OnnxModel
         {
@@ -156,7 +155,7 @@ public class OnnxModelControllerTests : IClassFixture<TestWebApplicationFactory>
             Scale = 2,
             MustInputWidth = 256,
             MustInputHeight = 256,
-            ElementType = EzioHost.Shared.Enums.TensorElementType.Float,
+            ElementType = TensorElementType.Float,
             CreatedBy = testUserId,
             CreatedAt = DateTime.UtcNow,
             DeletedAt = null

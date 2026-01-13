@@ -1,7 +1,23 @@
 ﻿@page "/video-embed/{VideoId:guid}"
 @using Microsoft.AspNetCore.Components.Sections
 @layout NullLayout
-<div id="player" width="100vw" height="100vh" data-video="@Video?.PlayerJsMetadata" data-video-subtitles="@Video?.SubtitleMetadata"></div>
+<div style="height: 100vh; position: relative; width: 100vw;">
+    @if (Video != null)
+    {
+        var statusMessage = GetVideoStatusMessage(Video);
+
+        if (statusMessage != null)
+        {
+            <div class="absolute inset-0 bg-black bg-opacity-90 flex items-center justify-center z-10">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                    <p class="text-white text-xl font-semibold">@statusMessage</p>
+                </div>
+            </div>
+        }
+    }
+    <div id="player" width="100vw" height="100vh" data-video="@Video?.PlayerJsMetadata" data-video-subtitles="@Video?.SubtitleMetadata"></div>
+</div>
 
 <SectionContent SectionName="@SectionNames.FooterSection">
     <script src="/Components/Pages/VideoEmbedPage.Razor.js">

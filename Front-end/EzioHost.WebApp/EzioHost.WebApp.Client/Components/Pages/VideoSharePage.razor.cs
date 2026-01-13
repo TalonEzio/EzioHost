@@ -1,4 +1,4 @@
-using System.Text.Json;
+using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.WebApp.Client.Services;
 using Microsoft.AspNetCore.Components;
@@ -24,5 +24,19 @@ public partial class VideoSharePage
         {
             NavigationManager.NavigateTo("/");
         }
+    }
+
+    private bool IsVideoUpscaling(VideoDto video)
+    {
+        return video.VideoUpscales?.Any(u => u.Status == VideoEnum.VideoUpscaleStatus.Queue) ?? false;
+    }
+
+    private string? GetVideoStatusMessage(VideoDto video)
+    {
+        if (IsVideoUpscaling(video))
+            return "Đang upscale";
+        if (!video.CanPlay)
+            return "Đang xử lý";
+        return null;
     }
 }

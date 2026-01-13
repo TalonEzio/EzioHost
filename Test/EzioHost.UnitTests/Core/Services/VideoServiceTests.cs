@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Repositories;
@@ -5,33 +6,31 @@ using EzioHost.Core.Services.Implement;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Core.UnitOfWorks;
 using EzioHost.Domain.Entities;
-using EzioHost.Domain.Settings;
 using EzioHost.Shared.Enums;
 using EzioHost.Shared.Models;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace EzioHost.UnitTests.Core.Services;
 
 public class VideoServiceTests
 {
-    private readonly Mock<IVideoUnitOfWork> _videoUnitOfWorkMock;
     private readonly Mock<IDirectoryProvider> _directoryProviderMock;
-    private readonly Mock<IProtectService> _protectServiceMock;
-    private readonly Mock<ISettingProvider> _settingProviderMock;
-    private readonly Mock<IMapper> _mapperMock;
-    private readonly Mock<IM3U8PlaylistService> _m3U8PlaylistServiceMock;
-    private readonly Mock<IVideoResolutionService> _videoResolutionServiceMock;
-    private readonly Mock<IStorageService> _storageServiceMock;
     private readonly Mock<IEncodingQualitySettingService> _encodingQualitySettingServiceMock;
     private readonly Mock<ILogger<VideoService>> _loggerMock;
-    private readonly Mock<IVideoRepository> _videoRepositoryMock;
-    private readonly Mock<IVideoStreamRepository> _videoStreamRepositoryMock;
+    private readonly Mock<IM3U8PlaylistService> _m3U8PlaylistServiceMock;
+    private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<IProtectService> _protectServiceMock;
     private readonly VideoService _service;
+    private readonly Mock<ISettingProvider> _settingProviderMock;
+    private readonly Mock<IStorageService> _storageServiceMock;
+    private readonly Mock<IVideoRepository> _videoRepositoryMock;
+    private readonly Mock<IVideoResolutionService> _videoResolutionServiceMock;
+    private readonly Mock<IVideoStreamRepository> _videoStreamRepositoryMock;
+    private readonly Mock<IVideoUnitOfWork> _videoUnitOfWorkMock;
 
     public VideoServiceTests()
     {
@@ -45,13 +44,13 @@ public class VideoServiceTests
         _storageServiceMock = TestMockFactory.CreateStorageServiceMock();
         _encodingQualitySettingServiceMock = TestMockFactory.CreateEncodingQualitySettingServiceMock();
         _loggerMock = new Mock<ILogger<VideoService>>();
-        
+
         _videoRepositoryMock = TestMockFactory.CreateVideoRepositoryMock();
         _videoStreamRepositoryMock = TestMockFactory.CreateVideoStreamRepositoryMock();
-        
+
         _videoUnitOfWorkMock.Setup(x => x.VideoRepository).Returns(_videoRepositoryMock.Object);
         _videoUnitOfWorkMock.Setup(x => x.VideoStreamRepository).Returns(_videoStreamRepositoryMock.Object);
-        
+
         _service = new VideoService(
             _videoUnitOfWorkMock.Object,
             _directoryProviderMock.Object,
@@ -88,7 +87,7 @@ public class VideoServiceTests
     {
         // Arrange
         var videoId = Guid.NewGuid();
-        var expectedVideo = TestDataBuilder.CreateVideo(id: videoId);
+        var expectedVideo = TestDataBuilder.CreateVideo(videoId);
         _videoRepositoryMock
             .Setup(x => x.GetVideoById(videoId))
             .ReturnsAsync(expectedVideo);
@@ -124,7 +123,7 @@ public class VideoServiceTests
     {
         // Arrange
         var videoId = Guid.NewGuid();
-        var expectedVideo = TestDataBuilder.CreateVideo(id: videoId);
+        var expectedVideo = TestDataBuilder.CreateVideo(videoId);
         _videoRepositoryMock
             .Setup(x => x.GetVideoWithReadyUpscale(videoId))
             .ReturnsAsync(expectedVideo);
@@ -161,7 +160,7 @@ public class VideoServiceTests
         // Arrange
         var video = TestDataBuilder.CreateVideo();
         var videoStream = TestDataBuilder.CreateVideoStream(videoId: video.Id);
-        bool eventRaised = false;
+        var eventRaised = false;
         _service.OnVideoStreamAdded += (sender, args) => eventRaised = true;
 
         _mapperMock.Setup(x => x.Map<VideoStreamDto>(It.IsAny<VideoStream>()))
@@ -183,12 +182,12 @@ public class VideoServiceTests
         // Arrange
         var video = TestDataBuilder.CreateVideo();
         var existingStream = TestDataBuilder.CreateVideoStream(
-            videoId: video.Id, 
+            videoId: video.Id,
             resolution: VideoEnum.VideoResolution._720p);
         video.VideoStreams = new List<VideoStream> { existingStream };
-        
+
         var duplicateStream = TestDataBuilder.CreateVideoStream(
-            videoId: video.Id, 
+            videoId: video.Id,
             resolution: VideoEnum.VideoResolution._720p);
 
         // Act
@@ -239,7 +238,8 @@ public class VideoServiceTests
             .ReturnsAsync(video);
         _videoRepositoryMock.Setup(x => x.UpdateVideo(It.IsAny<Video>()))
             .ReturnsAsync(video);
-        _storageServiceMock.Setup(x => x.UploadLargeFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+        _storageServiceMock
+            .Setup(x => x.UploadLargeFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.FromResult<string?>(null));
 
         // Act
@@ -248,11 +248,12 @@ public class VideoServiceTests
         // Assert
         result.Should().Be(VideoEnum.VideoBackupStatus.BackedUp);
         _storageServiceMock.Verify(x => x.UploadLargeFileAsync(
-            It.IsAny<string>(), 
-            It.Is<string>(k => k.Contains(video.Id.ToString())), 
-            "application/octet-stream"), 
+                It.IsAny<string>(),
+                It.Is<string>(k => k.Contains(video.Id.ToString())),
+                "application/octet-stream"),
             Times.Once);
-        _videoRepositoryMock.Verify(x => x.UpdateVideo(It.Is<Video>(v => v.BackupStatus == VideoEnum.VideoBackupStatus.BackedUp)), Times.Once);
+        _videoRepositoryMock.Verify(
+            x => x.UpdateVideo(It.Is<Video>(v => v.BackupStatus == VideoEnum.VideoBackupStatus.BackedUp)), Times.Once);
     }
 
     [Fact]
@@ -267,7 +268,7 @@ public class VideoServiceTests
         // Note: GenerateThumbnail and UpdateResolution use FFMpeg/FFProbe which are static methods
         // These are difficult to mock. In a real scenario, you might want to refactor to inject these dependencies.
         // For now, we'll test the logic path but expect it may throw if FFMpeg is not available.
-        
+
         // Act & Assert
         // This test may fail if FFMpeg is not available, but it tests the code path
         try
@@ -305,36 +306,36 @@ public class VideoServiceTests
         var video = TestDataBuilder.CreateVideo();
         var videoStream = TestDataBuilder.CreateVideoStream(videoId: video.Id);
         videoStream.Video = video;
-        
+
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
-        
+
         // Create the folder structure - the service gets directory from M3U8Location path
         // M3U8Location uses forward slashes, but Path.Combine will handle it correctly
         var folderPath = Path.Combine(tempDir, "videos", "test");
         Directory.CreateDirectory(folderPath);
-        
+
         // Create test TS files in the correct folder
         var tsFile1 = Path.Combine(folderPath, "segment_000001.ts");
         var tsFile2 = Path.Combine(folderPath, "segment_000002.ts");
         await File.WriteAllTextAsync(tsFile1, "test content 1");
         await File.WriteAllTextAsync(tsFile2, "test content 2");
-        
+
         // Set M3U8Location to match the folder structure (relative to web root)
         // Use forward slashes as stored in database, Path.Combine will normalize
         videoStream.M3U8Location = Path.Combine("videos", "test", "720p.m3u8").Replace('\\', '/');
-        
+
         // Verify folder exists before test
         Directory.Exists(folderPath).Should().BeTrue();
         File.Exists(tsFile1).Should().BeTrue();
         File.Exists(tsFile2).Should().BeTrue();
-        
+
         // Create a new directory provider mock with the temp directory
         var tempDirectoryProviderMock = new Mock<IDirectoryProvider>();
         tempDirectoryProviderMock.Setup(x => x.GetWebRootPath()).Returns(tempDir);
         tempDirectoryProviderMock.Setup(x => x.GetThumbnailFolder()).Returns(Path.Combine(tempDir, "thumbnails"));
         tempDirectoryProviderMock.Setup(x => x.GetBaseVideoFolder()).Returns(Path.Combine(tempDir, "videos"));
-        
+
         // Create a new service instance with the temp directory provider
         var tempService = new VideoService(
             _videoUnitOfWorkMock.Object,
@@ -347,7 +348,7 @@ public class VideoServiceTests
             _storageServiceMock.Object,
             _encodingQualitySettingServiceMock.Object,
             _loggerMock.Object);
-        
+
         _storageServiceMock.Setup(x => x.UploadFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.FromResult<string?>(null));
 
@@ -357,11 +358,11 @@ public class VideoServiceTests
         // Assert
         // Verify that UploadFileAsync was called with TS files
         _storageServiceMock.Verify(x => x.UploadFileAsync(
-            It.Is<string>(f => f.EndsWith(".ts")), 
-            It.Is<string>(k => k.Contains(".ts")), 
-            "video/MP2T"), 
+                It.Is<string>(f => f.EndsWith(".ts")),
+                It.Is<string>(k => k.Contains(".ts")),
+                "video/MP2T"),
             Times.Exactly(2));
-        
+
         // Cleanup
         try
         {
@@ -379,10 +380,10 @@ public class VideoServiceTests
         // Arrange
         var video = TestDataBuilder.CreateVideo();
         video.ShareType = VideoEnum.VideoShareType.Private; // Will be overridden
-        
+
         _videoRepositoryMock.Setup(x => x.AddNewVideo(It.IsAny<Video>()))
             .ReturnsAsync(video);
-        
+
         // Mock UpdateResolution and GenerateThumbnail to avoid FFMpeg calls
         // Note: These will be called but may throw if FFMpeg is not available
         // In a real scenario, you'd want to mock these dependencies
@@ -391,7 +392,7 @@ public class VideoServiceTests
         try
         {
             var result = await _service.AddNewVideo(video);
-            
+
             // Assert
             result.Should().NotBeNull();
             result.ShareType.Should().Be(VideoEnum.VideoShareType.Public);
@@ -437,7 +438,8 @@ public class VideoServiceTests
             .ReturnsAsync(videos);
 
         // Act
-        var result = await _service.GetVideos(1, 10, null, new Expression<Func<Video, object>>[] { v => v.VideoStreams });
+        var result =
+            await _service.GetVideos(1, 10, null, new Expression<Func<Video, object>>[] { v => v.VideoStreams });
 
         // Assert
         result.Should().NotBeNull();
@@ -451,7 +453,7 @@ public class VideoServiceTests
         var video = TestDataBuilder.CreateVideo();
         video.VideoStreams = null; // Test null coalescing
         var videoStream = TestDataBuilder.CreateVideoStream(videoId: video.Id);
-        
+
         _mapperMock.Setup(x => x.Map<VideoStreamDto>(It.IsAny<VideoStream>()))
             .Returns(new VideoStreamDto());
         _storageServiceMock.Setup(x => x.UploadFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))

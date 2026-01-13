@@ -57,20 +57,20 @@
                         <div class="resolution-card @(isEnabled ? "enabled" : "disabled")">
                             <div class="resolution-header">
                                 <label class="resolution-checkbox">
-                                    <input type="checkbox" 
-                                           checked="@isEnabled" 
-                                           @onchange="@((ChangeEventArgs e) => ToggleResolution(setting.Resolution, (bool)(e.Value ?? false)))" />
+                                    <input type="checkbox"
+                                           checked="@isEnabled"
+                                           @onchange="@(e => ToggleResolution(setting.Resolution, (bool)(e.Value ?? false)))"/>
                                     <span class="checkmark"></span>
                                     <span class="resolution-name">@GetResolutionName(setting.Resolution)</span>
                                 </label>
                             </div>
-                            
+
                             <div class="resolution-details">
                                 <div class="resolution-dimensions">
                                     <i class="bi bi-aspect-ratio"></i>
                                     <span>@GetResolutionDimensions(setting.Resolution)</span>
                                 </div>
-                                
+
                                 @if (isEnabled)
                                 {
                                     <div class="bitrate-input-group">
@@ -78,13 +78,13 @@
                                             <i class="bi bi-speedometer2"></i>
                                             Bitrate (kbps):
                                         </label>
-                                        <input type="number" 
-                                               class="bitrate-input" 
-                                               value="@bitrate" 
-                                               min="100" 
-                                               max="50000" 
+                                        <input type="number"
+                                               class="bitrate-input"
+                                               value="@bitrate"
+                                               min="100"
+                                               max="50000"
                                                step="100"
-                                               @onchange="@((ChangeEventArgs e) => UpdateBitrate(setting.Resolution, int.TryParse(e.Value?.ToString(), out var val) ? val : bitrate))" />
+                                               @onchange="@(e => UpdateBitrate(setting.Resolution, int.TryParse(e.Value?.ToString(), out var val) ? val : bitrate))"/>
                                     </div>
                                 }
                             </div>

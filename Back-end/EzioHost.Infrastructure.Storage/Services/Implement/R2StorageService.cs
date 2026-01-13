@@ -9,8 +9,8 @@ namespace EzioHost.Infrastructure.Storage.CloudFlare.Services.Implement;
 
 public class R2StorageService(IAmazonS3 s3Client, ISettingProvider settingsProvider) : IStorageService
 {
-
     private StorageSettings StorageSettings => settingsProvider.GetStorageSettings();
+
     public async Task<string> UploadFileAsync(string localFilePath, string key, string contentType)
     {
         var putRequest = new PutObjectRequest

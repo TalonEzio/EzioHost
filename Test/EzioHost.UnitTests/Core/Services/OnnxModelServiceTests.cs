@@ -47,7 +47,7 @@ public class OnnxModelServiceTests
     {
         // Arrange
         var modelId = Guid.NewGuid();
-        var expectedModel = TestDataBuilder.CreateOnnxModel(id: modelId);
+        var expectedModel = TestDataBuilder.CreateOnnxModel(modelId);
 
         _onnxModelRepositoryMock
             .Setup(x => x.GetOnnxModelById(modelId))

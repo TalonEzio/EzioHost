@@ -1,10 +1,10 @@
+using System.Linq.Expressions;
 using EzioHost.Domain.Entities;
 using EzioHost.Infrastructure.SqlServer.DataContexts;
 using EzioHost.Infrastructure.SqlServer.Repositories;
 using EzioHost.UnitTests.TestHelpers;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace EzioHost.UnitTests.Infrastructure.Repositories;
@@ -17,11 +17,17 @@ public class UserSqlServerRepositoryTests : IDisposable
     public UserSqlServerRepositoryTests()
     {
         var options = new DbContextOptionsBuilder<EzioHostDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
         _dbContext = new EzioHostDbContext(options);
         _repository = new UserSqlServerRepository(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Dispose();
     }
 
     [Fact]
@@ -85,11 +91,5 @@ public class UserSqlServerRepositoryTests : IDisposable
 
         // Assert
         result.FirstName.Should().Be("Updated");
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
     }
 }

@@ -17,10 +17,8 @@ public static class DatabaseStartup
             // Skip database configuration in Testing environment
             // TestWebApplicationFactory will configure in-memory database instead
             if (builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
-            {
                 return builder;
-            }
-            
+
             builder.Services.AddDbContext<EzioHostDbContext>(cfg =>
             {
                 cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));

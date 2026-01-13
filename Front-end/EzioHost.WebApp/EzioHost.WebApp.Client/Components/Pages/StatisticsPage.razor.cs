@@ -9,14 +9,38 @@ namespace EzioHost.WebApp.Client.Components.Pages;
 [Authorize]
 public partial class StatisticsPage : IAsyncDisposable
 {
+    private IJSObjectReference? _jsModule;
     [Inject] public IVideoApi VideoApi { get; set; } = null!;
     [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
 
     private VideoDetailedStatisticsDto? Statistics { get; set; }
     private VideoStatisticsDto? QuickStats { get; set; }
     private bool IsLoading { get; set; } = true;
-    private bool HasError { get; set; } = false;
-    private IJSObjectReference? _jsModule;
+    private bool HasError { get; set; }
+
+    private int TotalVideos => QuickStats?.TotalVideos ?? 0;
+    private int ReadyVideos => QuickStats?.ReadyVideos ?? 0;
+    private string StorageUsedDisplay => QuickStats?.TotalStorageUsedDisplay ?? "-";
+
+    public async ValueTask DisposeAsync()
+    {
+        // Destroy all chart instances
+        if (_jsModule != null)
+            try
+            {
+                // Destroy charts through JS module
+                await _jsModule.InvokeVoidAsync("destroyChart", "videoTimelineChart");
+                await _jsModule.InvokeVoidAsync("destroyChart", "storageTimelineChart");
+                await _jsModule.InvokeVoidAsync("destroyChart", "resolutionPieChart");
+                await _jsModule.InvokeVoidAsync("destroyChart", "statusPieChart");
+
+                await _jsModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,7 +73,6 @@ public partial class StatisticsPage : IAsyncDisposable
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
-        {
             try
             {
                 _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>(
@@ -59,12 +82,8 @@ public partial class StatisticsPage : IAsyncDisposable
             {
                 Console.WriteLine($"Could not load JS module: {ex.Message}");
             }
-        }
 
-        if (!IsLoading && !HasError && Statistics != null && _jsModule != null)
-        {
-            await RenderCharts();
-        }
+        if (!IsLoading && !HasError && Statistics != null && _jsModule != null) await RenderCharts();
     }
 
     private async Task RenderCharts()
@@ -78,7 +97,7 @@ public partial class StatisticsPage : IAsyncDisposable
             {
                 var videoLabels = Statistics.VideoTimeline.Select(t => t.Date).ToArray();
                 var videoData = Statistics.VideoTimeline.Select(t => t.Count).ToArray();
-                
+
                 await _jsModule.InvokeVoidAsync(
                     "initVideoTimelineChart", "videoTimelineChart", videoLabels, videoData);
             }
@@ -88,7 +107,7 @@ public partial class StatisticsPage : IAsyncDisposable
             {
                 var storageLabels = Statistics.StorageTimeline.Select(t => t.Date).ToArray();
                 var storageData = Statistics.StorageTimeline.Select(t => t.StorageBytes).ToArray();
-                
+
                 await _jsModule.InvokeVoidAsync(
                     "initStorageTimelineChart", "storageTimelineChart", storageLabels, storageData);
             }
@@ -98,7 +117,7 @@ public partial class StatisticsPage : IAsyncDisposable
             {
                 var resolutionLabels = Statistics.ResolutionDistribution.Select(d => d.Label).ToArray();
                 var resolutionData = Statistics.ResolutionDistribution.Select(d => d.Count).ToArray();
-                
+
                 await _jsModule.InvokeVoidAsync(
                     "initResolutionPieChart", "resolutionPieChart", resolutionLabels, resolutionData);
             }
@@ -108,7 +127,7 @@ public partial class StatisticsPage : IAsyncDisposable
             {
                 var statusLabels = Statistics.StatusDistribution.Select(d => d.Label).ToArray();
                 var statusData = Statistics.StatusDistribution.Select(d => d.Count).ToArray();
-                
+
                 await _jsModule.InvokeVoidAsync(
                     "initStatusPieChart", "statusPieChart", statusLabels, statusData);
             }
@@ -116,32 +135,6 @@ public partial class StatisticsPage : IAsyncDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Error rendering charts: {ex.Message}");
-        }
-    }
-
-    private int TotalVideos => QuickStats?.TotalVideos ?? 0;
-    private int ReadyVideos => QuickStats?.ReadyVideos ?? 0;
-    private string StorageUsedDisplay => QuickStats?.TotalStorageUsedDisplay ?? "-";
-
-    public async ValueTask DisposeAsync()
-    {
-        // Destroy all chart instances
-        if (_jsModule != null)
-        {
-            try
-            {
-                // Destroy charts through JS module
-                await _jsModule.InvokeVoidAsync("destroyChart", "videoTimelineChart");
-                await _jsModule.InvokeVoidAsync("destroyChart", "storageTimelineChart");
-                await _jsModule.InvokeVoidAsync("destroyChart", "resolutionPieChart");
-                await _jsModule.InvokeVoidAsync("destroyChart", "statusPieChart");
-
-                await _jsModule.DisposeAsync();
-            }
-            catch
-            {
-                // Ignore disposal errors
-            }
         }
     }
 }

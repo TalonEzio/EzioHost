@@ -81,7 +81,11 @@
                             <div class="relative">
                                 <img src="@GetThumbnail(video)" class="w-full h-48 object-cover" alt="@video.Title">
                                 <div class="absolute top-2 right-2">
-                                    @if (video.CanPlay)
+                                    @if (IsVideoUpscaling(video))
+                                    {
+                                        <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">Đang upscale</span>
+                                    }
+                                    else if (video.CanPlay)
                                     {
                                         <span class="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded">Sẵn sàng</span>
                                     }
@@ -118,7 +122,7 @@
                                             <i class="bi bi-share-fill"></i>
                                         </a>
                                     }
-                                    @if (video.CanUpscale)
+                                    @if (video.CanUpscale && !IsVideoUpscaling(video))
                                     {
                                         <button class="flex-1 px-3 py-2 border border-yellow-500 text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors text-sm" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
                                             <i class="bi bi-magic"></i>
@@ -157,7 +161,11 @@
                                         <span>
                                             <i class="bi bi-share mr-1"></i>@video.ShareType.GetDescription()
                                         </span>
-                                        @if (video.CanPlay)
+                                        @if (IsVideoUpscaling(video))
+                                        {
+                                            <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">Đang upscale</span>
+                                        }
+                                        else if (video.CanPlay)
                                         {
                                             <span class="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded">Sẵn sàng</span>
                                         }
@@ -183,7 +191,7 @@
                                             <i class="bi bi-share-fill"></i>
                                         </a>
                                     }
-                                    @if (video.CanUpscale)
+                                    @if (video.CanUpscale && !IsVideoUpscaling(video))
                                     {
                                         <button class="px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm" @onclick="@(async () => await JsRuntime.NavigateToAsync($"/video-upscale/{video.Id}"))">
                                             <i class="bi bi-magic"></i>
@@ -267,7 +275,7 @@
                 </div>
                 <div class="edit-video-section">
                     <div class="edit-video-divider"></div>
-                    <VideoSubtitleManager VideoId="@EditingVideo.Id" OnSubtitleChanged="HandleSubtitleChanged" />
+                    <VideoSubtitleManager VideoId="@EditingVideo.Id" OnSubtitleChanged="HandleSubtitleChanged"/>
                 </div>
             </div>
             <div class="edit-video-footer">

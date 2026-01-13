@@ -23,14 +23,11 @@ public class EncodingQualitySettingService(
     public async Task<List<EncodingQualitySettingDto>> GetUserSettings(Guid userId)
     {
         var hasSettings = await repository.UserHasSettings(userId);
-        
-        if (!hasSettings)
-        {
-            await CreateDefaultSettings(userId);
-        }
+
+        if (!hasSettings) await CreateDefaultSettings(userId);
 
         var settings = await repository.GetSettingsByUserId(userId);
-        
+
         return settings
             .OrderBy(s => (int)s.Resolution)
             .Select(s => new EncodingQualitySettingDto
@@ -43,7 +40,8 @@ public class EncodingQualitySettingService(
             .ToList();
     }
 
-    public async Task<List<EncodingQualitySettingDto>> UpdateUserSettings(Guid userId, EncodingQualitySettingUpdateRequest request)
+    public async Task<List<EncodingQualitySettingDto>> UpdateUserSettings(Guid userId,
+        EncodingQualitySettingUpdateRequest request)
     {
         var existingSettings = (await repository.GetSettingsByUserId(userId)).ToList();
         var existingSettingsDict = existingSettings.ToDictionary(s => s.Resolution);
@@ -51,7 +49,6 @@ public class EncodingQualitySettingService(
         var updatedSettings = new List<EncodingQualitySetting>();
 
         foreach (var item in request.Settings)
-        {
             if (item.Id.HasValue && existingSettingsDict.TryGetValue(item.Resolution, out var existing))
             {
                 // Update existing setting
@@ -76,7 +73,6 @@ public class EncodingQualitySettingService(
                 };
                 updatedSettings.Add(await repository.AddSetting(newSetting));
             }
-        }
 
         // Delete settings that are not in the request (optional - depends on requirements)
         // For now, we'll keep all settings and just update/add what's in the request
@@ -96,14 +92,11 @@ public class EncodingQualitySettingService(
     public async Task<List<EncodingQualitySettingDto>> GetActiveSettingsForEncoding(Guid userId)
     {
         var hasSettings = await repository.UserHasSettings(userId);
-        
-        if (!hasSettings)
-        {
-            await CreateDefaultSettings(userId);
-        }
+
+        if (!hasSettings) await CreateDefaultSettings(userId);
 
         var activeSettings = await repository.GetActiveSettingsByUserId(userId);
-        
+
         return activeSettings
             .OrderBy(s => (int)s.Resolution)
             .Select(s => new EncodingQualitySettingDto
@@ -126,7 +119,6 @@ public class EncodingQualitySettingService(
         };
 
         foreach (var resolution in defaultResolutions)
-        {
             if (DefaultBitrates.TryGetValue(resolution, out var bitrate))
             {
                 var setting = new EncodingQualitySetting
@@ -141,6 +133,5 @@ public class EncodingQualitySettingService(
                 };
                 await repository.AddSetting(setting);
             }
-        }
     }
 }
