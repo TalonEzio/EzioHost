@@ -182,6 +182,26 @@ public partial class VideoPage : IAsyncDisposable
                 }
             });
 
+            _hubConnection.On<VideoSubtitleDto>(nameof(IVideoHubAction.ReceiveSubtitleTranscribed), async subtitle =>
+            {
+                var video = Videos.FirstOrDefault(x => x.Id == subtitle.VideoId);
+                if (video != null)
+                {
+                    // Reload video to get updated subtitles
+                    var updatedVideo = await VideoApi.GetVideoById(subtitle.VideoId);
+                    var index = Videos.FindIndex(v => v.Id == subtitle.VideoId);
+                    if (index >= 0)
+                    {
+                        Videos[index] = updatedVideo;
+                        if (EditingVideo?.Id == subtitle.VideoId) EditingVideo = updatedVideo;
+                    }
+
+                    ApplyFilters();
+                    await InvokeAsync(StateHasChanged);
+                    await JsRuntime.ShowSuccessToast($"Subtitle {subtitle.Language} đã được tạo thành công cho video {video.Title}");
+                }
+            });
+
             try
             {
                 await _hubConnection.StartAsync();

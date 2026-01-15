@@ -11,9 +11,12 @@ public class EncodingQualitySettingService(
 {
     private static readonly Dictionary<VideoEnum.VideoResolution, int> DefaultBitrates = new()
     {
+        { VideoEnum.VideoResolution._144p, 400 },
+        { VideoEnum.VideoResolution._240p, 600 },
         { VideoEnum.VideoResolution._360p, 800 },
         { VideoEnum.VideoResolution._480p, 1400 },
         { VideoEnum.VideoResolution._720p, 2800 },
+        { VideoEnum.VideoResolution._960p, 4000 },
         { VideoEnum.VideoResolution._1080p, 5000 },
         { VideoEnum.VideoResolution._1440p, 8000 },
         { VideoEnum.VideoResolution._1920p, 8000 },

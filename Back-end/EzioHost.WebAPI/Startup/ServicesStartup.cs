@@ -52,6 +52,12 @@ public static class ServicesStartup
         builder.Services.AddScoped<IVideoSubtitleRepository, VideoSubtitleSqlServerRepository>();
         builder.Services.AddScoped<IVideoSubtitleService, VideoSubtitleService>();
 
+        builder.Services.AddScoped<ISubtitleTranscribeRepository, SubtitleTranscribeSqlServerRepository>();
+        builder.Services.AddScoped<ISubtitleTranscribeService, SubtitleTranscribeService>();
+
+        builder.Services.AddScoped<ISubtitleTranscribeSettingRepository, SubtitleTranscribeSettingSqlServerRepository>();
+        builder.Services.AddScoped<ISubtitleTranscribeSettingService, SubtitleTranscribeSettingService>();
+
         builder.Services.AddScoped<IAmazonS3>(serviceProvider =>
         {
             var appSettings = serviceProvider.GetService<IOptionsMonitor<AppSettings>>();

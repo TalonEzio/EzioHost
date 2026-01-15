@@ -275,7 +275,7 @@
                 </div>
                 <div class="edit-video-section">
                     <div class="edit-video-divider"></div>
-                    <VideoSubtitleManager VideoId="@EditingVideo.Id" OnSubtitleChanged="HandleSubtitleChanged"/>
+                    <VideoSubtitleManager VideoId="@EditingVideo.Id" CanPlay="@EditingVideo.CanPlay" OnSubtitleChanged="HandleSubtitleChanged"/>
                 </div>
             </div>
             <div class="edit-video-footer">

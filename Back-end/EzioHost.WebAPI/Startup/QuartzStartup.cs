@@ -47,6 +47,19 @@ public static class QuartzStartup
                     .RepeatForever()
                 )
             );
+
+            var subtitleTranscribeJobKey = new JobKey(nameof(SubtitleTranscribeJob));
+            quartz.AddJob<SubtitleTranscribeJob>(opts => opts.WithIdentity(subtitleTranscribeJobKey).StoreDurably());
+
+            quartz.AddTrigger(cfg => cfg
+                .WithIdentity(nameof(SubtitleTranscribeJob))
+                .ForJob(subtitleTranscribeJobKey)
+                .StartNow()
+                .WithSimpleSchedule(schedule => schedule
+                    .WithIntervalInSeconds(10)
+                    .RepeatForever()
+                )
+            );
         });
         builder.Services.AddQuartzHostedService(cfg =>
         {

@@ -10,6 +10,8 @@ public class VideoResolutionService(
     {
         return resolution switch
         {
+            "144p" => 400000,
+            "240p" => 600000,
             "360p" => 800000,
             "480p" => 1400000,
             "720p" => 2800000,
@@ -63,6 +65,8 @@ public class VideoResolutionService(
     {
         return resolution switch
         {
+            "144p" => "256x144",
+            "240p" => "426x240",
             "360p" => "640x360",
             "480p" => "854x480",
             "720p" => "1280x720",

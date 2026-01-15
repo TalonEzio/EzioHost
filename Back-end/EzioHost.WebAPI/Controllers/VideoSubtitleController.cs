@@ -14,6 +14,7 @@ namespace EzioHost.WebAPI.Controllers;
 public class VideoSubtitleController(
     IVideoSubtitleService videoSubtitleService,
     IVideoService videoService,
+    ISubtitleTranscribeSettingService subtitleTranscribeSettingService,
     IMapper mapper) : ControllerBase
 {
     [HttpPost("{videoId:guid}")]
@@ -146,6 +147,40 @@ public class VideoSubtitleController(
         catch (Exception ex)
         {
             return StatusCode(500, $"Lỗi khi xóa subtitle: {ex.Message}");
+        }
+    }
+
+    [HttpGet("settings")]
+    public async Task<IActionResult> GetTranscribeSettings()
+    {
+        try
+        {
+            var userId = HttpContext.User.UserId;
+            if (userId == Guid.Empty) return Unauthorized("User ID not found");
+
+            var settings = await subtitleTranscribeSettingService.GetUserSettingsAsync(userId);
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Lỗi khi lấy settings: {ex.Message}");
+        }
+    }
+
+    [HttpPut("settings")]
+    public async Task<IActionResult> UpdateTranscribeSettings([FromBody] SubtitleTranscribeSettingUpdateDto dto)
+    {
+        try
+        {
+            var userId = HttpContext.User.UserId;
+            if (userId == Guid.Empty) return Unauthorized("User ID not found");
+
+            var settings = await subtitleTranscribeSettingService.UpdateUserSettingsAsync(userId, dto);
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Lỗi khi cập nhật settings: {ex.Message}");
         }
     }
 }

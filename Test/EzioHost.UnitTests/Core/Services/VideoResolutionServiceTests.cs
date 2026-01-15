@@ -20,9 +20,12 @@ public class VideoResolutionServiceTests
     }
 
     [Theory]
+    [InlineData("144p", 400000)]
+    [InlineData("240p", 600000)]
     [InlineData("360p", 800000)]
     [InlineData("480p", 1400000)]
     [InlineData("720p", 2800000)]
+    [InlineData("960p", 4000000)]
     [InlineData("1080p", 5000000)]
     [InlineData("1440p", 8000000)]
     [InlineData("1920p", 8000000)]
@@ -39,9 +42,12 @@ public class VideoResolutionServiceTests
     }
 
     [Theory]
+    [InlineData("144p", "256x144")]
+    [InlineData("240p", "426x240")]
     [InlineData("360p", "640x360")]
     [InlineData("480p", "854x480")]
     [InlineData("720p", "1280x720")]
+    [InlineData("960p", "1280x960")]
     [InlineData("1080p", "1920x1080")]
     [InlineData("1440p", "2560x1440")]
     [InlineData("1920p", "2560x1920")]

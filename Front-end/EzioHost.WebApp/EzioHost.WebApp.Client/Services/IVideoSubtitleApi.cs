@@ -17,4 +17,10 @@ public interface IVideoSubtitleApi
 
     [Delete("/api/VideoSubtitle/{subtitleId}")]
     Task DeleteSubtitle(Guid subtitleId);
+
+    [Get("/api/VideoSubtitle/settings")]
+    Task<SubtitleTranscribeSettingDto> GetTranscribeSettings();
+
+    [Put("/api/VideoSubtitle/settings")]
+    Task<SubtitleTranscribeSettingDto> UpdateTranscribeSettings([Body] SubtitleTranscribeSettingUpdateDto dto);
 }

@@ -56,6 +56,10 @@ internal class Program
             .AddRefitClient<IVideoSubtitleApi>(refitSettings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseAddress));
 
+        builder.Services
+            .AddRefitClient<ISubtitleTranscribeApi>(refitSettings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseAddress));
+
         await builder.Build().RunAsync();
     }
 }

@@ -207,9 +207,12 @@ public partial class EncodingSettingsPage : IAsyncDisposable
     {
         return resolution switch
         {
+            VideoEnum.VideoResolution._144p => 400,
+            VideoEnum.VideoResolution._240p => 600,
             VideoEnum.VideoResolution._360p => 800,
             VideoEnum.VideoResolution._480p => 1400,
             VideoEnum.VideoResolution._720p => 2800,
+            VideoEnum.VideoResolution._960p => 4000,
             VideoEnum.VideoResolution._1080p => 5000,
             VideoEnum.VideoResolution._1440p => 8000,
             VideoEnum.VideoResolution._1920p => 8000,
@@ -227,9 +230,12 @@ public partial class EncodingSettingsPage : IAsyncDisposable
     {
         return resolution switch
         {
+            VideoEnum.VideoResolution._144p => "256 x 144",
+            VideoEnum.VideoResolution._240p => "426 x 240",
             VideoEnum.VideoResolution._360p => "640 x 360",
             VideoEnum.VideoResolution._480p => "854 x 480",
             VideoEnum.VideoResolution._720p => "1280 x 720",
+            VideoEnum.VideoResolution._960p => "1280 x 960",
             VideoEnum.VideoResolution._1080p => "1920 x 1080",
             VideoEnum.VideoResolution._1440p => "2560 x 1440",
             VideoEnum.VideoResolution._1920p => "2560 x 1920",

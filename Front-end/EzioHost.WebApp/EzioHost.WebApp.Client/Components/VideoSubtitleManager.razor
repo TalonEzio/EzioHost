@@ -1,4 +1,5 @@
 @using EzioHost.WebApp.Client.Services
+@using EzioHost.Shared.Helpers
 @using Refit
 <div class="space-y-4">
     <div class="flex justify-between items-center">
@@ -30,6 +31,18 @@
             <p class="text-sm text-gray-500 text-center py-2">Chưa có subtitle nào</p>
         }
     </div>
+
+    <!-- Audio Transcribing Button -->
+    @if (CanPlay && (Subtitles == null || !Subtitles.Any()))
+    {
+        <div class="border-t border-gray-200 pt-4">
+            <button type="button"
+                    class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                    @onclick="ShowTranscribeModal">
+                <i class="bi bi-mic mr-1"></i>Audio Transcribing
+            </button>
+        </div>
+    }
 
     <!-- Upload Form -->
     <div class="border-t border-gray-200 pt-4">
@@ -86,11 +99,87 @@
     }
 </div>
 
+<!-- Transcribe Language Selection Modal -->
+@if (ShowTranscribeDialog)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" @onclick="CloseTranscribeModal">
+        <div class="bg-white rounded-xl max-w-md w-full" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-center p-4 border-b border-gray-200">
+                <h5 class="text-lg font-semibold text-gray-900">Chọn ngôn ngữ</h5>
+                <button type="button" class="text-gray-400 hover:text-gray-600" @onclick="CloseTranscribeModal">
+                    <i class="bi bi-x-lg text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <!-- Search Input -->
+                <div class="mb-4">
+                    <div class="relative">
+                        <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text"
+                               @bind="LanguageSearchTerm"
+                               @bind:event="oninput"
+                               @onfocus="() => ShowLanguageDropdown = true"
+                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                               placeholder="Tìm kiếm ngôn ngữ..."/>
+                    </div>
+                </div>
+
+                <!-- Language Dropdown -->
+                <div class="relative">
+                    <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+                        @if (FilteredLanguages.Any())
+                        {
+                            @foreach (var lang in FilteredLanguages)
+                            {
+                                <button type="button"
+                                        class="w-full px-4 py-3 text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors @(SelectedLanguage == lang.Code ? "bg-primary-50 border-primary-200" : "")"
+                                        @onclick="() => SelectLanguage(lang.Code)"
+                                        @onkeydown="@(e => HandleKeyDown(e, lang))">
+                                    <div class="font-medium text-gray-900">@lang.Name</div>
+                                    <div class="text-sm text-gray-600">@lang.NativeName</div>
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <div class="px-4 py-3 text-center text-gray-500 text-sm">
+                                Không tìm thấy ngôn ngữ
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-200 flex justify-end gap-2">
+                <button type="button"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        @onclick="CloseTranscribeModal">
+                    Hủy
+                </button>
+                <button type="button"
+                        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                        @onclick="HandleTranscribe"
+                        disabled="@(IsTranscribing || string.IsNullOrEmpty(SelectedLanguage))">
+                    @if (IsTranscribing)
+                    {
+                        <span>Đang xử lý...</span>
+                    }
+                    else
+                    {
+                        <span>OK</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public Guid VideoId { get; set; }
+    [Parameter] public bool CanPlay { get; set; }
     [Parameter] public EventCallback OnSubtitleChanged { get; set; }
 
     [Inject] public IVideoSubtitleApi VideoSubtitleApi { get; set; } = null!;
+    [Inject] public ISubtitleTranscribeApi SubtitleTranscribeApi { get; set; } = null!;
     [Inject] public IJSRuntime JSRuntime { get; set; } = null!;
 
     private List<VideoSubtitleDto>? Subtitles { get; set; }
@@ -102,9 +191,49 @@
     private string? ErrorMessage { get; set; }
     private string? SuccessMessage { get; set; }
 
+    private bool ShowTranscribeDialog { get; set; }
+    private string SelectedLanguage { get; set; } = string.Empty;
+    private bool IsTranscribing { get; set; }
+    private string LanguageSearchTerm { get; set; } = string.Empty;
+    private bool ShowLanguageDropdown { get; set; } = true;
+
+    private List<LanguageHelper.LanguageInfo> AllLanguages { get; set; } = new();
+
+    private List<LanguageHelper.LanguageInfo> FilteredLanguages
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(LanguageSearchTerm))
+                return AllLanguages;
+
+            var searchLower = LanguageSearchTerm.ToLowerInvariant();
+            return AllLanguages.Where(lang =>
+                lang.Name.ToLowerInvariant().Contains(searchLower) ||
+                lang.NativeName.ToLowerInvariant().Contains(searchLower) ||
+                lang.Code.ToLowerInvariant().Contains(searchLower)
+            ).ToList();
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        AllLanguages = LanguageHelper.GetSupportedLanguages();
         await LoadSubtitles();
+    }
+
+    private void SelectLanguage(string code)
+    {
+        SelectedLanguage = code;
+        ShowLanguageDropdown = false;
+        LanguageSearchTerm = string.Empty;
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e, LanguageHelper.LanguageInfo lang)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            SelectLanguage(lang.Code);
+        }
     }
 
     private async Task LoadSubtitles()
@@ -199,6 +328,56 @@
         finally
         {
             IsDeleting = false;
+        }
+    }
+
+    private void ShowTranscribeModal()
+    {
+        ShowTranscribeDialog = true;
+        SelectedLanguage = "auto";
+        LanguageSearchTerm = string.Empty;
+        ShowLanguageDropdown = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private void CloseTranscribeModal()
+    {
+        ShowTranscribeDialog = false;
+        SelectedLanguage = string.Empty;
+        LanguageSearchTerm = string.Empty;
+        ShowLanguageDropdown = false;
+    }
+
+    private async Task HandleTranscribe()
+    {
+        if (string.IsNullOrEmpty(SelectedLanguage))
+        {
+            ErrorMessage = "Vui lòng chọn ngôn ngữ";
+            return;
+        }
+
+        IsTranscribing = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            await SubtitleTranscribeApi.CreateTranscribeRequest(VideoId, new ISubtitleTranscribeApi.CreateTranscribeRequestDto
+            {
+                Language = SelectedLanguage
+            });
+
+            SuccessMessage = "Đã gửi yêu cầu transcribe. Vui lòng chờ xử lý...";
+            CloseTranscribeModal();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Lỗi khi tạo yêu cầu transcribe: {ex.Message}";
+        }
+        finally
+        {
+            IsTranscribing = false;
         }
     }
 

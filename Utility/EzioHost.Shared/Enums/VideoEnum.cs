@@ -27,13 +27,17 @@ public class VideoEnum
 
     public enum VideoResolution
     {
+        [Description("144p")] _144p = 144,
+
+        [Description("240p")] _240p = 240,
+
         [Description("360p")] _360p = 360,
 
         [Description("480p")] _480p = 480,
 
         [Description("720p")] _720p = 720,
 
-        //[Description("960p")] _960p = 960,
+        [Description("960p")] _960p = 960,
 
         [Description("1080p")] _1080p = 1080,
 
@@ -70,5 +74,13 @@ public class VideoEnum
     {
         Queue = 0,
         Ready = 1
+    }
+
+    public enum SubtitleTranscribeStatus : byte
+    {
+        [Description("Chờ xử lý")] Queue = 0,
+        [Description("Đang xử lý")] Processing = 1,
+        [Description("Hoàn tất")] Completed = 2,
+        [Description("Thất bại")] Failed = 3
     }
 }
