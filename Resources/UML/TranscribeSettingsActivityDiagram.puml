@@ -1,0 +1,23 @@
+@startuml
+|Admin|
+start
+:Chọn "Audio Transcribing";
+
+|Hệ thống|
+:Hiển thị cài đặt transcribe;
+
+|Admin|
+if (Cập nhật?) then (Có)
+    |Admin|
+    :Điều chỉnh model và GPU;
+    :Click "Lưu";
+    
+    |Hệ thống|
+    :Cập nhật/Create setting;
+    :Thông báo thành công;
+    stop
+else (Không)
+    stop
+endif
+
+@enduml

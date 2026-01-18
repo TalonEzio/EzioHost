@@ -20,6 +20,8 @@ public class EzioHostDbContext(DbContextOptions<EzioHostDbContext> options) : Db
 
     public DbSet<SubtitleTranscribeSetting> SubtitleTranscribeSettings { get; set; }
 
+    public DbSet<CloudflareStorageSetting> CloudflareStorageSettings { get; set; }
+
     public DbSet<EncodingQualitySetting> EncodingQualitySettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,6 +41,7 @@ public class EzioHostDbContext(DbContextOptions<EzioHostDbContext> options) : Db
         modelBuilder.Entity<VideoSubtitle>().HasQueryFilter(x => !x.DeletedAt.HasValue);
         modelBuilder.Entity<SubtitleTranscribe>().HasQueryFilter(x => !x.DeletedAt.HasValue);
         modelBuilder.Entity<SubtitleTranscribeSetting>().HasQueryFilter(x => !x.DeletedAt.HasValue);
+        modelBuilder.Entity<CloudflareStorageSetting>().HasQueryFilter(x => !x.DeletedAt.HasValue);
 
         modelBuilder.Entity<VideoUpscale>().HasQueryFilter(x =>
             !x.DeletedAt.HasValue && !x.Model.DeletedAt.HasValue && !x.Video.DeletedAt.HasValue);

@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Quản lý phụ đề" as UC_SubtitleManagement
+
+' Khai báo các use case con
+usecase "Xem danh sách phụ đề" as UC_ListSubtitles
+usecase "Upload phụ đề" as UC_UploadSubtitle
+usecase "Xóa phụ đề" as UC_DeleteSubtitle
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_SubtitleManagement
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_SubtitleManagement <.. UC_ListSubtitles : <<extend>>
+UC_SubtitleManagement <.. UC_UploadSubtitle : <<extend>>
+UC_SubtitleManagement <.. UC_DeleteSubtitle : <<extend>>
+
+@enduml

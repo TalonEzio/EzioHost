@@ -28,6 +28,7 @@ public class VideoService(
     IVideoResolutionService videoResolutionService,
     IStorageService storageService,
     IEncodingQualitySettingService encodingQualitySettingService,
+    ICloudflareStorageSettingService cloudflareStorageSettingService,
     ILogger<VideoService> logger) : IVideoService
 {
     private readonly string _thumbnailPath = directoryProvider.GetThumbnailFolder();
@@ -98,6 +99,10 @@ public class VideoService(
             await videoUnitOfWork.BeginTransactionAsync();
 
             inputVideo.VideoStreams ??= [];
+
+            // Get user's Cloudflare storage setting and set flag
+            var cloudflareSetting = await cloudflareStorageSettingService.GetUserSettingsAsync(inputVideo.CreatedBy);
+            inputVideo.IsCloudflareEnabled = cloudflareSetting.IsEnabled;
 
             // Get user's active encoding settings
             var userSettings = await encodingQualitySettingService.GetActiveSettingsForEncoding(inputVideo.CreatedBy);
@@ -358,6 +363,15 @@ public class VideoService(
 
     public async Task UploadSegmentsToStorageAsync(VideoStream videoStream)
     {
+        // Check if Cloudflare storage is enabled for this video
+        if (videoStream.Video.IsCloudflareEnabled != true)
+        {
+            logger.LogInformation(
+                "Skipping Cloudflare R2 upload for video {VideoId} - Cloudflare storage is disabled",
+                videoStream.Video.Id);
+            return;
+        }
+
         var relativePath = Uri.UnescapeDataString(videoStream.M3U8Location);
 
         var fullFilePath = Path.Combine(_webRootPath, relativePath);

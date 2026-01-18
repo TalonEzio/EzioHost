@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Upload video" as UC_UploadVideo
+
+' Khai báo các use case con
+usecase "Khởi tạo upload" as UC_InitUpload
+usecase "Upload chunk" as UC_UploadChunk
+usecase "Hủy upload" as UC_CancelUpload
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_UploadVideo
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_UploadVideo <.. UC_InitUpload : <<extend>>
+UC_UploadVideo <.. UC_UploadChunk : <<extend>>
+UC_UploadVideo <.. UC_CancelUpload : <<extend>>
+
+@enduml

@@ -1,0 +1,44 @@
+@startuml
+title Video Info Management Flow
+
+actor Admin as user
+participant "VideoController" as controller
+participant "VideoService" as videoService
+
+== View Video Info ==
+user -> controller : GET /api/Video/{videoId}
+activate controller
+controller -> videoService : GetVideoById(videoId)
+activate videoService
+videoService --> controller : Video
+
+alt Video not found
+    controller --> user : 404 Not Found
+else Video Status != Ready
+    controller --> user : 400 Bad Request
+else Check ShareType permission
+    controller -> controller : Check access permission
+    controller --> user : 200 OK (VideoDto)
+end
+deactivate videoService
+deactivate controller
+
+== Update Video Info ==
+user -> controller : POST /api/Video\n(UpdateDto)
+activate controller
+controller -> videoService : GetVideoById(videoId)
+activate videoService
+videoService --> controller : Video
+
+alt Video not found
+    controller --> user : 404 Not Found
+else Video found
+    controller -> controller : Update Title and ShareType
+    controller -> videoService : UpdateVideo(video)
+    videoService --> controller : Updated
+    controller --> user : 200 OK
+end
+deactivate videoService
+deactivate controller
+
+@enduml

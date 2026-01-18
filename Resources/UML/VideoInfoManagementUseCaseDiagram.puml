@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Quản lý thông tin video" as UC_VideoInfoManagement
+
+' Khai báo các use case con
+usecase "Xem chi tiết video" as UC_ViewVideo
+usecase "Cập nhật tiêu đề" as UC_UpdateTitle
+usecase "Cập nhật loại chia sẻ" as UC_UpdateShareType
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_VideoInfoManagement
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_VideoInfoManagement <.. UC_ViewVideo : <<extend>>
+UC_VideoInfoManagement <.. UC_UpdateTitle : <<extend>>
+UC_VideoInfoManagement <.. UC_UpdateShareType : <<extend>>
+
+@enduml

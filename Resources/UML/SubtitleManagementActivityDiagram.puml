@@ -1,0 +1,56 @@
+@startuml
+|Admin|
+start
+:Chọn video cần quản lý phụ đề;
+
+|Hệ thống|
+:Hiển thị danh sách phụ đề;
+
+|Admin|
+if (Xem danh sách?) then (Có)
+    |Hệ thống|
+    :Hiển thị danh sách;
+    stop
+endif
+
+if (Upload phụ đề?) then (Có)
+    |Admin|
+    :Chọn file VTT và nhập ngôn ngữ;
+    
+    |Hệ thống|
+    :Kiểm tra video và quyền sở hữu?;
+    :Validate file (.vtt, ≤5MB, WebVTT);
+    
+    if (Không hợp lệ?) then (Có)
+        |Hệ thống|
+        :Thông báo lỗi;
+        stop
+    else (Hợp lệ)
+        |Hệ thống|
+        :Lưu file và upload R2;
+        :Tạo VideoSubtitle entity;
+        stop
+    endif
+endif
+
+if (Xóa phụ đề?) then (Có)
+    |Admin|
+    :Chọn phụ đề cần xóa;
+    
+    |Hệ thống|
+    :Kiểm tra phụ đề và quyền sở hữu?;
+    
+    if (Không hợp lệ?) then (Có)
+        |Hệ thống|
+        :Thông báo lỗi;
+        stop
+    else (Hợp lệ)
+        |Hệ thống|
+        :Xóa file và entity;
+        stop
+    endif
+endif
+
+stop
+
+@enduml

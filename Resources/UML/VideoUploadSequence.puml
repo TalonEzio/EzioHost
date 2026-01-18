@@ -1,0 +1,56 @@
+@startuml
+title Video Upload Flow
+
+actor Admin as user
+participant "UploadController" as controller
+participant "FileUploadService" as uploadService
+participant "VideoService" as videoService
+
+== Init Upload ==
+user -> controller : POST /api/Upload/init
+activate controller
+controller -> uploadService : GetFileUploadByCondition()
+activate uploadService
+uploadService --> controller : FileUpload?
+
+alt FileUpload exists and not completed
+    controller --> user : 200 OK (Resume upload)
+else FileUpload exists and completed
+    controller -> uploadService : CopyCompletedFile()
+    uploadService -> videoService : AddNewVideo()
+    videoService --> uploadService
+    uploadService --> controller : copyFileUpload
+    controller --> user : 201 Created
+else FileUpload does not exist
+    controller -> uploadService : AddFileUpload()
+    uploadService --> controller : newFileUpload
+    controller --> user : 201 Created
+end
+deactivate uploadService
+deactivate controller
+
+== Upload Chunks ==
+loop For each chunk
+    user -> controller : POST /api/Upload/chunk/{uploadId}
+    activate controller
+    controller -> uploadService : UploadChunk()
+    activate uploadService
+    uploadService -> uploadService : Append chunk to temp file
+    
+    alt File size < expected
+        uploadService -> uploadService : Update Status = InProgress
+        uploadService --> controller : Status = InProgress
+        controller --> user : 202 Accepted
+    else File size == expected
+        uploadService -> uploadService : Move file to final location
+        uploadService -> uploadService : Set Status = Completed
+        uploadService -> videoService : AddNewVideo(Status = Queue)
+        videoService --> uploadService
+        uploadService --> controller : Status = Completed
+        controller --> user : 201 Created
+    end
+    deactivate uploadService
+    deactivate controller
+end
+
+@enduml

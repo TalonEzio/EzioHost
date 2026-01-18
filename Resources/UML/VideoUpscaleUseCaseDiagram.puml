@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Upscale video" as UC_UpscaleVideo
+
+' Khai báo các use case con
+usecase "Tạo yêu cầu upscale" as UC_CreateUpscale
+usecase "Demo upscale model" as UC_DemoUpscale
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_UpscaleVideo
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_UpscaleVideo <.. UC_CreateUpscale : <<extend>>
+UC_UpscaleVideo <.. UC_DemoUpscale : <<extend>>
+
+@enduml

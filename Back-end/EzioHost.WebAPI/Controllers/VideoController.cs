@@ -23,7 +23,9 @@ public class VideoController(
     IUpscaleService upscaleService,
     IOnnxModelService modelService,
     IDirectoryProvider directoryProvider,
-    IOptions<AppSettings> appSettings) : ControllerBase
+    IOptions<AppSettings> appSettings,
+    IConfiguration configuration,
+    ICloudflareStorageSettingService cloudflareStorageSettingService) : ControllerBase
 {
     private string WebRootPath => directoryProvider.GetWebRootPath();
 
@@ -253,10 +255,40 @@ public class VideoController(
 
         var content = await System.IO.File.ReadAllTextAsync(physicalPath);
 
-        var cdnBaseUrl = $"{StorageSettings.PublicDomain.TrimEnd('/')}/videos/{videoId}/{resolution}/";
-
         var resolutionDescription = resEnum.GetDescription();
-        content = content.Replace(resolutionDescription, $"{cdnBaseUrl}{resolutionDescription}");
+
+        // Check if video was processed with Cloudflare enabled
+        // Default to true for backward compatibility (old videos without flag)
+        if (video.IsCloudflareEnabled == true)
+        {
+            // Rewrite URLs to CDN
+            var cdnBaseUrl = $"{StorageSettings.PublicDomain.TrimEnd('/')}/videos/{videoId}/{resolution}/";
+            content = content.Replace(resolutionDescription, $"{cdnBaseUrl}{resolutionDescription}");
+        }
+        else
+        {
+            // Rewrite URLs to local static path using StaticPathResolver pattern
+            var m3U8Directory = Path.GetDirectoryName(m3U8LocalLocation) ?? string.Empty;
+            var prefixStatic = configuration["StaticFileSettings:WebApiPrefixStaticFile"] ?? "/static";
+            var prefix = prefixStatic.TrimEnd('/', '\\');
+            var cleanPath = m3U8Directory.TrimStart('/', '\\').Replace('\\', '/');
+            var combinedPath = $"{prefix}/{cleanPath}";
+            
+            // Normalize path using Uri (same pattern as StaticPathResolver)
+            string baseUrl;
+            try
+            {
+                var dumpUri = new Uri("http://localhost/");
+                var finalUri = new Uri(dumpUri, combinedPath);
+                baseUrl = finalUri.AbsolutePath.Replace("//", "/");
+            }
+            catch (UriFormatException)
+            {
+                baseUrl = combinedPath.Replace("//", "/");
+            }
+
+            content = content.Replace(resolutionDescription, $"{baseUrl}/{resolutionDescription}");
+        }
 
         return Content(content, "application/vnd.apple.mpegurl");
     }
@@ -580,5 +612,43 @@ public class VideoController(
         }
 
         return storage;
+    }
+
+    [HttpGet("storage-settings")]
+    [Authorize]
+    public async Task<IActionResult> GetStorageSettings()
+    {
+        try
+        {
+            var userId = User.UserId;
+            if (userId == Guid.Empty)
+                return Unauthorized("User ID not found");
+
+            var settings = await cloudflareStorageSettingService.GetUserSettingsAsync(userId);
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Lỗi khi lấy settings: {ex.Message}");
+        }
+    }
+
+    [HttpPut("storage-settings")]
+    [Authorize]
+    public async Task<IActionResult> UpdateStorageSettings([FromBody] CloudflareStorageSettingUpdateDto dto)
+    {
+        try
+        {
+            var userId = User.UserId;
+            if (userId == Guid.Empty)
+                return Unauthorized("User ID not found");
+
+            var settings = await cloudflareStorageSettingService.UpdateUserSettingsAsync(userId, dto);
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Lỗi khi cập nhật settings: {ex.Message}");
+        }
     }
 }

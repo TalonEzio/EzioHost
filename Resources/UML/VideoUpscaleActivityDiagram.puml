@@ -1,0 +1,35 @@
+@startuml
+|Admin|
+start
+:Chọn video và mô hình AI;
+:Click "Upscale";
+
+|Hệ thống|
+:Kiểm tra video và model hợp lệ?;
+
+if (Không hợp lệ?) then (Có)
+    |Hệ thống|
+    :Thông báo lỗi;
+    stop
+else (Hợp lệ)
+    |Hệ thống|
+    :Tạo VideoUpscale (Status = Queue);
+    :Thông báo yêu cầu đã tạo;
+    
+    |Hệ thống (Background)|
+    :Trích xuất frames và audio;
+    
+    repeat
+        |Hệ thống|
+        :Upscale frame bằng AI;
+    repeat while (Còn frame?) is (Có)
+    -> Không;
+    
+    |Hệ thống|
+    :Ghép video + Tạo HLS;
+    :Cập nhật Status = Ready;
+    :Thông báo hoàn thành;
+endif
+stop
+
+@enduml

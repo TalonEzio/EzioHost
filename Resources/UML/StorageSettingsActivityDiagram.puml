@@ -1,0 +1,23 @@
+@startuml
+|Admin|
+start
+:Chọn "Cloudflare R2 Storage";
+
+|Hệ thống|
+:Hiển thị cài đặt storage;
+
+|Admin|
+if (Cập nhật?) then (Có)
+    |Admin|
+    :Bật/tắt upload R2;
+    :Click "Lưu";
+    
+    |Hệ thống|
+    :Cập nhật/Create setting;
+    :Thông báo thành công;
+    stop
+else (Không)
+    stop
+endif
+
+@enduml

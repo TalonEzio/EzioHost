@@ -1,0 +1,53 @@
+@startuml
+title Subtitle Transcribe Flow
+
+actor Admin as user
+participant "SubtitleTranscribeController" as controller
+participant "SubtitleTranscribeService" as transcribeService
+participant "SubtitleTranscribeJob" as job
+participant "VideoSubtitleService" as subtitleService
+participant "VideoHub (SignalR)" as hub
+
+== Create Transcribe Request ==
+user -> controller : POST /api/SubtitleTranscribe/{videoId}\n(language)
+activate controller
+controller -> controller : Validate video and ownership
+
+alt Invalid
+    controller --> user : 404/403/400 Error
+else Valid
+    controller -> transcribeService : CreateTranscribeRequestAsync()
+    activate transcribeService
+    transcribeService --> controller : SubtitleTranscribe created
+    deactivate transcribeService
+    controller --> user : 201 Created
+end
+deactivate controller
+
+== Background Processing ==
+job -> transcribeService : GetNextTranscribeJobAsync()
+transcribeService --> job : SubtitleTranscribe
+
+job -> transcribeService : ProcessTranscriptionAsync()
+activate transcribeService
+
+== Transcription Processing ==
+transcribeService -> transcribeService : Extract audio (FFmpeg)
+transcribeService -> transcribeService : Download Whisper model (if needed)
+transcribeService -> transcribeService : Transcribe audio (Whisper AI)
+transcribeService -> transcribeService : Convert to VTT format
+transcribeService -> subtitleService : UploadSubtitleAsync()
+activate subtitleService
+subtitleService --> transcribeService : VideoSubtitle created
+deactivate subtitleService
+transcribeService -> transcribeService : Update Status = Completed
+
+transcribeService -> hub : Notify completion
+activate hub
+hub --> user : ReceiveSubtitleTranscribed
+deactivate hub
+
+transcribeService --> job : Complete
+deactivate transcribeService
+
+@enduml

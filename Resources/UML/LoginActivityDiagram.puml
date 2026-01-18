@@ -1,0 +1,46 @@
+@startuml
+|Admin|
+start
+:Chọn đăng nhập;
+
+|Hệ thống|
+:Hiển thị trang đăng nhập\n(Redirect đến OIDC Provider);
+
+|Admin|
+:Nhập thông tin tài khoản;
+
+|Admin|
+:Click đăng nhập;
+
+|Hệ thống|
+:Kiểm tra tài khoản\n(Xác thực qua OIDC Provider);
+
+if (Xác thực thành công?) then (Đúng)
+    |Hệ thống|
+    :Tạo JWT Tokens\n(Access Token, ID Token, Refresh Token);
+    :Tạo/Cập nhật người dùng\ntrong Database;
+    :Tạo Cookie Session\n(30 ngày);
+    :Thông báo thành công;
+    stop
+else (Sai)
+    |Hệ thống|
+    :Thông báo yêu cầu đăng nhập lại;
+    |Admin|
+    :Nhập thông tin tài khoản;
+    |Admin|
+    :Click đăng nhập;
+    |Hệ thống|
+    :Kiểm tra tài khoản\n(Xác thực qua OIDC Provider);
+    if (Xác thực thành công?) then (Đúng)
+        :Tạo JWT Tokens;
+        :Tạo/Cập nhật người dùng;
+        :Tạo Cookie Session;
+        :Thông báo thành công;
+        stop
+    else (Sai)
+        :Thông báo yêu cầu đăng nhập lại;
+        stop
+    endif
+endif
+
+@enduml

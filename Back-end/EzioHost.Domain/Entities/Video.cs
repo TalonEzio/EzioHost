@@ -40,6 +40,8 @@ public class Video : BaseAuditableEntityWithUserId<Guid>
     public VideoEnum.VideoBackupStatus BackupStatus { get; set; } = VideoEnum.VideoBackupStatus.NotBackedUp;
     public string BackupUrl { get; set; } = string.Empty;
 
+    public bool? IsCloudflareEnabled { get; set; }
+
     public ICollection<VideoStream> VideoStreams { get; set; } = [];
 
     public ICollection<VideoUpscale> VideoUpscales { get; set; } = [];

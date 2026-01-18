@@ -1,0 +1,40 @@
+@startuml
+|Admin|
+start
+:Chọn video cần tạo phụ đề;
+:Chọn ngôn ngữ;
+:Click "Tạo phụ đề tự động";
+
+|Hệ thống|
+:Kiểm tra video và quyền hợp lệ?;
+
+if (Không hợp lệ?) then (Có)
+    |Hệ thống|
+    :Thông báo lỗi;
+    stop
+else (Hợp lệ)
+    |Hệ thống|
+    :Kiểm tra tính năng đã bật?\nVideo chưa có subtitle?\nChưa có request đang chờ?;
+    
+    if (Không thỏa mãn?) then (Có)
+        |Hệ thống|
+        :Thông báo lỗi;
+        stop
+    else (Thỏa mãn)
+        |Hệ thống|
+        :Tạo SubtitleTranscribe\n(Status = Queue);
+        :Thông báo yêu cầu đã tạo;
+        
+        |Hệ thống (Background)|
+        :Trích xuất audio từ video\n(FFmpeg);
+        :Tải Whisper model\n(nếu chưa có);
+        :Transcribe audio\n(Whisper AI);
+        :Chuyển đổi sang VTT;
+        :Lưu VideoSubtitle;
+        :Cập nhật Status = Completed;
+        :Thông báo hoàn thành;
+    endif
+endif
+stop
+
+@enduml

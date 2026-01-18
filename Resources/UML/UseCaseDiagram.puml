@@ -1,0 +1,54 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Quản trị viên (Admin)" as Admin
+
+rectangle "Hệ thống EzioHost" {
+
+    ' --- NHÓM 1: XÁC THỰC ---
+
+    usecase "Đăng nhập" as UC_Login
+
+
+    ' --- NHÓM 2: QUẢN TRỊ HỆ THỐNG ---
+    package "Quản trị Hệ thống" {
+        usecase "Quản lý cài đặt" as UC_Settings
+      
+    }
+
+    ' --- NHÓM 3: QUẢN LÝ & XỬ LÝ VIDEO ---
+    package "Quản lý & Xử lý Video" {
+        usecase "Upload video" as UC_UploadVideo
+        usecase "Quản lý video" as UC_Video
+        usecase "Thống kê" as UC_Statistics
+        usecase "Upscale video" as UC_Upscale
+        usecase "Tạo phụ đề tự động" as UC_AutoSub
+    }
+
+    ' --- NHÓM 4: QUẢN LÝ TÀI NGUYÊN ---
+    package "Quản lý Tài nguyên" {
+        usecase "Quản lý mô hình AI" as UC_Model
+        usecase "Quản lý file phụ đề" as UC_SubFile
+    }
+}
+
+Admin --> UC_Settings
+Admin --> UC_UploadVideo
+Admin --> UC_Video
+Admin --> UC_Statistics
+Admin --> UC_Upscale
+Admin --> UC_AutoSub
+Admin --> UC_Model
+Admin --> UC_SubFile
+
+UC_Settings ..> UC_Login : <<include>>
+UC_UploadVideo ..> UC_Login : <<include>>
+UC_Video ..> UC_Login : <<include>>
+UC_Statistics ..> UC_Login : <<include>>
+UC_Upscale ..> UC_Login : <<include>>
+UC_AutoSub ..> UC_Login : <<include>>
+UC_Model ..> UC_Login : <<include>>
+UC_SubFile ..> UC_Login : <<include>>
+
+@enduml

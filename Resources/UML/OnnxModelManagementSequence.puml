@@ -1,0 +1,48 @@
+@startuml
+title ONNX Model Management Flow
+
+actor Admin as user
+participant "OnnxModelController" as controller
+participant "OnnxModelService" as modelService
+participant "UpscaleService" as upscaleService
+
+== List Models ==
+user -> controller : GET /api/OnnxModel
+controller -> modelService : GetOnnxModels()
+modelService --> controller : Models
+controller --> user : 200 OK
+
+== Add Model ==
+user -> controller : PUT /api/OnnxModel\n(modelFile, modelInfo)
+controller -> controller : Save ONNX file
+controller -> modelService : AddOnnxModel()
+modelService --> controller : Model created
+controller --> user : 200 OK
+
+== Analyze Model ==
+user -> controller : POST /api/OnnxModel/analyze\n(modelFile)
+controller -> controller : Analyze metadata\n(ONNX Runtime)
+controller --> user : 200 OK (Metadata)
+
+== Demo Upscale ==
+user -> controller : POST /api/OnnxModel/demo/{modelId}
+controller -> modelService : GetOnnxModelById()
+modelService --> controller : Model
+
+alt Model not found
+    controller --> user : 404 Not Found
+else Model found
+    controller -> upscaleService : UpscaleImage()
+    upscaleService --> controller : Upscaled image
+    controller -> modelService : UpdateOnnxModel()
+    controller --> user : 200 OK
+end
+
+== Delete Model ==
+user -> controller : DELETE /api/OnnxModel/{id}
+controller -> modelService : DeleteOnnxModel()
+modelService --> controller : Deleted
+controller -> controller : Delete ONNX file
+controller --> user : 204 No Content
+
+@enduml

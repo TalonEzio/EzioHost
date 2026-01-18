@@ -1,0 +1,19 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Admin" as Admin
+usecase "Đăng nhập" as UC_Login
+usecase "Lưu đăng nhập" as UC_SaveLogin
+usecase "Đăng xuất" as UC_Logout
+usecase "Cập nhật thông tin" as UC_UpdateInfo
+usecase "Đăng ký" as UC_Register
+
+Admin --> UC_Login
+
+UC_SaveLogin ..> UC_Login : <<extend>>
+UC_Logout ..> UC_Login : <<extend>>
+UC_UpdateInfo ..> UC_Login : <<extend>>
+UC_Register ..> UC_Login : <<extend>>
+
+@enduml

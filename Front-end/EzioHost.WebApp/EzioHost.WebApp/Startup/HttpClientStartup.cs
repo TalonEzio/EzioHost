@@ -66,6 +66,11 @@ public static class HttpClientStartup
             .ConfigureHttpClient(configureClient)
             .AddHttpMessageHandler<RequestCookieHandler>();
 
+        builder.Services
+            .AddRefitClient<ICloudflareStorageSettingApi>(refitSettings)
+            .ConfigureHttpClient(configureClient)
+            .AddHttpMessageHandler<RequestCookieHandler>();
+
         return builder;
     }
 }

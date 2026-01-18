@@ -1,0 +1,39 @@
+@startuml
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Admin" as Admin
+participant "WebApp" as WebApp
+participant "ReverseProxy" as AuthController
+participant "OIDC Provider\n(Keycloak)" as OIDC
+participant "WebAPI" as WebAPI
+database "Database" as DB
+
+Admin -> WebApp: Truy cập trang web
+WebApp -> AuthController: GET /login?returnUrl=...
+
+alt Admin chưa đăng nhập
+    AuthController -> AuthController: Kiểm tra authentication
+    AuthController -> OIDC: Challenge OpenID Connect
+    OIDC -> Admin: Redirect đến trang đăng nhập
+    Admin -> OIDC: Nhập thông tin đăng nhập
+    OIDC -> OIDC: Xác thực thông tin
+    OIDC -> AuthController: Trả về authorization code
+    AuthController -> OIDC: Đổi code lấy tokens\n(Access Token, ID Token, Refresh Token)
+    OIDC -> AuthController: Trả về tokens
+    
+    AuthController -> AuthController: OnTokenValidated event
+    AuthController -> WebAPI: POST /api/User\n(Bearer: Access Token)
+    WebAPI -> DB: Tạo/Cập nhật người dùng
+    DB -> WebAPI: Trả về UserDto
+    WebAPI -> AuthController: Trả về UserDto
+    
+    AuthController -> AuthController: Tạo Cookie Session\n(30 ngày)
+    AuthController -> WebApp: Redirect về returnUrl
+    WebApp -> Admin: Hiển thị trang chủ
+else Admin đã đăng nhập
+    AuthController -> WebApp: Redirect về returnUrl
+    WebApp -> Admin: Hiển thị trang chủ
+end
+
+@enduml

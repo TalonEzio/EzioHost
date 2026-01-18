@@ -1,0 +1,52 @@
+@startuml
+|Admin|
+start
+:Chọn video;
+
+|Hệ thống|
+:Kiểm tra video tồn tại\nvà Status = Ready?;
+
+if (Video hợp lệ?) then (Không)
+    |Hệ thống|
+    :Thông báo lỗi;
+    stop
+else (Có)
+    |Hệ thống|
+    :Kiểm tra quyền truy cập\n(ShareType);
+    
+    if (Có quyền truy cập?) then (Không)
+        |Hệ thống|
+        :Thông báo 400 Bad Request;
+        stop
+    else (Có)
+        |Hệ thống|
+        :Hiển thị thông tin video;
+        |Admin|
+        :Xem thông tin video;
+        
+        if (Cần cập nhật?) then (Có)
+            |Admin|
+            :Nhập tiêu đề và loại chia sẻ;
+            :Bấm "Lưu";
+            
+            |Hệ thống|
+            :Kiểm tra quyền sở hữu;
+            
+            if (Là chủ sở hữu?) then (Có)
+                |Hệ thống|
+                :Cập nhật Title và ShareType;
+                :Lưu vào database;
+                :Thông báo thành công;
+            else (Không)
+                |Hệ thống|
+                :Thông báo không có quyền;
+                stop
+            endif
+        else (Không)
+            stop
+        endif
+    endif
+endif
+stop
+
+@enduml

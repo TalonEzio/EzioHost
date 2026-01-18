@@ -1,0 +1,42 @@
+@startuml
+title Subtitle Management Flow
+
+actor Admin as user
+participant "VideoSubtitleController" as controller
+participant "VideoSubtitleService" as subtitleService
+participant "VideoService" as videoService
+
+== List Subtitles ==
+user -> controller : GET /api/VideoSubtitle/{videoId}
+controller -> subtitleService : GetSubtitlesByVideoIdAsync()
+subtitleService --> controller : List<VideoSubtitle>
+controller --> user : 200 OK
+
+== Upload Subtitle ==
+user -> controller : POST /api/VideoSubtitle/{videoId}\n(file, language)
+controller -> controller : Validate file and language
+controller -> videoService : GetVideoById()
+
+alt Invalid
+    controller --> user : 404/403 Error
+else Valid
+    controller -> subtitleService : UploadSubtitleAsync()\n(Save file, Upload R2, Create entity)
+    subtitleService --> controller : VideoSubtitle
+    controller --> user : 201 Created
+end
+
+== Delete Subtitle ==
+user -> controller : DELETE /api/VideoSubtitle/{subtitleId}
+controller -> subtitleService : GetSubtitleByIdAsync()
+subtitleService --> controller : VideoSubtitle
+controller -> videoService : GetVideoById()
+
+alt Invalid
+    controller --> user : 404/403 Error
+else Valid
+    controller -> subtitleService : DeleteSubtitleAsync()\n(Delete file and entity)
+    subtitleService --> controller : Deleted
+    controller --> user : 204 No Content
+end
+
+@enduml

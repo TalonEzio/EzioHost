@@ -1,0 +1,32 @@
+@startuml
+|Admin|
+start
+:Chọn "Chất lượng Encoding";
+
+|Hệ thống|
+:Hiển thị cài đặt encoding;
+
+|Admin|
+if (Cập nhật?) then (Có)
+    |Admin|
+    :Điều chỉnh bitrate và resolution;
+    :Click "Lưu";
+    
+    |Hệ thống|
+    :Validate (ít nhất 1 resolution bật);
+    
+    if (Không hợp lệ?) then (Có)
+        |Hệ thống|
+        :Thông báo lỗi;
+        stop
+    else (Hợp lệ)
+        |Hệ thống|
+        :Cập nhật/Create settings;
+        :Thông báo thành công;
+        stop
+    endif
+else (Không)
+    stop
+endif
+
+@enduml

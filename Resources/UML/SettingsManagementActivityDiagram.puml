@@ -1,0 +1,54 @@
+@startuml
+|Admin|
+start
+:Chọn chức năng quản lý cài đặt;
+
+|Hệ thống|
+:Hiển thị danh sách cài đặt;
+
+|Admin|
+if (Cài đặt Encoding?) then (Có)
+    |Hệ thống|
+    :Hiển thị cài đặt encoding;
+    
+    if (Cập nhật?) then (Có)
+        |Admin|
+        :Điều chỉnh bitrate và resolution;
+        
+        |Hệ thống|
+        :Validate và cập nhật settings;
+        stop
+    endif
+endif
+
+if (Cài đặt Transcribe?) then (Có)
+    |Hệ thống|
+    :Hiển thị cài đặt transcribe;
+    
+    if (Cập nhật?) then (Có)
+        |Admin|
+        :Điều chỉnh model và GPU;
+        
+        |Hệ thống|
+        :Cập nhật setting;
+        stop
+    endif
+endif
+
+if (Cài đặt Storage?) then (Có)
+    |Hệ thống|
+    :Hiển thị cài đặt storage;
+    
+    if (Cập nhật?) then (Có)
+        |Admin|
+        :Bật/tắt upload R2;
+        
+        |Hệ thống|
+        :Cập nhật setting;
+        stop
+    endif
+endif
+
+stop
+
+@enduml

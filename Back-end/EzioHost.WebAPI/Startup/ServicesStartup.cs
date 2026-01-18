@@ -58,6 +58,9 @@ public static class ServicesStartup
         builder.Services.AddScoped<ISubtitleTranscribeSettingRepository, SubtitleTranscribeSettingSqlServerRepository>();
         builder.Services.AddScoped<ISubtitleTranscribeSettingService, SubtitleTranscribeSettingService>();
 
+        builder.Services.AddScoped<ICloudflareStorageSettingRepository, CloudflareStorageSettingSqlServerRepository>();
+        builder.Services.AddScoped<ICloudflareStorageSettingService, CloudflareStorageSettingService>();
+
         builder.Services.AddScoped<IAmazonS3>(serviceProvider =>
         {
             var appSettings = serviceProvider.GetService<IOptionsMonitor<AppSettings>>();

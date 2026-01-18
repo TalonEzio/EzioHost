@@ -1,0 +1,116 @@
+@startuml
+
+package "Domain Entities" {
+    class User {
+        +Guid Id
+        +string UserName
+        +string FirstName
+        +string LastName
+        +string Email
+        +DateTime LastLogin
+    }
+    
+    class Video {
+        +Guid Id
+        +string Title
+        +string RawLocation
+        +string M3U8Location
+        +string Thumbnail
+        +VideoResolution Resolution
+        +VideoStatus Status
+        +VideoShareType ShareType
+    }
+    
+    class FileUpload {
+        +Guid Id
+        +string FileName
+        +long FileSize
+        +long ReceivedBytes
+        +string ContentType
+        +string? Checksum
+        +string PhysicalPath
+        +FileUploadStatus Status
+        +bool IsCompleted
+    }
+    
+    class VideoStream {
+        +Guid Id
+        +string M3U8Location
+        +VideoResolution Resolution
+        +string Key
+        +string Iv
+        +Guid VideoId
+    }
+    
+    class VideoUpscale {
+        +Guid Id
+        +string OutputLocation
+        +int Scale
+        +Guid ModelId
+        +Guid VideoId
+        +VideoResolution Resolution
+        +VideoUpscaleStatus Status
+    }
+    
+    class VideoSubtitle {
+        +Guid Id
+        +Guid VideoId
+        +string Language
+        +string LocalPath
+        +string CloudPath
+        +string FileName
+        +long FileSize
+    }
+    
+    class OnnxModel {
+        +Guid Id
+        +string Name
+        +string FileLocation
+        +string DemoInput
+        +string DemoOutput
+        +int Scale
+        +int MustInputWidth
+        +int MustInputHeight
+        +TensorElementType ElementType
+    }
+    
+    class SubtitleTranscribe {
+        +Guid Id
+        +Guid VideoId
+        +string Language
+        +SubtitleTranscribeStatus Status
+        +string? ErrorMessage
+    }
+    
+    class SubtitleTranscribeSetting {
+        +Guid Id
+        +Guid UserId
+        +bool IsEnabled
+        +WhisperModelType ModelType
+        +bool UseGpu
+        +int? GpuDeviceId
+    }
+    
+    class CloudflareStorageSetting {
+        +Guid Id
+        +Guid UserId
+        +bool IsEnabled
+    }
+    
+    class EncodingQualitySetting {
+        +Guid Id
+        +Guid UserId
+        +VideoResolution Resolution
+        +int BitrateKbps
+        +bool IsEnabled
+    }
+}
+
+' Entity relationships
+Video "1" *-- "0..*" VideoStream
+Video "1" *-- "0..*" VideoUpscale
+Video "1" *-- "0..*" VideoSubtitle
+VideoUpscale "0..*" --> "1" OnnxModel
+SubtitleTranscribe "0..*" --> "1" Video
+
+@enduml

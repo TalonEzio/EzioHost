@@ -1,0 +1,49 @@
+@startuml System Deployment Diagram
+
+node "Client" {
+    component [Blazor WASM] as BlazorWASM
+}
+
+node "Reverse Proxy Server" {
+    component [YARP Reverse Proxy] as ReverseProxy
+    component [Keycloak] as Keycloak
+}
+
+node "API Server" {
+    component [ASP.NET Core WebAPI] as WebAPI
+    component [Blazor Server] as BlazorServer
+    component [SignalR Hub] as SignalRHub
+    component [Background Jobs] as Jobs
+    component [FFmpeg] as FFmpeg
+    component [ONNX Runtime] as ONNX
+    component [Whisper AI] as Whisper
+}
+
+node "Database Server" {
+    database "SQL Server" as SQLServer
+}
+
+node "Storage Server" {
+    cloud "Cloudflare R2" as R2Storage
+}
+
+' Connections
+BlazorWASM --> ReverseProxy : HTTPS
+ReverseProxy --> WebAPI : /api/*
+ReverseProxy --> BlazorServer : Frontend
+Keycloak --> WebAPI : Auth
+
+WebAPI --> SQLServer
+WebAPI --> R2Storage
+WebAPI --> SignalRHub
+
+BlazorServer --> WebAPI
+
+Jobs --> WebAPI
+Jobs --> FFmpeg
+Jobs --> ONNX
+Jobs --> Whisper
+Jobs --> SQLServer
+Jobs --> R2Storage
+
+@enduml

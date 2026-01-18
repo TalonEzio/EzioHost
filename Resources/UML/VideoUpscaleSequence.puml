@@ -1,0 +1,47 @@
+@startuml
+title Video Upscaling Flow
+
+actor Admin as user
+participant "VideoController" as controller
+participant "UpscaleService" as upscaleService
+participant "VideoUpscaleJob" as job
+participant "VideoHub (SignalR)" as hub
+
+== Upscale Initiation ==
+user -> controller : POST /api/Video/{videoId}/upscale/{modelId}
+activate controller
+controller -> controller : Validate video and model
+
+alt Invalid
+    controller --> user : 404/400 Error
+else Valid
+    controller -> upscaleService : AddNewVideoUpscale()
+    upscaleService --> controller : VideoUpscale created
+    controller --> user : 201 Created
+end
+deactivate controller
+
+== Background Processing ==
+job -> upscaleService : GetVideoNeedUpscale()
+upscaleService --> job : VideoUpscale
+
+job -> hub : Notify started
+hub --> user : ReceiveVideoUpscaleStarted
+
+job -> upscaleService : UpscaleVideo()
+activate upscaleService
+
+== Video Processing ==
+upscaleService -> upscaleService : Extract frames + audio
+loop For each frame
+    upscaleService -> upscaleService : UpscaleImage(frame)
+end
+upscaleService -> upscaleService : Re-encode video + CreateHLS
+upscaleService -> upscaleService : Update Status = Ready
+
+upscaleService -> hub : Notify completion
+hub --> user : VideoProcessingDone
+upscaleService --> job : Complete
+deactivate upscaleService
+
+@enduml

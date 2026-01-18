@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Tạo phụ đề tự động" as UC_AutoSubtitle
+
+' Khai báo các use case con
+usecase "Tạo yêu cầu transcribe" as UC_CreateTranscribe
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_AutoSubtitle
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_AutoSubtitle <.. UC_CreateTranscribe : <<extend>>
+
+@enduml

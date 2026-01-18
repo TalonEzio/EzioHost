@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Quản lý cài đặt" as UC_SettingsManagement
+
+' Khai báo các use case con
+usecase "Quản lý cài đặt encoding" as UC_EncodingSettings
+usecase "Quản lý cài đặt transcribe" as UC_TranscribeSettings
+usecase "Quản lý cài đặt storage" as UC_StorageSettings
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_SettingsManagement
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_SettingsManagement <.. UC_EncodingSettings : <<extend>>
+UC_SettingsManagement <.. UC_TranscribeSettings : <<extend>>
+UC_SettingsManagement <.. UC_StorageSettings : <<extend>>
+
+@enduml

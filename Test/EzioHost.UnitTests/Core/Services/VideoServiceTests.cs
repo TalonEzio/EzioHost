@@ -20,6 +20,7 @@ public class VideoServiceTests
 {
     private readonly Mock<IDirectoryProvider> _directoryProviderMock;
     private readonly Mock<IEncodingQualitySettingService> _encodingQualitySettingServiceMock;
+    private readonly Mock<ICloudflareStorageSettingService> _cloudflareStorageSettingServiceMock;
     private readonly Mock<ILogger<VideoService>> _loggerMock;
     private readonly Mock<IM3U8PlaylistService> _m3U8PlaylistServiceMock;
     private readonly Mock<IMapper> _mapperMock;
@@ -43,6 +44,15 @@ public class VideoServiceTests
         _videoResolutionServiceMock = TestMockFactory.CreateVideoResolutionServiceMock();
         _storageServiceMock = TestMockFactory.CreateStorageServiceMock();
         _encodingQualitySettingServiceMock = TestMockFactory.CreateEncodingQualitySettingServiceMock();
+        _cloudflareStorageSettingServiceMock = new Mock<ICloudflareStorageSettingService>();
+        // Setup default Cloudflare storage setting (enabled by default)
+        _cloudflareStorageSettingServiceMock
+            .Setup(x => x.GetUserSettingsAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new CloudflareStorageSettingDto
+            {
+                Id = Guid.NewGuid(),
+                IsEnabled = true
+            });
         _loggerMock = new Mock<ILogger<VideoService>>();
 
         _videoRepositoryMock = TestMockFactory.CreateVideoRepositoryMock();
@@ -61,6 +71,7 @@ public class VideoServiceTests
             _videoResolutionServiceMock.Object,
             _storageServiceMock.Object,
             _encodingQualitySettingServiceMock.Object,
+            _cloudflareStorageSettingServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -347,6 +358,7 @@ public class VideoServiceTests
             _videoResolutionServiceMock.Object,
             _storageServiceMock.Object,
             _encodingQualitySettingServiceMock.Object,
+            _cloudflareStorageSettingServiceMock.Object,
             _loggerMock.Object);
 
         _storageServiceMock.Setup(x => x.UploadFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))

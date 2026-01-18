@@ -1,0 +1,48 @@
+@startuml
+|Admin|
+start
+:Chọn file video;
+:Click "Upload";
+
+|Hệ thống|
+:Tính toán checksum và kích thước file;
+:Kiểm tra FileUpload đã tồn tại?;
+
+if (FileUpload tồn tại?) then (Có)
+    if (Đã hoàn thành?) then (Có)
+        |Hệ thống|
+        :Copy file và tạo Video mới;
+        stop
+    else (Chưa)
+        |Hệ thống|
+        :Trả về FileUpload để tiếp tục;
+    endif
+else (Không)
+    |Hệ thống|
+    :Tạo FileUpload mới;
+endif
+
+repeat
+    |Admin|
+    :Gửi chunk;
+    
+    |Hệ thống|
+    :Lưu chunk vào file tạm;
+    :Cập nhật ReceivedBytes;
+    
+    if (Kích thước < dự kiến?) then (Còn thiếu)
+        |Hệ thống|
+        :Cập nhật Status = InProgress;
+        :Tiếp tục nhận chunk;
+    else (Đã đủ)
+        |Hệ thống|
+        :Di chuyển file sang thư mục video;
+        :Tạo Video entity (Status = Queue);
+        :Thông báo upload thành công;
+        stop
+    endif
+repeat while (Còn chunk?) is (Có)
+-> Không;
+stop
+
+@enduml

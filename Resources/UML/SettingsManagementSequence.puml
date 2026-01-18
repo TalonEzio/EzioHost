@@ -1,0 +1,51 @@
+@startuml
+title Settings Management Flow
+
+actor Admin as user
+participant "EncodingQualitySettingController" as encodingController
+participant "EncodingQualitySettingService" as encodingService
+participant "VideoSubtitleController" as subtitleController
+participant "SubtitleTranscribeSettingService" as transcribeService
+participant "VideoController" as videoController
+participant "CloudflareStorageSettingService" as storageService
+
+== Encoding Settings ==
+user -> encodingController : GET /api/EncodingQualitySetting
+encodingController -> encodingService : GetUserSettings(userId)
+encodingService --> encodingController : List<EncodingQualitySettingDto>
+encodingController --> user : 200 OK
+
+user -> encodingController : PUT /api/EncodingQualitySetting\n(UpdateRequest)
+encodingController -> encodingController : Validate request
+
+alt Invalid
+    encodingController --> user : 400 Error
+else Valid
+    encodingController -> encodingService : UpdateUserSettings()\n(Update/Create settings)
+    encodingService --> encodingController : List<EncodingQualitySettingDto>
+    encodingController --> user : 200 OK
+end
+
+== Transcribe Settings ==
+user -> subtitleController : GET /api/VideoSubtitle/settings
+subtitleController -> transcribeService : GetUserSettingsAsync(userId)
+transcribeService --> subtitleController : SubtitleTranscribeSettingDto
+subtitleController --> user : 200 OK
+
+user -> subtitleController : PUT /api/VideoSubtitle/settings\n(UpdateDto)
+subtitleController -> transcribeService : UpdateUserSettingsAsync()\n(Update/Create setting)
+transcribeService --> subtitleController : SubtitleTranscribeSettingDto
+subtitleController --> user : 200 OK
+
+== Storage Settings ==
+user -> videoController : GET /api/Video/storage-settings
+videoController -> storageService : GetUserSettingsAsync(userId)
+storageService --> videoController : CloudflareStorageSettingDto
+videoController --> user : 200 OK
+
+user -> videoController : PUT /api/Video/storage-settings\n(UpdateDto)
+videoController -> storageService : UpdateUserSettingsAsync()\n(Update/Create setting)
+storageService --> videoController : CloudflareStorageSettingDto
+videoController --> user : 200 OK
+
+@enduml

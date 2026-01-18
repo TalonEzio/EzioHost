@@ -1,0 +1,28 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Quản lý mô hình AI" as UC_ModelManagement
+
+' Khai báo các use case con
+usecase "Xem danh sách mô hình" as UC_ListModels
+usecase "Thêm mô hình mới" as UC_AddModel
+usecase "Xóa mô hình" as UC_DeleteModel
+usecase "Phân tích mô hình" as UC_AnalyzeModel
+usecase "Demo upscale" as UC_DemoUpscale
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_ModelManagement
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_ModelManagement <.. UC_ListModels : <<extend>>
+UC_ModelManagement <.. UC_AddModel : <<extend>>
+UC_ModelManagement <.. UC_DeleteModel : <<extend>>
+UC_ModelManagement <.. UC_AnalyzeModel : <<extend>>
+UC_ModelManagement <.. UC_DemoUpscale : <<extend>>
+
+@enduml

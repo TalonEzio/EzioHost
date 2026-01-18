@@ -1,0 +1,42 @@
+@startuml
+|Admin|
+start
+:Chọn chức năng quản lý mô hình;
+
+|Hệ thống|
+:Hiển thị danh sách mô hình;
+
+|Admin|
+if (Thêm mô hình?) then (Có)
+    |Admin|
+    :Upload file ONNX;
+    |Hệ thống|
+    :Lưu file và tạo OnnxModel;
+    stop
+endif
+
+if (Phân tích mô hình?) then (Có)
+    |Admin|
+    :Upload file ONNX;
+    |Hệ thống|
+    :Phân tích metadata;
+    stop
+endif
+
+if (Demo upscale?) then (Có)
+    |Admin|
+    :Chọn mô hình và upload ảnh;
+    |Hệ thống|
+    :Upscale ảnh;
+    stop
+endif
+
+if (Xóa mô hình?) then (Có)
+    |Hệ thống|
+    :Xóa OnnxModel và file;
+    stop
+endif
+
+stop
+
+@enduml

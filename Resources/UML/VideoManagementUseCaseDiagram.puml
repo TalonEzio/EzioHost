@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+
+' --- CẤU HÌNH ĐEN TRẮNG ---
+skinparam monochrome true
+skinparam shadowing true ' Giữ lại bóng đổ để hình có chiều sâu, nếu muốn phẳng hoàn toàn thì xóa dòng này
+
+actor "Admin" as Admin
+usecase "Quản lý video" as UC_VideoManagement
+
+' Khai báo các use case con
+usecase "Xem danh sách video" as UC_ListVideos
+usecase "Xem chi tiết video" as UC_ViewVideo
+usecase "Cập nhật thông tin" as UC_UpdateInfo
+usecase "Xóa video" as UC_DeleteVideo
+usecase "Tải xuống video" as UC_DownloadVideo
+usecase "Xem thống kê" as UC_Statistics
+usecase "Xem video streaming" as UC_StreamVideo
+
+' 1. Admin nằm bên trái, trỏ vào giữa
+Admin --> UC_VideoManagement
+
+' 2. Các chức năng con nằm bên phải, mũi tên extend trỏ ngược về giữa
+UC_VideoManagement <.. UC_ListVideos : <<extend>>
+UC_VideoManagement <.. UC_ViewVideo : <<extend>>
+UC_VideoManagement <.. UC_UpdateInfo : <<extend>>
+UC_VideoManagement <.. UC_DeleteVideo : <<extend>>
+UC_VideoManagement <.. UC_DownloadVideo : <<extend>>
+UC_VideoManagement <.. UC_Statistics : <<extend>>
+UC_VideoManagement <.. UC_StreamVideo : <<extend>>
+
+@enduml
