@@ -23,6 +23,7 @@ public static class DatabaseStartup
             {
                 cfg.UseSqlServer(builder.Configuration.GetConnectionString(nameof(EzioHost)));
                 cfg.EnableServiceProviderCaching();
+                cfg.LogTo(_ => { }, Microsoft.Extensions.Logging.LogLevel.None);
             });
             return builder;
         }

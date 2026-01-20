@@ -47,8 +47,23 @@ export function setupDragAndDrop(dropZone, dotNetRef) {
 
             if (files.length === 0) return;
 
-            // Filter only video files
-            const videoFiles = Array.from(files).filter(file => file.type.startsWith("video/"));
+            // Filter only video files.
+            // Note: Some browsers may not set a proper MIME type for .mkv (file.type can be empty),
+            // so we also fall back to checking the file extension for common video formats.
+            const videoFiles = Array.from(files).filter(file => {
+                if (file.type && file.type.startsWith("video/")) {
+                    return true;
+                }
+
+                const name = file.name || "";
+                const dotIndex = name.lastIndexOf(".");
+                if (dotIndex === -1) return false;
+
+                const ext = name.substring(dotIndex + 1).toLowerCase();
+                const knownVideoExtensions = ["mkv", "mp4", "webm", "avi", "mov", "flv"];
+
+                return knownVideoExtensions.includes(ext);
+            });
 
             if (videoFiles.length === 0) {
                 dotNetRef.invokeMethodAsync("ShowWarning", "Vui lòng chọn file video");

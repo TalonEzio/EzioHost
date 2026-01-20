@@ -37,7 +37,8 @@ public class VideoController(
         int pageNumber = 1,
         int pageSize = 10,
         bool? includeStreams = null,
-        bool? includeUpscaled = false)
+        bool? includeSubtitles = null,
+        bool? includeUpscaled = null)
     {
         try
         {
@@ -48,22 +49,26 @@ public class VideoController(
             if (userId == Guid.Empty)
                 return Unauthorized("User ID not found");
 
-            Expression<Func<Video, object>>[]? includes;
-
-            if (includeStreams == true && includeUpscaled == true)
-                includes = [x => x.VideoStreams, x => x.VideoUpscales];
-            else if (includeStreams == true)
-                includes = [x => x.VideoStreams];
-            //else if (includeUpscaled == true)
-            //    includes = [x => x.VideoUpscales];
-            else
-                includes = [];
+            List<Expression<Func<Video, object>>>? includes = [];
+            if (includeStreams == true)
+            {
+                includes.Add(x => x.VideoStreams);
+            }
+            if (includeSubtitles == true)
+            {
+                includes.Add(x => x.VideoSubtitles);
+            }
+            if (includeUpscaled == true)
+            {
+                includes.Add(x => x.VideoUpscales);
+            }
 
             var videos = (await videoService.GetVideos(
                 pageNumber,
                 pageSize,
                 x => x.CreatedBy == userId,
-                includes)).ToList();
+                includes.ToArray()
+                )).ToList();
 
             var videoDtos = mapper.Map<List<VideoDto>>(videos);
 
@@ -273,7 +278,7 @@ public class VideoController(
             var prefix = prefixStatic.TrimEnd('/', '\\');
             var cleanPath = m3U8Directory.TrimStart('/', '\\').Replace('\\', '/');
             var combinedPath = $"{prefix}/{cleanPath}";
-            
+
             // Normalize path using Uri (same pattern as StaticPathResolver)
             string baseUrl;
             try
@@ -354,42 +359,40 @@ public class VideoController(
                 }
 
                 // Calculate storage for video streams (HLS segments)
-                if (video.VideoStreams != null)
-                    foreach (var stream in video.VideoStreams)
-                        if (!string.IsNullOrEmpty(stream.M3U8Location))
+                foreach (var stream in video.VideoStreams)
+                    if (!string.IsNullOrEmpty(stream.M3U8Location))
+                    {
+                        var m3U8Path = Path.Combine(WebRootPath, Uri.UnescapeDataString(stream.M3U8Location));
+                        var streamDirectory = Path.GetDirectoryName(m3U8Path);
+                        if (Directory.Exists(streamDirectory))
                         {
-                            var m3U8Path = Path.Combine(WebRootPath, Uri.UnescapeDataString(stream.M3U8Location));
-                            var streamDirectory = Path.GetDirectoryName(m3U8Path);
-                            if (Directory.Exists(streamDirectory))
+                            var tsFiles = Directory.GetFiles(streamDirectory, "*.ts");
+                            foreach (var tsFile in tsFiles)
                             {
-                                var tsFiles = Directory.GetFiles(streamDirectory, "*.ts");
-                                foreach (var tsFile in tsFiles)
-                                {
-                                    var tsFileInfo = new FileInfo(tsFile);
-                                    totalStorageUsed += tsFileInfo.Length;
-                                }
+                                var tsFileInfo = new FileInfo(tsFile);
+                                totalStorageUsed += tsFileInfo.Length;
+                            }
 
-                                // Also include m3u8 file
-                                if (System.IO.File.Exists(m3U8Path))
-                                {
-                                    var m3U8FileInfo = new FileInfo(m3U8Path);
-                                    totalStorageUsed += m3U8FileInfo.Length;
-                                }
+                            // Also include m3u8 file
+                            if (System.IO.File.Exists(m3U8Path))
+                            {
+                                var m3U8FileInfo = new FileInfo(m3U8Path);
+                                totalStorageUsed += m3U8FileInfo.Length;
                             }
                         }
+                    }
 
                 // Calculate storage for upscaled videos
-                if (video.VideoUpscales != null)
-                    foreach (var upscale in video.VideoUpscales)
-                        if (!string.IsNullOrEmpty(upscale.OutputLocation))
+                foreach (var upscale in video.VideoUpscales)
+                    if (!string.IsNullOrEmpty(upscale.OutputLocation))
+                    {
+                        var upscaleFilePath = Path.Combine(WebRootPath, upscale.OutputLocation);
+                        if (System.IO.File.Exists(upscaleFilePath))
                         {
-                            var upscaleFilePath = Path.Combine(WebRootPath, upscale.OutputLocation);
-                            if (System.IO.File.Exists(upscaleFilePath))
-                            {
-                                var upscaleFileInfo = new FileInfo(upscaleFilePath);
-                                totalStorageUsed += upscaleFileInfo.Length;
-                            }
+                            var upscaleFileInfo = new FileInfo(upscaleFilePath);
+                            totalStorageUsed += upscaleFileInfo.Length;
                         }
+                    }
 
                 // Calculate storage for thumbnails
                 if (!string.IsNullOrEmpty(video.Thumbnail))

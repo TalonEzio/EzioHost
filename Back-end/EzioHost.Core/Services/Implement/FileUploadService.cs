@@ -4,13 +4,15 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
+using FFMpegCore;
 
 namespace EzioHost.Core.Services.Implement;
 
 public class FileUploadService(
     IFileUploadRepository fileUploadRepository,
     IDirectoryProvider directoryProvider,
-    IVideoService videoService) : IFileUploadService
+    IVideoService videoService,
+    IVideoSubtitleService videoSubtitleService) : IFileUploadService
 {
     private string BaseWebRootFolder => directoryProvider.GetWebRootPath();
     private string BaseUploadFolder => directoryProvider.GetBaseUploadFolder();
@@ -116,6 +118,10 @@ public class FileUploadService(
         };
 
         await videoService.AddNewVideo(newVideo);
+
+        // Try to auto-extract embedded subtitles (e.g. from MKV) and store them as WebVTT subtitles
+        await TryExtractEmbeddedSubtitleAsync(newVideo, videoFinalPath, fileUpload.CreatedBy);
+
         return VideoEnum.FileUploadStatus.Completed;
     }
 
@@ -168,5 +174,86 @@ public class FileUploadService(
         await videoService.AddNewVideo(newVideo);
 
         return copyFileUpload;
+    }
+
+    private async Task TryExtractEmbeddedSubtitleAsync(Video video, string videoAbsolutePath, Guid userId)
+    {
+        // This is a best-effort operation: if the file has no subtitle stream or FFmpeg is not available,
+        // we silently ignore the error and keep the upload flow successful.
+        try
+        {
+            // Analyze the video file to get all subtitle streams
+            var mediaInfo = await FFProbe.AnalyseAsync(videoAbsolutePath);
+
+            // Get all subtitle streams
+            var subtitleStreams = mediaInfo.SubtitleStreams.ToList();
+            if (!subtitleStreams.Any())
+                return;
+
+            for (var subtitleIndex = 0; subtitleIndex < subtitleStreams.Count; subtitleIndex++)
+            {
+                try
+                {
+                    var subtitleStream = subtitleStreams[subtitleIndex];
+                    var subtitleStreamFFmpegMap = $"-map 0:s:{subtitleIndex}";
+                    // Determine language name from stream metadata
+                    // Priority: Title > Language > Default name
+                    var tags = subtitleStream.Tags;
+                    var languageName = tags != null && tags.TryGetValue("title", out var title) && !string.IsNullOrWhiteSpace(title)
+                        ? title
+                        : tags != null && tags.TryGetValue("language", out var language) && !string.IsNullOrWhiteSpace(language)
+                            ? language
+                            : $"Subtitle {subtitleIndex}";
+
+                    // Create a temporary VTT file for this subtitle stream
+                    var tempSubtitlePath = Path.Combine(BaseUploadFolder, $"{Guid.NewGuid()}.vtt");
+
+                    // Extract and convert this specific subtitle stream to WebVTT
+                    var arguments = FFMpegArguments
+                        .FromFileInput(videoAbsolutePath)
+                        .OutputToFile(tempSubtitlePath, true,
+                            options => options
+                                // Map the specific subtitle stream by its subtitle-stream index
+                                .WithCustomArgument(subtitleStreamFFmpegMap)
+                                // Ensure output is WebVTT so it can be consumed by the existing subtitle pipeline
+                                .WithCustomArgument("-c:s webvtt"));
+
+                    await arguments.ProcessAsynchronously();
+
+                    if (!File.Exists(tempSubtitlePath)) continue;
+
+                    await using var subtitleFileStream = new FileStream(tempSubtitlePath, FileMode.Open, FileAccess.Read);
+                    var fileInfo = new FileInfo(tempSubtitlePath);
+
+                    // Upload the subtitle using the existing pipeline
+                    await videoSubtitleService.UploadSubtitleAsync(
+                        video.Id,
+                        languageName,
+                        subtitleFileStream,
+                        Path.GetFileName(tempSubtitlePath),
+                        fileInfo.Length,
+                        userId);
+
+                    // Clean up temporary file
+                    try
+                    {
+                        File.Delete(tempSubtitlePath);
+                    }
+                    catch
+                    {
+                        // Ignore cleanup errors
+                    }
+                }
+                catch
+                {
+                    // Ignore errors for individual streams, continue with next stream
+                    continue;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore any errors during subtitle extraction so that upload is not affected
+        }
     }
 }

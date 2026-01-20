@@ -31,7 +31,7 @@
                          @ondragleave:preventDefault="true"
                          @ondrop:preventDefault="true">
                         <SeekableInputFile OnChanged="OnFilesChanged"
-                                           class="hidden" id="videoFileInput" accept="video/*" multiple/>
+                                           class="hidden" id="videoFileInput" accept="video/*,.mkv,video/x-matroska" multiple/>
 
                         @if (SelectedFiles.Any())
                         {
