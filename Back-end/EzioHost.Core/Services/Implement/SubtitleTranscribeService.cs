@@ -4,6 +4,7 @@ using EzioHost.Core.Repositories;
 using EzioHost.Core.Services.Interface;
 using EzioHost.Domain.Entities;
 using EzioHost.Shared.Enums;
+using EzioHost.Shared.Helpers;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using Microsoft.Extensions.Logging;
@@ -133,7 +134,7 @@ public class SubtitleTranscribeService(
                 logger.LogInformation($"[SubtitleTranscribe] Starting transcription for video {transcribe.VideoId} with model {userSettings.ModelType}");
 
                 using var whisperFactory = WhisperFactory.FromPath(modelPath);
-                
+
                 // Note: GPU support is automatically enabled if Whisper.net.Runtime.Cuda is installed
                 // No explicit GPU configuration needed - the library will use GPU if available
                 if (userSettings.UseGpu)
@@ -249,12 +250,7 @@ public class SubtitleTranscribeService(
 
     private static string GetLanguageDisplayName(string languageCode)
     {
-        return languageCode.ToLowerInvariant() switch
-        {
-            "vi" => "Vietnamese",
-            "en" => "English",
-            "auto" => "Auto",
-            _ => languageCode
-        };
+        var supportedLanguages = LanguageHelper.GetSupportedLanguages();
+        return supportedLanguages.FirstOrDefault(language => language.Code == languageCode)?.NativeName ?? languageCode;
     }
 }

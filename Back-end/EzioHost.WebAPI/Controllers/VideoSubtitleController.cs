@@ -76,6 +76,7 @@ public class VideoSubtitleController(
     }
 
     [HttpGet("file/{subtitleId:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetSubtitleFile([FromRoute] Guid subtitleId)
     {
         try

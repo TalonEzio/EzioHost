@@ -4,8 +4,8 @@ public static class LanguageHelper
 {
     public static List<LanguageInfo> GetSupportedLanguages()
     {
-        return new List<LanguageInfo>
-        {
+        return
+        [
             new("auto", "Auto", "Tự động chọn"),
             new("vi", "Vietnamese", "Tiếng Việt"),
             new("en", "English", "English"),
@@ -162,7 +162,7 @@ public static class LanguageHelper
             new("crh", "Crimean Tatar", "Qırım tatar"),
             new("gag", "Gagauz", "Gagauz"),
             new("chm", "Mari", "Марий")
-        };
+        ];
     }
 
     public record LanguageInfo(string Code, string Name, string NativeName);
