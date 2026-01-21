@@ -1,4 +1,7 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Globalization;
+using System.Threading.Channels;
 using AutoMapper;
 using EzioHost.Core.Private;
 using EzioHost.Core.Providers;
@@ -15,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using static EzioHost.Shared.Enums.VideoEnum;
+using Channel = System.Threading.Channels.Channel;
 
 namespace EzioHost.Core.Services.Implement;
 
@@ -28,10 +32,13 @@ public class UpscaleService(
     IM3U8PlaylistService m3U8PlaylistService,
     ILogger<UpscaleService> logger) : IUpscaleService
 {
-    private const int CONCURRENT_UPSCALE_TASK = 1;
-    private const string FRAME_PATTERN = "frame_%05d.jpg";
-    private const string FRAME_SEARCH_PATTERN = "frame_*.jpg";
+    private const int CONCURRENT_UPSCALE_TASK = 2; // Increased for streaming pipeline
+    private const int BATCH_SIZE = 1; // Batch size for upscaling (can be increased if model supports it)
     private const int MAX_CACHED_SESSIONS = 5; // Limit number of cached sessions
+
+    // Records for streaming pipeline
+    private record struct FrameData(int Index, byte[] Data, int Width, int Height);
+    private record struct UpscaledFrameData(int Index, byte[] Data, int Width, int Height);
 
     private static readonly ImageEncodingParam ImageEncodingParam;
     private static readonly SessionOptions SessionOptions;
@@ -73,7 +80,7 @@ public class UpscaleService(
 
         try
         {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew();
             var inferenceSession = GetInferenceSession(model);
 
             var upscale = await Upscaler.UpscaleImageAsync(inputPath, inferenceSession, model.Scale);
@@ -97,9 +104,390 @@ public class UpscaleService(
         }
     }
 
+    /// <summary>
+    /// Streaming pipeline: decode frames from FFmpeg stdout, upscale, and encode back to FFmpeg stdin
+    /// This avoids saving all frames to disk, significantly reducing I/O and disk space usage
+    /// </summary>
+    private async Task ProcessVideoStreamingAsync(
+        string inputVideoPath,
+        string outputVideoPath,
+        string audioPath,
+        int originalWidth,
+        int originalHeight,
+        double frameRate,
+        int outputWidth,
+        int outputHeight,
+        InferenceSession inferenceSession,
+        int scale,
+        Guid videoUpscaleId,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(
+            "Starting streaming pipeline. VideoUpscaleId: {VideoUpscaleId}, Workers: {Workers}, BatchSize: {BatchSize}",
+            videoUpscaleId,
+            CONCURRENT_UPSCALE_TASK,
+            BATCH_SIZE);
+
+        var upscaleStopwatch = Stopwatch.StartNew();
+        var processedFrames = new ThreadSafeCounter();
+        var failedFrames = new ThreadSafeCounter();
+        var sessionLock = new object();
+
+        // Start FFmpeg decode process (outputs raw BGR frames to stdout)
+        using var decodeProcess = StartDecodeProcess(inputVideoPath, originalWidth, originalHeight, frameRate);
+        if (decodeProcess.StandardOutput.BaseStream == Stream.Null)
+        {
+            throw new InvalidOperationException("Failed to access FFmpeg decode pipe.");
+        }
+
+        // Drain decode stderr to avoid blocking
+        var decodeErrorTask = DrainStreamAsync(decodeProcess.StandardError, "ffmpeg-decode", cancellationToken);
+
+        // Create channels for pipeline stages
+        var inputChannel = Channel.CreateUnbounded<FrameData>();
+        var outputChannel = Channel.CreateUnbounded<UpscaledFrameData>();
+
+        var source = decodeProcess.StandardOutput.BaseStream;
+        var frameSize = originalWidth * originalHeight * 3; // BGR24 = 3 bytes per pixel
+        const int readBatchSize = 4; // Read multiple frames at once to reduce syscalls
+        var batchBuffer = new byte[frameSize * readBatchSize];
+        var frameIndex = 0;
+
+        // Stage 1: Read frames from FFmpeg stdout
+        var readTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var totalBytesRead = 0;
+                    var targetBytes = frameSize * readBatchSize;
+
+                    while (totalBytesRead < targetBytes)
+                    {
+                        var read = await source.ReadAsync(
+                            batchBuffer.AsMemory(totalBytesRead, targetBytes - totalBytesRead),
+                            cancellationToken);
+                        if (read == 0)
+                        {
+                            // End of stream: emit remaining full frames
+                            if (totalBytesRead > 0 && totalBytesRead % frameSize == 0)
+                            {
+                                var framesInBatch = totalBytesRead / frameSize;
+                                for (int i = 0; i < framesInBatch; i++)
+                                {
+                                    var offset = i * frameSize;
+                                    var frameData = new byte[frameSize];
+                                    Array.Copy(batchBuffer, offset, frameData, 0, frameSize);
+                                    await inputChannel.Writer.WriteAsync(
+                                        new FrameData(frameIndex, frameData, originalWidth, originalHeight),
+                                        cancellationToken);
+                                    frameIndex++;
+                                }
+                            }
+                            return;
+                        }
+                        totalBytesRead += read;
+                    }
+
+                    // Split batch into individual frames
+                    for (int i = 0; i < readBatchSize; i++)
+                    {
+                        var offset = i * frameSize;
+                        var frameData = new byte[frameSize];
+                        Array.Copy(batchBuffer, offset, frameData, 0, frameSize);
+                        await inputChannel.Writer.WriteAsync(
+                            new FrameData(frameIndex, frameData, originalWidth, originalHeight),
+                            cancellationToken);
+                        frameIndex++;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                logger.LogWarning("Frame reading cancelled. VideoUpscaleId: {VideoUpscaleId}", videoUpscaleId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error reading frames. VideoUpscaleId: {VideoUpscaleId}", videoUpscaleId);
+            }
+            finally
+            {
+                inputChannel.Writer.Complete();
+            }
+        }, cancellationToken);
+
+        // Stage 2: Worker tasks to upscale frames
+        var workerTasks = new List<Task>();
+        for (int i = 0; i < CONCURRENT_UPSCALE_TASK; i++)
+        {
+            workerTasks.Add(Task.Run(async () =>
+            {
+                var batch = new List<FrameData>(BATCH_SIZE);
+                await foreach (var frameData in inputChannel.Reader.ReadAllAsync(cancellationToken))
+                {
+                    batch.Add(frameData);
+
+                    if (batch.Count >= BATCH_SIZE)
+                    {
+                        await ProcessBatchAsync(
+                            batch,
+                            outputChannel,
+                            inferenceSession,
+                            scale,
+                            sessionLock,
+                            videoUpscaleId,
+                            processedFrames,
+                            failedFrames,
+                            cancellationToken);
+                        batch.Clear();
+                    }
+                }
+
+                // Process remaining frames
+                if (batch.Count > 0)
+                {
+                    await ProcessBatchAsync(
+                        batch,
+                        outputChannel,
+                        inferenceSession,
+                        scale,
+                        sessionLock,
+                        videoUpscaleId,
+                        processedFrames,
+                        failedFrames,
+                        cancellationToken);
+                }
+            }, cancellationToken));
+        }
+
+        // Stage 3: Write upscaled frames to FFmpeg encode process (in order)
+        Process? encodeProcess = null;
+        Stream? encodeStream = null;
+        Task? encodeErrorTask = null;
+        var nextExpectedIndex = 0;
+        var pendingFrames = new Dictionary<int, UpscaledFrameData>();
+        byte[]? outputBuffer = null;
+
+        var writeTask = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach (var upscaledData in outputChannel.Reader.ReadAllAsync(cancellationToken))
+                {
+                    pendingFrames[upscaledData.Index] = upscaledData;
+
+                    // Write frames in order
+                    while (pendingFrames.TryGetValue(nextExpectedIndex, out var frameToWrite))
+                    {
+                        pendingFrames.Remove(nextExpectedIndex);
+
+                        // Lazy start encoder when we have first frame
+                        if (encodeProcess == null)
+                        {
+                            encodeProcess = StartEncodeProcess(
+                                audioPath,
+                                outputVideoPath,
+                                frameToWrite.Width,
+                                frameToWrite.Height,
+                                frameRate);
+                            encodeStream = encodeProcess.StandardInput.BaseStream;
+                            encodeErrorTask = DrainStreamAsync(encodeProcess.StandardError, "ffmpeg-encode", cancellationToken);
+                        }
+
+                        outputBuffer ??= new byte[frameToWrite.Width * frameToWrite.Height * 3];
+                        frameToWrite.Data.CopyTo(outputBuffer);
+
+                        await encodeStream!.WriteAsync(outputBuffer, cancellationToken);
+                        nextExpectedIndex++;
+
+                        if (nextExpectedIndex % 100 == 0)
+                        {
+                            logger.LogDebug(
+                                "Streaming progress. VideoUpscaleId: {VideoUpscaleId}, Processed: {Processed}",
+                                videoUpscaleId,
+                                nextExpectedIndex);
+                        }
+                    }
+                }
+
+                // Write remaining buffered frames
+                while (pendingFrames.Count > 0 && !cancellationToken.IsCancellationRequested)
+                {
+                    if (pendingFrames.Remove(nextExpectedIndex, out var frameToWrite))
+                    {
+                        if (encodeProcess == null)
+                        {
+                            encodeProcess = StartEncodeProcess(
+                                audioPath,
+                                outputVideoPath,
+                                frameToWrite.Width,
+                                frameToWrite.Height,
+                                frameRate);
+                            encodeStream = encodeProcess.StandardInput.BaseStream;
+                            encodeErrorTask = DrainStreamAsync(encodeProcess.StandardError, "ffmpeg-encode", cancellationToken);
+                        }
+
+                        outputBuffer ??= new byte[frameToWrite.Width * frameToWrite.Height * 3];
+                        frameToWrite.Data.CopyTo(outputBuffer);
+                        await encodeStream!.WriteAsync(outputBuffer, cancellationToken);
+                        nextExpectedIndex++;
+                    }
+                    else
+                    {
+                        await Task.Delay(10, cancellationToken);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                logger.LogWarning("Frame writing cancelled. VideoUpscaleId: {VideoUpscaleId}", videoUpscaleId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error writing frames. VideoUpscaleId: {VideoUpscaleId}", videoUpscaleId);
+            }
+        }, cancellationToken);
+
+        // Wait for all stages
+        await readTask;
+        await Task.WhenAll(workerTasks);
+        outputChannel.Writer.Complete();
+        await writeTask;
+
+        // Finalize encoder
+        if (encodeStream != null)
+        {
+            await encodeStream.FlushAsync(cancellationToken);
+            await encodeStream.DisposeAsync();
+        }
+
+        await decodeErrorTask;
+        if (!decodeProcess.HasExited)
+        {
+            await decodeProcess.WaitForExitAsync(cancellationToken);
+        }
+
+        if (encodeProcess != null)
+        {
+            await (encodeErrorTask ?? Task.CompletedTask);
+            if (!encodeProcess.HasExited)
+            {
+                await encodeProcess.WaitForExitAsync(cancellationToken);
+            }
+        }
+
+        upscaleStopwatch.Stop();
+        logger.LogInformation(
+            "Streaming pipeline completed. VideoUpscaleId: {VideoUpscaleId}, Processed: {Processed}, Failed: {Failed}, Duration: {DurationMs}ms",
+            videoUpscaleId,
+            processedFrames.Value,
+            failedFrames.Value,
+            upscaleStopwatch.ElapsedMilliseconds);
+    }
+
+    private async Task ProcessBatchAsync(
+        List<FrameData> batch,
+        ChannelWriter<UpscaledFrameData> outputWriter,
+        InferenceSession inferenceSession,
+        int scale,
+        object sessionLock,
+        Guid videoUpscaleId,
+        ThreadSafeCounter processedFrames,
+        ThreadSafeCounter failedFrames,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var inputFrames = batch.Select(f => (BgrData: f.Data, f.Width, f.Height)).ToList();
+            var indices = batch.Select(f => f.Index).ToList();
+
+            List<byte[]> upscaledFrames;
+            int outputWidth, outputHeight;
+
+            lock (sessionLock)
+            {
+                (upscaledFrames, outputWidth, outputHeight) = Upscaler.UpscaleBatchFromBgrBytes(
+                    inputFrames,
+                    inferenceSession,
+                    scale);
+            }
+
+            for (int i = 0; i < upscaledFrames.Count; i++)
+            {
+                await outputWriter.WriteAsync(
+                    new UpscaledFrameData(indices[i], upscaledFrames[i], outputWidth, outputHeight),
+                    cancellationToken);
+            }
+
+            processedFrames.Add(batch.Count);
+        }
+        catch (Exception ex)
+        {
+            failedFrames.Add(batch.Count);
+            logger.LogWarning(ex,
+                "Error upscaling batch. VideoUpscaleId: {VideoUpscaleId}, BatchSize: {BatchSize}",
+                videoUpscaleId,
+                batch.Count);
+        }
+    }
+
+    private Process StartDecodeProcess(string inputVideo, int width, int height, double frameRate)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ffmpeg",
+            Arguments = $"-v error -i \"{inputVideo}\" -f rawvideo -pix_fmt bgr24 -s {width}x{height} -r {frameRate.ToString(CultureInfo.InvariantCulture)} pipe:1",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        return Process.Start(psi) ?? throw new InvalidOperationException("Unable to start FFmpeg decode process.");
+    }
+
+    private Process StartEncodeProcess(string audioSource, string outputVideo, int width, int height, double frameRate)
+    {
+        var videoCodec = VideoEncodeSetting.VideoCodec.ToLowerInvariant();
+        var bitrate = VideoEncodeSetting.UpscaleBitrateKbps;
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ffmpeg",
+            Arguments =
+                $"-y -f rawvideo -pix_fmt bgr24 -s {width}x{height} -r {frameRate.ToString(CultureInfo.InvariantCulture)} -i pipe:0 " +
+                $"-i \"{audioSource}\" -map 0:v:0 -map 1:a? -c:v {videoCodec} -b:v {bitrate}k -pix_fmt yuv420p -c:a copy -shortest \"{outputVideo}\"",
+            RedirectStandardInput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        return Process.Start(psi) ?? throw new InvalidOperationException("Unable to start FFmpeg encode process.");
+    }
+
+    private async Task DrainStreamAsync(StreamReader reader, string prefix, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync(cancellationToken);
+                if (line == null) break;
+                // Optionally log FFmpeg output for debugging
+                // logger.LogTrace("{Prefix}: {Line}", prefix, line);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancelled
+        }
+    }
+
     public async Task UpscaleVideo(VideoUpscale videoUpscale)
     {
-        var overallStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var overallStopwatch = Stopwatch.StartNew();
         logger.LogInformation(
             "Starting video upscaling. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}, ModelId: {ModelId}",
             videoUpscale.Id,
@@ -111,26 +499,6 @@ public class UpscaleService(
 
         var model = videoUpscale.Model;
         var video = videoUpscale.Video;
-
-        if (model == null)
-        {
-            logger.LogError(
-                "OnnxModel not found for upscaling. VideoUpscaleId: {VideoUpscaleId}, ModelId: {ModelId}",
-                videoUpscale.Id,
-                videoUpscale.ModelId);
-            throw new InvalidOperationException(
-                $"OnnxModel with Id {videoUpscale.ModelId} was not found or has been deleted.");
-        }
-
-        if (video == null)
-        {
-            logger.LogError(
-                "Video not found for upscaling. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}",
-                videoUpscale.Id,
-                videoUpscale.VideoId);
-            throw new InvalidOperationException(
-                $"Video with Id {videoUpscale.VideoId} was not found or has been deleted.");
-        }
 
         logger.LogInformation(
             "Video upscaling parameters. VideoUpscaleId: {VideoUpscaleId}, Model: {ModelName}, Scale: {Scale}",
@@ -152,12 +520,6 @@ public class UpscaleService(
         var tempDir = Path.Combine(TempPath, Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
         logger.LogDebug("Created temporary directory for upscaling: {TempDir}", tempDir);
-
-        var framesDir = Path.Combine(tempDir, "frames");
-        Directory.CreateDirectory(framesDir);
-
-        var upscaledFramesDir = Path.Combine(tempDir, "upscaled_frames");
-        Directory.CreateDirectory(upscaledFramesDir);
 
         try
         {
@@ -185,159 +547,56 @@ public class UpscaleService(
                 frameRate);
 
             logger.LogInformation(
-                "Starting frame and audio extraction. VideoUpscaleId: {VideoUpscaleId}",
+                "Starting streaming pipeline upscaling. VideoUpscaleId: {VideoUpscaleId}",
                 videoUpscale.Id);
 
-            var extractionStopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-            var frameExtractionArguments = FFMpegArguments
-                .FromFileInput(inputVideoPath)
-                .OutputToFile(Path.Combine(framesDir, FRAME_PATTERN), true, options => options
-                    .WithFramerate(frameRate)
-                    .WithCustomArgument("-qscale:v 1")
-                    .WithCustomArgument("-qmin 1")
-                    .WithCustomArgument("-qmax 1")
-                    .WithCustomArgument("-fps_mode cfr")
-                );
-            var randomVideoFileName = Path.GetRandomFileName() + ".mp4";
+            // Extract audio first (still needed for merging)
             var randomAudioFileName = Path.GetRandomFileName() + ".aac";
+            var audioPath = Path.Combine(tempDir, randomAudioFileName);
+
+            logger.LogInformation(
+                "Extracting audio. VideoUpscaleId: {VideoUpscaleId}",
+                videoUpscale.Id);
 
             var audioExtractionArguments = FFMpegArguments
                 .FromFileInput(inputVideoPath)
-                .OutputToFile(Path.Combine(tempDir, randomAudioFileName), true, options => options
+                .OutputToFile(audioPath, true, options => options
                     .WithAudioCodec(AudioCodec.Aac)
                 );
 
-            await Task.WhenAll(
-                frameExtractionArguments.ProcessAsynchronously(),
-                audioExtractionArguments.ProcessAsynchronously()
-            );
-
-            extractionStopwatch.Stop();
-            logger.LogInformation(
-                "Frame and audio extraction completed. VideoUpscaleId: {VideoUpscaleId}, Duration: {DurationMs}ms",
-                videoUpscale.Id,
-                extractionStopwatch.ElapsedMilliseconds);
-
-            var frameFiles = Directory.GetFiles(framesDir, FRAME_SEARCH_PATTERN).OrderBy(f => f).ToList();
+            await audioExtractionArguments.ProcessAsynchronously();
 
             logger.LogInformation(
-                "Found {FrameCount} frames to upscale. VideoUpscaleId: {VideoUpscaleId}",
-                frameFiles.Count,
+                "Audio extraction completed. VideoUpscaleId: {VideoUpscaleId}",
                 videoUpscale.Id);
 
-            logger.LogInformation(
-                "Starting frame upscaling. VideoUpscaleId: {VideoUpscaleId}, FrameCount: {FrameCount}, ConcurrentTasks: {ConcurrentTasks}",
-                videoUpscale.Id,
-                frameFiles.Count,
-                CONCURRENT_UPSCALE_TASK);
+            // Use streaming pipeline: decode -> upscale -> encode (all in memory, no disk I/O for frames)
+            var tempVideoPath = Path.Combine(tempDir, Path.GetRandomFileName() + ".mp4");
+            await ProcessVideoStreamingAsync(
+                inputVideoPath,
+                tempVideoPath,
+                audioPath,
+                originalWidth,
+                originalHeight,
+                frameRate,
+                outputWidth,
+                outputHeight,
+                inferenceSession,
+                model.Scale,
+                videoUpscale.Id);
 
-            var upscaleStopwatch = System.Diagnostics.Stopwatch.StartNew();
-            var semaphore = new SemaphoreSlim(CONCURRENT_UPSCALE_TASK);
-            var tasks = new List<Task>();
-            var processedFrames = 0;
-            var failedFrames = 0;
-
-            foreach (var frameFile in frameFiles)
+            // Move temp video to final location
+            if (File.Exists(tempVideoPath))
             {
-                await semaphore.WaitAsync();
-
-                tasks.Add(Task.Run(() =>
-                {
-                    try
-                    {
-                        var frameName = Path.GetFileName(frameFile);
-                        var upscaledFramePath = Path.Combine(upscaledFramesDir, frameName);
-
-                        var upscaledFrame = Upscaler.UpscaleImage(frameFile, inferenceSession, model.Scale);
-                        upscaledFrame.SaveImage(upscaledFramePath, ImageEncodingParam);
-
-                        var currentProcessed = Interlocked.Increment(ref processedFrames);
-                        if (currentProcessed % 100 == 0 || currentProcessed == frameFiles.Count)
-                        {
-                            logger.LogDebug(
-                                "Frame upscaling progress. VideoUpscaleId: {VideoUpscaleId}, Processed: {Processed}/{Total} ({Percentage:F1}%)",
-                                videoUpscale.Id,
-                                currentProcessed,
-                                frameFiles.Count,
-                                (currentProcessed * 100.0 / frameFiles.Count));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Interlocked.Increment(ref failedFrames);
-                        logger.LogWarning(ex,
-                            "Error upscaling frame. VideoUpscaleId: {VideoUpscaleId}, FrameFile: {FrameFile}",
-                            videoUpscale.Id,
-                            frameFile);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }));
+                File.Move(tempVideoPath, outputVideoPath, true);
+                logger.LogInformation(
+                    "Streaming pipeline completed and video saved. VideoUpscaleId: {VideoUpscaleId}",
+                    videoUpscale.Id);
             }
-
-            await Task.WhenAll(tasks);
-
-            upscaleStopwatch.Stop();
-            logger.LogInformation(
-                "Frame upscaling completed. VideoUpscaleId: {VideoUpscaleId}, Processed: {Processed}, Failed: {Failed}, Total: {Total}, Duration: {DurationMs}ms",
-                videoUpscale.Id,
-                processedFrames,
-                failedFrames,
-                frameFiles.Count,
-                upscaleStopwatch.ElapsedMilliseconds);
-
-
-            logger.LogInformation(
-                "Creating upscaled video from frames. VideoUpscaleId: {VideoUpscaleId}",
-                videoUpscale.Id);
-
-            var videoCreationStopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-            var videoCreationArguments = FFMpegArguments
-                .FromFileInput(Path.Combine(upscaledFramesDir, FRAME_PATTERN), false, options => options
-                    .WithFramerate(frameRate)
-                )
-                .OutputToFile(Path.Combine(tempDir, randomVideoFileName), true, options => options
-                    .WithVideoCodec(VideoEncodeSetting.VideoCodec)
-                    .WithCustomArgument($"-b:v {VideoEncodeSetting.UpscaleBitrateKbps}k")
-                    .WithCustomArgument("-pix_fmt yuv420p")
-                    .WithVideoFilters(filterOptions => filterOptions
-                        .Scale(outputWidth, outputHeight)
-                    )
-                );
-
-            await videoCreationArguments.ProcessAsynchronously();
-
-            videoCreationStopwatch.Stop();
-            logger.LogInformation(
-                "Video creation from frames completed. VideoUpscaleId: {VideoUpscaleId}, Duration: {DurationMs}ms",
-                videoUpscale.Id,
-                videoCreationStopwatch.ElapsedMilliseconds);
-
-            logger.LogInformation(
-                "Merging audio with upscaled video. VideoUpscaleId: {VideoUpscaleId}",
-                videoUpscale.Id);
-
-            var mergeStopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-            var finalVideoArguments = FFMpegArguments
-                .FromFileInput(Path.Combine(tempDir, randomVideoFileName))
-                .AddFileInput(Path.Combine(tempDir, randomAudioFileName))
-                .OutputToFile(outputVideoPath, true, options => options
-                    .CopyChannel(Channel.Video)
-                    .CopyChannel(Channel.Audio)
-                );
-
-            await finalVideoArguments.ProcessAsynchronously();
-
-            mergeStopwatch.Stop();
-            logger.LogInformation(
-                "Audio merge completed. VideoUpscaleId: {VideoUpscaleId}, Duration: {DurationMs}ms",
-                videoUpscale.Id,
-                mergeStopwatch.ElapsedMilliseconds);
+            else
+            {
+                throw new InvalidOperationException($"Streaming pipeline failed: output video not found at {tempVideoPath}");
+            }
 
             videoUpscale.OutputLocation = Path.GetRelativePath(WebRootPath, outputVideoPath);
             await UpdateVideoUpscale(videoUpscale);
@@ -509,6 +768,18 @@ public class UpscaleService(
             onnxModel.Id);
         newInferenceSession.Dispose();
         throw new FileLoadException("Cannot add onnx model to cache");
+    }
+
+    private class ThreadSafeCounter
+    {
+        private int _value;
+
+        public int Value => Interlocked.CompareExchange(ref _value, 0, 0);
+
+        public void Add(int amount)
+        {
+            Interlocked.Add(ref _value, amount);
+        }
     }
 
     private void CleanupOldSessions()

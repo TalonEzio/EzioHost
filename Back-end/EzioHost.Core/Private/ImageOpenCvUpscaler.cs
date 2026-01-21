@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -19,43 +19,8 @@ internal sealed class ImageOpenCvUpscaler
 
     public Mat UpscaleImage(string imagePath, InferenceSession session, int scale)
     {
-        var stopwatch = Stopwatch.StartNew();
-
         var inputImage = Cv2.ImRead(imagePath);
-        //Cv2.CvtColor(inputImage, inputImage, ColorConversionCodes.BGR2RGB);
-
-        var inputName = session.InputMetadata.Keys.First();
-        // Check if the model expects FP16 input
-        var inputType = session.InputMetadata[inputName].ElementDataType;
-
-        IDisposableReadOnlyCollection<DisposableNamedOnnxValue>? results = null;
-
-        if (inputType == TensorElementType.Float16)
-        {
-            // Create FP16 batch tensor: [batch_size, 3, H, W]
-            var batchTensorFp16 = ImageToTensorFp16(inputImage);
-            results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, batchTensorFp16)]);
-        }
-        else if (inputType == TensorElementType.Float)
-        {
-            // Fallback to FP32 if model doesn't support FP16
-            var batchTensor = ImageToTensorFp32(inputImage);
-            results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, batchTensor)]);
-        }
-
-        if (results == null)
-            throw new NotSupportedException(
-                $"Model input type {inputType} is not supported. Only Float16 and Float32 are supported.");
-        stopwatch.Stop();
-
-        var outputTensor = results.First().AsTensor<float>();
-
-        stopwatch.Restart();
-        var outputImage = TensorToImage(outputTensor);
-        stopwatch.Stop();
-
-
-        return outputImage;
+        return UpscaleImageFromMat(inputImage, session, scale);
     }
 
     private static DenseTensor<float> ImageToTensorFp32(Mat image)
@@ -202,6 +167,90 @@ internal sealed class ImageOpenCvUpscaler
             if (x < 0) x = 0;
             else if (x > 255f) x = 255f;
             dst[i] = (byte)x;
+        }
+    }
+
+    /// <summary>
+    /// Upscale a single frame from BGR byte array (raw video frame format)
+    /// </summary>
+    public byte[] UpscaleFromBgrBytes(byte[] bgrData, int width, int height, InferenceSession session, int scale)
+    {
+        // Create Mat from BGR byte array
+        var inputMat = new Mat(height, width, MatType.CV_8UC3);
+        Marshal.Copy(bgrData, 0, inputMat.Data, bgrData.Length);
+        
+        // Upscale using existing logic
+        var upscaledMat = UpscaleImageFromMat(inputMat, session, scale);
+        inputMat.Dispose();
+        
+        // Convert Mat back to BGR byte array
+        var outputWidth = width * scale;
+        var outputHeight = height * scale;
+        var outputSize = outputWidth * outputHeight * 3;
+        var outputBytes = new byte[outputSize];
+        Marshal.Copy(upscaledMat.Data, outputBytes, 0, outputSize);
+        
+        upscaledMat.Dispose();
+        return outputBytes;
+    }
+
+    /// <summary>
+    /// Upscale a batch of frames from BGR byte arrays
+    /// Returns list of upscaled BGR byte arrays and output dimensions
+    /// </summary>
+    public (List<byte[]> UpscaledFrames, int OutputWidth, int OutputHeight) UpscaleBatchFromBgrBytes(
+        List<(byte[] BgrData, int Width, int Height)> frames,
+        InferenceSession session,
+        int scale)
+    {
+        if (frames.Count == 0)
+            return (new List<byte[]>(), 0, 0);
+
+        var firstFrame = frames[0];
+        var outputWidth = firstFrame.Width * scale;
+        var outputHeight = firstFrame.Height * scale;
+        var outputFrames = new List<byte[]>(frames.Count);
+
+        // For now, process frames sequentially
+        // TODO: Implement true batch processing if model supports it
+        foreach (var frame in frames)
+        {
+            var upscaled = UpscaleFromBgrBytes(frame.BgrData, frame.Width, frame.Height, session, scale);
+            outputFrames.Add(upscaled);
+        }
+
+        return (outputFrames, outputWidth, outputHeight);
+    }
+
+    /// <summary>
+    /// Internal method to upscale from Mat (used by both file and byte array methods)
+    /// </summary>
+    private Mat UpscaleImageFromMat(Mat inputImage, InferenceSession session, int scale)
+    {
+        var inputName = session.InputMetadata.Keys.First();
+        var inputType = session.InputMetadata[inputName].ElementDataType;
+
+        IDisposableReadOnlyCollection<DisposableNamedOnnxValue>? results = null;
+
+        if (inputType == TensorElementType.Float16)
+        {
+            var batchTensorFp16 = ImageToTensorFp16(inputImage);
+            results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, batchTensorFp16)]);
+        }
+        else if (inputType == TensorElementType.Float)
+        {
+            var batchTensor = ImageToTensorFp32(inputImage);
+            results = session.Run([NamedOnnxValue.CreateFromTensor(inputName, batchTensor)]);
+        }
+
+        if (results == null)
+            throw new NotSupportedException(
+                $"Model input type {inputType} is not supported. Only Float16 and Float32 are supported.");
+
+        using (results)
+        {
+            var outputTensor = results.First().AsTensor<float>();
+            return TensorToImage(outputTensor);
         }
     }
 }
