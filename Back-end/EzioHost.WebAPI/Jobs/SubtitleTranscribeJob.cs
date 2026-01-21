@@ -20,13 +20,32 @@ public class SubtitleTranscribeJob(
 {
     public async Task Execute(IJobExecutionContext context)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var jobName = context.JobDetail.Key.Name;
+        var triggerName = context.Trigger.Key.Name;
+
+        logger.LogInformation(
+            "SubtitleTranscribeJob started. JobName: {JobName}, TriggerName: {TriggerName}, FireTime: {FireTime}",
+            jobName,
+            triggerName,
+            context.FireTimeUtc);
+
         try
         {
             var transcribe = await subtitleTranscribeService.GetNextTranscribeJobAsync();
 
-            if (transcribe == null) return;
+            if (transcribe == null)
+            {
+                logger.LogDebug("No transcription jobs to process");
+                return;
+            }
 
-            logger.LogInformation($"[SubtitleTranscribeJob] Processing transcription for video {transcribe.VideoId}");
+            logger.LogInformation(
+                "Processing transcription. SubtitleTranscribeId: {SubtitleTranscribeId}, VideoId: {VideoId}, Language: {Language}, UserId: {UserId}",
+                transcribe.Id,
+                transcribe.VideoId,
+                transcribe.Language,
+                transcribe.CreatedBy);
 
             var userId = transcribe.CreatedBy;
 
@@ -44,12 +63,35 @@ public class SubtitleTranscribeJob(
                     .SafeFireAndForget();
 
                 logger.LogInformation(
-                    $"[SubtitleTranscribeJob] Transcription completed and notified user {userId} for video {transcribe.VideoId}");
+                    "Transcription completed and notification sent. SubtitleTranscribeId: {SubtitleTranscribeId}, VideoId: {VideoId}, SubtitleId: {SubtitleId}, UserId: {UserId}, Duration: {DurationMs}ms",
+                    transcribe.Id,
+                    transcribe.VideoId,
+                    latestSubtitle.Id,
+                    userId,
+                    stopwatch.ElapsedMilliseconds);
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Transcription completed but no subtitle found. SubtitleTranscribeId: {SubtitleTranscribeId}, VideoId: {VideoId}",
+                    transcribe.Id,
+                    transcribe.VideoId);
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "[SubtitleTranscribeJob] Error processing transcription");
+            stopwatch.Stop();
+            logger.LogError(ex,
+                "Error processing transcription. Duration: {DurationMs}ms",
+                stopwatch.ElapsedMilliseconds);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            logger.LogInformation(
+                "SubtitleTranscribeJob finished. JobName: {JobName}, Duration: {DurationMs}ms",
+                jobName,
+                stopwatch.ElapsedMilliseconds);
         }
     }
 }

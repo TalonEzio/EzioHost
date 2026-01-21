@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Linq.Expressions;
 using AutoMapper;
 using EzioHost.Core.Providers;
@@ -58,55 +58,114 @@ public class VideoService(
         Expression<Func<Video, bool>>? expression = null,
         Expression<Func<Video, object>>[]? includes = null)
     {
+        logger.LogDebug(
+            "Getting videos. PageNumber: {PageNumber}, PageSize: {PageSize}, HasFilter: {HasFilter}, IncludesCount: {IncludesCount}",
+            pageNumber,
+            pageSize,
+            expression != null,
+            includes?.Length ?? 0);
+
         return _videoRepository.GetVideos(pageNumber, pageSize, expression, includes);
     }
 
     public async Task<Video> AddNewVideo(Video newVideo)
     {
-        await UpdateResolution(newVideo);
-        newVideo.Thumbnail = await GenerateThumbnail(newVideo);
-        newVideo.ShareType = VideoShareType.Public;
-        await _videoRepository.AddNewVideo(newVideo);
+        logger.LogInformation(
+            "Adding new video. VideoId: {VideoId}, Title: {Title}, CreatedBy: {CreatedBy}",
+            newVideo.Id,
+            newVideo.Title,
+            newVideo.CreatedBy);
 
-        return newVideo;
+        try
+        {
+            await UpdateResolution(newVideo);
+            logger.LogDebug("Updated resolution for video {VideoId}. Resolution: {Resolution}", newVideo.Id, newVideo.Resolution.GetDescription());
+
+            newVideo.Thumbnail = await GenerateThumbnail(newVideo);
+            logger.LogDebug("Generated thumbnail for video {VideoId}. Thumbnail: {Thumbnail}", newVideo.Id, newVideo.Thumbnail);
+
+            newVideo.ShareType = VideoShareType.Public;
+            await _videoRepository.AddNewVideo(newVideo);
+
+            logger.LogInformation("Successfully added new video {VideoId}", newVideo.Id);
+            return newVideo;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error adding new video {VideoId}", newVideo.Id);
+            throw;
+        }
     }
 
     public Task<Video?> GetVideoById(Guid videoId)
     {
+        logger.LogDebug("Getting video by ID: {VideoId}", videoId);
         return _videoRepository.GetVideoById(videoId);
     }
 
     public async Task<Video> UpdateVideo(Video updateVideo)
     {
-        if (string.IsNullOrEmpty(updateVideo.Thumbnail))
+        logger.LogInformation(
+            "Updating video. VideoId: {VideoId}, Title: {Title}, ModifiedBy: {ModifiedBy}",
+            updateVideo.Id,
+            updateVideo.Title,
+            updateVideo.ModifiedBy);
+
+        try
         {
-            await UpdateResolution(updateVideo);
-            updateVideo.Thumbnail = await GenerateThumbnail(updateVideo);
+            if (string.IsNullOrEmpty(updateVideo.Thumbnail))
+            {
+                logger.LogDebug("Thumbnail missing for video {VideoId}, generating new thumbnail", updateVideo.Id);
+                await UpdateResolution(updateVideo);
+                updateVideo.Thumbnail = await GenerateThumbnail(updateVideo);
+            }
+
+            var video = await _videoRepository.UpdateVideo(updateVideo);
+
+            logger.LogInformation("Successfully updated video {VideoId}", updateVideo.Id);
+            return video;
         }
-
-        var video = await _videoRepository.UpdateVideo(updateVideo);
-
-        return video;
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating video {VideoId}", updateVideo.Id);
+            throw;
+        }
     }
 
     public async Task EncodeVideo(Video inputVideo)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var absoluteRawLocation = Path.Combine(_webRootPath, inputVideo.RawLocation);
         var absoluteM3U8Location = Path.Combine(_webRootPath, inputVideo.M3U8Location);
+
+        logger.LogInformation(
+            "Starting video encoding. VideoId: {VideoId}, Resolution: {Resolution}, CreatedBy: {CreatedBy}",
+            inputVideo.Id,
+            inputVideo.Resolution,
+            inputVideo.CreatedBy);
 
         try
         {
             await videoUnitOfWork.BeginTransactionAsync();
+            logger.LogDebug("Transaction started for video encoding {VideoId}", inputVideo.Id);
 
             inputVideo.VideoStreams ??= [];
 
             // Get user's Cloudflare storage setting and set flag
             var cloudflareSetting = await cloudflareStorageSettingService.GetUserSettingsAsync(inputVideo.CreatedBy);
             inputVideo.IsCloudflareEnabled = cloudflareSetting.IsEnabled;
+            logger.LogDebug(
+                "Cloudflare storage setting for video {VideoId}: IsEnabled={IsEnabled}",
+                inputVideo.Id,
+                cloudflareSetting.IsEnabled);
 
             // Get user's active encoding settings
             var userSettings = await encodingQualitySettingService.GetActiveSettingsForEncoding(inputVideo.CreatedBy);
             var enabledResolutions = userSettings.Select(s => s.Resolution).ToHashSet();
+            logger.LogDebug(
+                "User {UserId} has {Count} enabled resolutions for encoding",
+                inputVideo.CreatedBy,
+                enabledResolutions.Count);
 
             // Get existing resolutions that are already encoded
             var existingResolutions = inputVideo.VideoStreams
@@ -130,17 +189,43 @@ public class VideoService(
 
             // Ensure at least one resolution is encoded
             if (resolutionsToEncode.Count == 0 && !inputVideo.VideoStreams.Any())
+            {
+                logger.LogError(
+                    "Cannot encode video {VideoId}: No resolutions available for encoding. User must enable at least one resolution in settings.",
+                    inputVideo.Id);
                 throw new InvalidOperationException(
                     $"Cannot encode video {inputVideo.Id}: No resolutions available for encoding. Please enable at least one resolution in settings.");
+            }
 
+            logger.LogInformation(
+                "Encoding {Count} resolutions for video {VideoId}: {Resolutions}",
+                resolutionsToEncode.Count,
+                inputVideo.Id,
+                string.Join(", ", resolutionsToEncode));
+
+            var resolutionIndex = 0;
             foreach (var videoResolution in resolutionsToEncode)
             {
+                resolutionIndex++;
+                logger.LogInformation(
+                    "Encoding resolution {Resolution} ({Current}/{Total}) for video {VideoId}",
+                    videoResolution,
+                    resolutionIndex,
+                    resolutionsToEncode.Count,
+                    inputVideo.Id);
+
                 var newVideoStream = await CreateHlsVariantStream(absoluteRawLocation, inputVideo, videoResolution,
                     inputVideo.CreatedBy);
 
                 await AddNewVideoStream(inputVideo, newVideoStream);
+
+                logger.LogInformation(
+                    "Successfully encoded resolution {Resolution} for video {VideoId}",
+                    videoResolution,
+                    inputVideo.Id);
             }
 
+            logger.LogDebug("Building full M3U8 playlist for video {VideoId}", inputVideo.Id);
             await m3U8PlaylistService.BuildFullPlaylistAsync(inputVideo, absoluteM3U8Location);
 
             inputVideo.Status = VideoStatus.Ready;
@@ -148,6 +233,14 @@ public class VideoService(
             await videoUnitOfWork.VideoRepository.UpdateVideoForUnitOfWork(inputVideo);
 
             await videoUnitOfWork.CommitTransactionAsync();
+            logger.LogDebug("Transaction committed for video encoding {VideoId}", inputVideo.Id);
+
+            stopwatch.Stop();
+            logger.LogInformation(
+                "Video encoding completed successfully. VideoId: {VideoId}, Duration: {DurationMs}ms, ResolutionsEncoded: {ResolutionsCount}",
+                inputVideo.Id,
+                stopwatch.ElapsedMilliseconds,
+                resolutionsToEncode.Count);
 
             var videoMapper = mapper.Map<VideoDto>(inputVideo);
 
@@ -158,8 +251,13 @@ public class VideoService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error encoding video {VideoId}. Rolling back transaction.", inputVideo.Id);
+            stopwatch.Stop();
+            logger.LogError(ex,
+                "Error encoding video {VideoId} after {DurationMs}ms. Rolling back transaction.",
+                inputVideo.Id,
+                stopwatch.ElapsedMilliseconds);
             await videoUnitOfWork.RollbackTransactionAsync();
+            logger.LogDebug("Transaction rolled back for video encoding {VideoId}", inputVideo.Id);
             throw;
         }
     }
@@ -167,6 +265,12 @@ public class VideoService(
 
     public async Task<VideoStream> AddNewVideoStream(Video video, VideoStream videoStream)
     {
+        logger.LogInformation(
+            "Adding new video stream. VideoId: {VideoId}, VideoStreamId: {VideoStreamId}, Resolution: {Resolution}",
+            video.Id,
+            videoStream.Id,
+            videoStream.Resolution);
+
         video.VideoStreams ??= [];
 
         // Check if this resolution already exists in the collection to avoid duplicates
@@ -182,6 +286,8 @@ public class VideoService(
         _videoStreamRepository.Add(videoStream);
         videoStream.Video = video;
 
+        logger.LogDebug("Video stream {VideoStreamId} added to repository", videoStream.Id);
+
         OnVideoStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
         {
             VideoId = video.Id,
@@ -189,15 +295,32 @@ public class VideoService(
         });
 
         await UploadSegmentsToStorageAsync(videoStream);
+
+        logger.LogInformation(
+            "Successfully added video stream {VideoStreamId} for video {VideoId}",
+            videoStream.Id,
+            video.Id);
+
         return videoStream;
     }
 
     public async Task<VideoStream> CreateHlsVariantStream(string absoluteRawLocation, Video inputVideo,
         VideoResolution targetResolution, Guid userId, int scale = 2)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        logger.LogInformation(
+            "Creating HLS variant stream. VideoId: {VideoId}, Resolution: {Resolution}, UserId: {UserId}",
+            inputVideo.Id,
+            targetResolution,
+            userId);
+
         var segmentFolder = Path.Combine(_webRootPath, Path.GetDirectoryName(inputVideo.M3U8Location)!,
             targetResolution.GetDescription());
-        if (!Directory.Exists(segmentFolder)) Directory.CreateDirectory(segmentFolder);
+        if (!Directory.Exists(segmentFolder))
+        {
+            Directory.CreateDirectory(segmentFolder);
+            logger.LogDebug("Created segment folder: {Folder}", segmentFolder);
+        }
 
         var segmentPath = Path.Combine(segmentFolder, $"{targetResolution.GetDescription()}_%07d.ts");
         var absoluteVideoStreamM3U8Location = Path.Combine(segmentFolder, $"{targetResolution.GetDescription()}.m3u8");
@@ -213,11 +336,19 @@ public class VideoService(
             M3U8Location = Path.GetRelativePath(_webRootPath, absoluteVideoStreamM3U8Location)
         };
 
+        logger.LogDebug(
+            "Created video stream entity. VideoStreamId: {VideoStreamId}, M3U8Location: {M3U8Location}",
+            videoStream.Id,
+            videoStream.M3U8Location);
+
         var videoInput = await FFProbe.AnalyseAsync(absoluteRawLocation);
 
         var videoInputStream = videoInput.PrimaryVideoStream;
         if (videoInputStream == null)
+        {
+            logger.LogError("No video stream found in input file for video {VideoId}", inputVideo.Id);
             throw new InvalidOperationException("No video stream found in the input file.");
+        }
 
         var videoRatio = 1.0 * videoInputStream.DisplayAspectRatio.Width / videoInputStream.DisplayAspectRatio.Height;
         var targetHeight = (int)targetResolution;
@@ -229,10 +360,24 @@ public class VideoService(
 
         var resolutionSize = new Size(targetWidth, targetHeight);
 
+        logger.LogDebug(
+            "Calculated target resolution. VideoId: {VideoId}, Original: {OriginalWidth}x{OriginalHeight}, Target: {TargetWidth}x{TargetHeight}",
+            inputVideo.Id,
+            videoInputStream.Width,
+            videoInputStream.Height,
+            resolutionSize.Width,
+            resolutionSize.Height);
+
         // Get bitrate from user settings
         var bitrateBps =
             await videoResolutionService.GetBandwidthForResolutionAsync(targetResolution.GetDescription(), userId);
         var bitrateKbps = bitrateBps / 1000;
+
+        logger.LogDebug(
+            "Using bitrate for encoding. VideoId: {VideoId}, Resolution: {Resolution}, Bitrate: {BitrateKbps}kbps",
+            inputVideo.Id,
+            targetResolution,
+            bitrateKbps);
 
         var argumentProcessor = FFMpegArguments
             .FromFileInput(absoluteRawLocation)
@@ -257,7 +402,19 @@ public class VideoService(
 
         try
         {
+            logger.LogInformation(
+                "Starting FFMpeg encoding for video {VideoId}, resolution {Resolution}",
+                inputVideo.Id,
+                targetResolution);
+
             await argumentProcessor.ProcessAsynchronously();
+
+            stopwatch.Stop();
+            logger.LogInformation(
+                "FFMpeg encoding completed. VideoId: {VideoId}, Resolution: {Resolution}, Duration: {DurationMs}ms",
+                inputVideo.Id,
+                targetResolution,
+                stopwatch.ElapsedMilliseconds);
 
             var m3U8Content = await File.ReadAllLinesAsync(absoluteVideoStreamM3U8Location);
 
@@ -278,6 +435,10 @@ public class VideoService(
                                 .Replace("\\", "/");
 
                             m3U8Content[i] = line.Replace(oldUri, newUri);
+                            logger.LogDebug(
+                                "Updated DRM URI in M3U8. VideoStreamId: {VideoStreamId}, NewUri: {NewUri}",
+                                videoStream.Id,
+                                newUri);
                         }
                     }
 
@@ -285,80 +446,189 @@ public class VideoService(
                 }
 
             await File.WriteAllLinesAsync(absoluteVideoStreamM3U8Location, m3U8Content);
+            logger.LogDebug("M3U8 playlist file updated. VideoStreamId: {VideoStreamId}", videoStream.Id);
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
             logger.LogError(ex,
-                "FFMpeg processing error while creating HLS variant stream for video {VideoId}, resolution {Resolution}",
-                inputVideo.Id, targetResolution);
+                "FFMpeg processing error while creating HLS variant stream for video {VideoId}, resolution {Resolution} after {DurationMs}ms",
+                inputVideo.Id,
+                targetResolution,
+                stopwatch.ElapsedMilliseconds);
             throw;
         }
+
+        logger.LogInformation(
+            "Successfully created HLS variant stream. VideoStreamId: {VideoStreamId}, VideoId: {VideoId}, Resolution: {Resolution}",
+            videoStream.Id,
+            inputVideo.Id,
+            targetResolution);
 
         return videoStream;
     }
 
     public async Task DeleteVideo(Video deleteVideo)
     {
-        //var videoLocation = Path.Combine(_webRootPath, deleteVideo.RawLocation);
-        //Directory.Delete(Path.GetDirectoryName(videoLocation) ?? throw new InvalidOperationException());
-        await _videoRepository.DeleteVideo(deleteVideo);
+        logger.LogInformation(
+            "Deleting video. VideoId: {VideoId}, Title: {Title}",
+            deleteVideo.Id,
+            deleteVideo.Title);
+
+        try
+        {
+            //var videoLocation = Path.Combine(_webRootPath, deleteVideo.RawLocation);
+            //Directory.Delete(Path.GetDirectoryName(videoLocation) ?? throw new InvalidOperationException());
+            await _videoRepository.DeleteVideo(deleteVideo);
+
+            logger.LogInformation("Successfully deleted video {VideoId}", deleteVideo.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting video {VideoId}", deleteVideo.Id);
+            throw;
+        }
     }
 
     public Task<Video?> GetVideoByVideoStreamId(Guid videoStreamId)
     {
+        logger.LogDebug("Getting video by video stream ID: {VideoStreamId}", videoStreamId);
         return _videoRepository.GetVideoByVideoStreamId(videoStreamId);
     }
 
     public async Task<string> GenerateThumbnail(Video video)
     {
-        var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
-        var upscaleLocation = Path.Combine(_webRootPath,
-            video.VideoUpscales.FirstOrDefault()?.OutputLocation ?? string.Empty);
+        logger.LogInformation("Generating thumbnail for video {VideoId}", video.Id);
 
-        if (!string.IsNullOrEmpty(upscaleLocation) && File.Exists(upscaleLocation)) rawLocation = upscaleLocation;
+        try
+        {
+            var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
+            var upscaleLocation = Path.Combine(_webRootPath,
+                video.VideoUpscales.FirstOrDefault()?.OutputLocation ?? string.Empty);
 
-        var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
-        var duration = mediaInfo.Duration;
+            if (!string.IsNullOrEmpty(upscaleLocation) && File.Exists(upscaleLocation))
+            {
+                rawLocation = upscaleLocation;
+                logger.LogDebug("Using upscaled video for thumbnail generation. VideoId: {VideoId}", video.Id);
+            }
 
-        var random = new Random();
-        var randomSeconds = random.NextDouble() * duration.TotalSeconds;
-        var captureTime = TimeSpan.FromSeconds(randomSeconds);
+            var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
+            var duration = mediaInfo.Duration;
 
-        var thumbFileName = $"thumb_{video.Id}.jpg";
-        var thumbFullPath = Path.Combine(_thumbnailPath, thumbFileName);
+            var random = new Random();
+            var randomSeconds = random.NextDouble() * duration.TotalSeconds;
+            var captureTime = TimeSpan.FromSeconds(randomSeconds);
 
-        await FFMpeg.SnapshotAsync(rawLocation, thumbFullPath, null, captureTime);
+            logger.LogDebug(
+                "Thumbnail capture time calculated. VideoId: {VideoId}, Duration: {Duration}s, CaptureTime: {CaptureTime}s",
+                video.Id,
+                duration.TotalSeconds,
+                captureTime.TotalSeconds);
 
-        return Path.GetRelativePath(_webRootPath, thumbFullPath);
+            var thumbFileName = $"thumb_{video.Id}.jpg";
+            var thumbFullPath = Path.Combine(_thumbnailPath, thumbFileName);
+
+            await FFMpeg.SnapshotAsync(rawLocation, thumbFullPath, null, captureTime);
+
+            var relativePath = Path.GetRelativePath(_webRootPath, thumbFullPath);
+            logger.LogInformation(
+                "Successfully generated thumbnail for video {VideoId}. Thumbnail: {Thumbnail}",
+                video.Id,
+                relativePath);
+
+            return relativePath;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error generating thumbnail for video {VideoId}", video.Id);
+            throw;
+        }
     }
 
     public Task<Video?> GetVideoBackup()
     {
+        logger.LogDebug("Getting video for backup");
         return _videoRepository.GetVideoToBackup();
     }
 
     public async Task<VideoBackupStatus> BackupVideo(Video video)
     {
-        var localVideoPath = Path.Combine(_webRootPath, video.RawLocation);
-        var fileName = Path.GetFileName(localVideoPath);
-        var key = $"videos/{video.Id}/{fileName}";
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        logger.LogInformation(
+            "Starting video backup. VideoId: {VideoId}, Title: {Title}",
+            video.Id,
+            video.Title);
 
-        await storageService.UploadLargeFileAsync(localVideoPath, key, "application/octet-stream"); //default
+        try
+        {
+            var localVideoPath = Path.Combine(_webRootPath, video.RawLocation);
+            var fileName = Path.GetFileName(localVideoPath);
+            var key = $"videos/{video.Id}/{fileName}";
 
-        video.BackupStatus = VideoBackupStatus.BackedUp;
-        await UpdateVideo(video);
+            if (!File.Exists(localVideoPath))
+            {
+                logger.LogWarning(
+                    "Video file not found for backup. VideoId: {VideoId}, Path: {Path}",
+                    video.Id,
+                    localVideoPath);
+                throw new FileNotFoundException($"Video file not found: {localVideoPath}");
+            }
 
-        return video.BackupStatus;
+            var fileInfo = new FileInfo(localVideoPath);
+            logger.LogInformation(
+                "Uploading video to storage. VideoId: {VideoId}, Key: {Key}, Size: {Size} bytes",
+                video.Id,
+                key,
+                fileInfo.Length);
+
+            await storageService.UploadLargeFileAsync(localVideoPath, key, "application/octet-stream"); //default
+
+            stopwatch.Stop();
+            logger.LogInformation(
+                "Video uploaded to storage. VideoId: {VideoId}, Duration: {DurationMs}ms",
+                video.Id,
+                stopwatch.ElapsedMilliseconds);
+
+            video.BackupStatus = VideoBackupStatus.BackedUp;
+            await UpdateVideo(video);
+
+            logger.LogInformation("Video backup completed successfully. VideoId: {VideoId}", video.Id);
+            return video.BackupStatus;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            logger.LogError(ex,
+                "Error backing up video {VideoId} after {DurationMs}ms",
+                video.Id,
+                stopwatch.ElapsedMilliseconds);
+            throw;
+        }
     }
 
     public async Task UpdateResolution(Video video)
     {
-        var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
+        logger.LogDebug("Updating resolution for video {VideoId}", video.Id);
 
-        var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
-        var videoHeight = mediaInfo.PrimaryVideoStream!.Height;
+        try
+        {
+            var rawLocation = Path.Combine(_webRootPath, video.RawLocation);
 
-        video.Height = videoHeight;
+            var mediaInfo = await FFProbe.AnalyseAsync(rawLocation);
+            var videoHeight = mediaInfo.PrimaryVideoStream!.Height;
+
+            video.Height = videoHeight;
+
+            logger.LogDebug(
+                "Resolution updated for video {VideoId}. Height: {Height}",
+                video.Id,
+                videoHeight);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating resolution for video {VideoId}", video.Id);
+            throw;
+        }
     }
 
     public async Task UploadSegmentsToStorageAsync(VideoStream videoStream)
@@ -372,21 +642,68 @@ public class VideoService(
             return;
         }
 
+        logger.LogInformation(
+            "Starting upload of video segments to storage. VideoId: {VideoId}, VideoStreamId: {VideoStreamId}, Resolution: {Resolution}",
+            videoStream.Video.Id,
+            videoStream.Id,
+            videoStream.Resolution);
+
         var relativePath = Uri.UnescapeDataString(videoStream.M3U8Location);
 
         var fullFilePath = Path.Combine(_webRootPath, relativePath);
         var folderPath = Path.GetDirectoryName(fullFilePath)!;
 
-        if (!Directory.Exists(folderPath)) return;
+        if (!Directory.Exists(folderPath))
+        {
+            logger.LogWarning(
+                "Segment folder not found. VideoStreamId: {VideoStreamId}, Folder: {Folder}",
+                videoStream.Id,
+                folderPath);
+            return;
+        }
 
         var tsFiles = Directory.GetFiles(folderPath, "*.ts");
+        logger.LogInformation(
+            "Found {Count} segment files to upload. VideoStreamId: {VideoStreamId}",
+            tsFiles.Length,
+            videoStream.Id);
+
+        var uploadedCount = 0;
+        var failedCount = 0;
 
         await Parallel.ForEachAsync(tsFiles, async (filePath, ct) =>
         {
-            var fileName = Path.GetFileName(filePath);
-            var key = $"videos/{videoStream.Video.Id}/{(int)videoStream.Resolution}/{fileName}";
+            try
+            {
+                var fileName = Path.GetFileName(filePath);
+                var key = $"videos/{videoStream.Video.Id}/{(int)videoStream.Resolution}/{fileName}";
 
-            await storageService.UploadFileAsync(filePath, key, "video/MP2T");
+                var fileInfo = new FileInfo(filePath);
+                logger.LogDebug(
+                    "Uploading segment. VideoStreamId: {VideoStreamId}, File: {FileName}, Size: {Size} bytes",
+                    videoStream.Id,
+                    fileName,
+                    fileInfo.Length);
+
+                await storageService.UploadFileAsync(filePath, key, "video/MP2T");
+
+                Interlocked.Increment(ref uploadedCount);
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Increment(ref failedCount);
+                logger.LogError(ex,
+                    "Error uploading segment file. VideoStreamId: {VideoStreamId}, File: {FilePath}",
+                    videoStream.Id,
+                    filePath);
+            }
         });
+
+        logger.LogInformation(
+            "Completed upload of video segments. VideoStreamId: {VideoStreamId}, Uploaded: {UploadedCount}, Failed: {FailedCount}, Total: {TotalCount}",
+            videoStream.Id,
+            uploadedCount,
+            failedCount,
+            tsFiles.Length);
     }
 }

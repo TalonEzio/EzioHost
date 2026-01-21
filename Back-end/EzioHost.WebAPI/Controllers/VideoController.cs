@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using AutoMapper;
 using EzioHost.Core.Providers;
 using EzioHost.Core.Services.Interface;
@@ -11,6 +11,7 @@ using EzioHost.WebAPI.Extensions;
 using EzioHost.WebAPI.Startup;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace EzioHost.WebAPI.Controllers;
@@ -25,7 +26,8 @@ public class VideoController(
     IDirectoryProvider directoryProvider,
     IOptions<AppSettings> appSettings,
     IConfiguration configuration,
-    ICloudflareStorageSettingService cloudflareStorageSettingService) : ControllerBase
+    ICloudflareStorageSettingService cloudflareStorageSettingService,
+    ILogger<VideoController> logger) : ControllerBase
 {
     private string WebRootPath => directoryProvider.GetWebRootPath();
 
@@ -40,14 +42,26 @@ public class VideoController(
         bool? includeSubtitles = null,
         bool? includeUpscaled = null)
     {
+        var userId = User.UserId;
+        logger.LogInformation(
+            "Getting videos. UserId: {UserId}, PageNumber: {PageNumber}, PageSize: {PageSize}, IncludeStreams: {IncludeStreams}, IncludeSubtitles: {IncludeSubtitles}, IncludeUpscaled: {IncludeUpscaled}",
+            userId,
+            pageNumber,
+            pageSize,
+            includeStreams,
+            includeSubtitles,
+            includeUpscaled);
+
         try
         {
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-            var userId = User.UserId;
             if (userId == Guid.Empty)
+            {
+                logger.LogWarning("User ID not found in claims. UserId: {UserId}", userId);
                 return Unauthorized("User ID not found");
+            }
 
             List<Expression<Func<Video, object>>>? includes = [];
             if (includeStreams == true)
@@ -72,18 +86,26 @@ public class VideoController(
 
             var videoDtos = mapper.Map<List<VideoDto>>(videos);
 
+            logger.LogInformation(
+                "Successfully retrieved videos. UserId: {UserId}, Count: {Count}",
+                userId,
+                videoDtos.Count);
+
             return Ok(videoDtos);
         }
         catch (UnauthorizedAccessException ex)
         {
+            logger.LogWarning(ex, "Unauthorized access attempt. UserId: {UserId}", userId);
             return Unauthorized(ex.Message);
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "Invalid argument in GetVideos. UserId: {UserId}", userId);
             return BadRequest(ex.Message);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Error retrieving videos. UserId: {UserId}", userId);
             return StatusCode(500, "Internal server error occurred while retrieving videos.");
         }
     }
@@ -92,35 +114,71 @@ public class VideoController(
     [Authorize]
     public async Task<IActionResult> DownloadVideo([FromRoute] Guid videoId)
     {
+        var userId = User.UserId;
+        logger.LogInformation(
+            "Downloading video. VideoId: {VideoId}, UserId: {UserId}",
+            videoId,
+            userId);
+
         try
         {
             if (videoId == Guid.Empty)
+            {
+                logger.LogWarning("Invalid video ID for download. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
                 return BadRequest("Invalid video ID");
+            }
 
             var video = await videoService.GetVideoById(videoId);
             if (video == null)
+            {
+                logger.LogWarning("Video not found for download. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
                 return NotFound("Video not found");
+            }
 
             if (video.Status != VideoEnum.VideoStatus.Ready)
+            {
+                logger.LogWarning(
+                    "Video not ready for download. VideoId: {VideoId}, Status: {Status}, UserId: {UserId}",
+                    videoId,
+                    video.Status,
+                    userId);
                 return BadRequest("Video is not ready for download");
+            }
 
             var fileLocation = Path.Combine(WebRootPath, video.RawLocation);
             if (!System.IO.File.Exists(fileLocation))
+            {
+                logger.LogError(
+                    "Video file not found on disk. VideoId: {VideoId}, Path: {Path}, UserId: {UserId}",
+                    videoId,
+                    fileLocation,
+                    userId);
                 return NotFound("Video file not found");
+            }
+
+            var fileInfo = new FileInfo(fileLocation);
+            logger.LogInformation(
+                "Serving video file for download. VideoId: {VideoId}, FileSize: {FileSize} bytes, UserId: {UserId}",
+                videoId,
+                fileInfo.Length,
+                userId);
 
             var fileContent = await System.IO.File.ReadAllBytesAsync(fileLocation);
             return File(fileContent, "application/octet-stream", $"{video.Title}");
         }
-        catch (FileNotFoundException)
+        catch (FileNotFoundException ex)
         {
+            logger.LogWarning(ex, "Video file not found. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
             return NotFound("Video file not found");
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
+            logger.LogWarning(ex, "Unauthorized access to video download. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
             return Unauthorized("Access denied");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Error downloading video. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
             return StatusCode(500, "Internal server error occurred while downloading video");
         }
     }
@@ -173,21 +231,35 @@ public class VideoController(
     [Authorize]
     public async Task<IActionResult> UpdateVideo([FromBody] VideoUpdateDto videoUpdateDto)
     {
+        var userId = User.UserId;
+        logger.LogInformation(
+            "Updating video. VideoId: {VideoId}, Title: {Title}, ShareType: {ShareType}, UserId: {UserId}",
+            videoUpdateDto.Id,
+            videoUpdateDto.Title,
+            videoUpdateDto.ShareType,
+            userId);
+
         var video = await videoService.GetVideoById(videoUpdateDto.Id);
-        if (video == null) return NotFound();
+        if (video == null)
+        {
+            logger.LogWarning("Video not found for update. VideoId: {VideoId}, UserId: {UserId}", videoUpdateDto.Id, userId);
+            return NotFound();
+        }
 
         try
         {
             video.Title = videoUpdateDto.Title;
             video.ShareType = videoUpdateDto.ShareType;
-            video.ModifiedBy = User.UserId;
+            video.ModifiedBy = userId;
 
             await videoService.UpdateVideo(video);
 
+            logger.LogInformation("Successfully updated video. VideoId: {VideoId}, UserId: {UserId}", videoUpdateDto.Id, userId);
             return Ok();
         }
         catch (Exception e)
         {
+            logger.LogError(e, "Error updating video. VideoId: {VideoId}, UserId: {UserId}", videoUpdateDto.Id, userId);
             return BadRequest(e.Message);
         }
     }
@@ -196,16 +268,25 @@ public class VideoController(
     [Authorize]
     public async Task<IActionResult> DeleteVideo([FromRoute] Guid videoId)
     {
+        var userId = User.UserId;
+        logger.LogInformation("Deleting video. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
+
         var video = await videoService.GetVideoById(videoId);
-        if (video == null) return NotFound();
+        if (video == null)
+        {
+            logger.LogWarning("Video not found for deletion. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
+            return NotFound();
+        }
 
         try
         {
             await videoService.DeleteVideo(video);
+            logger.LogInformation("Successfully deleted video. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
             return Ok();
         }
         catch (Exception e)
         {
+            logger.LogError(e, "Error deleting video. VideoId: {VideoId}, UserId: {UserId}", videoId, userId);
             return BadRequest(e.Message);
         }
     }
@@ -301,12 +382,37 @@ public class VideoController(
     [HttpPost("{videoId:guid}/upscale/{modelId:guid}")]
     public async Task<IActionResult> UpscaleVideo([FromRoute] Guid videoId, [FromRoute] Guid modelId)
     {
+        var userId = HttpContext.User.UserId;
+        logger.LogInformation(
+            "Requesting video upscale. VideoId: {VideoId}, ModelId: {ModelId}, UserId: {UserId}",
+            videoId,
+            modelId,
+            userId);
+
         var video = await videoService.GetVideoById(videoId);
         var model = await modelService.GetOnnxModelById(modelId);
 
-        if (video == null || model == null) return NotFound();
+        if (video == null || model == null)
+        {
+            logger.LogWarning(
+                "Video or model not found for upscale. VideoId: {VideoId}, ModelId: {ModelId}, VideoExists: {VideoExists}, ModelExists: {ModelExists}, UserId: {UserId}",
+                videoId,
+                modelId,
+                video != null,
+                model != null,
+                userId);
+            return NotFound();
+        }
 
-        if (video.Status != VideoEnum.VideoStatus.Ready) return BadRequest();
+        if (video.Status != VideoEnum.VideoStatus.Ready)
+        {
+            logger.LogWarning(
+                "Video not ready for upscale. VideoId: {VideoId}, Status: {Status}, UserId: {UserId}",
+                videoId,
+                video.Status,
+                userId);
+            return BadRequest();
+        }
 
         var videoUpscale = new VideoUpscale
         {
@@ -314,10 +420,17 @@ public class VideoController(
             Video = video,
             Model = model,
             Status = VideoEnum.VideoUpscaleStatus.Queue,
-            CreatedBy = HttpContext.User.UserId
+            CreatedBy = userId
         };
 
-        await upscaleService.AddNewVideoUpscale(videoUpscale);
+        var result = await upscaleService.AddNewVideoUpscale(videoUpscale);
+
+        logger.LogInformation(
+            "Video upscale request created. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}, ModelId: {ModelId}, UserId: {UserId}",
+            result.Id,
+            videoId,
+            modelId,
+            userId);
 
         return Created();
     }

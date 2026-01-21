@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using AutoMapper;
 using EzioHost.Core.Private;
 using EzioHost.Core.Providers;
@@ -65,27 +65,78 @@ public class UpscaleService(
 
     public async Task UpscaleImage(OnnxModel model, string inputPath, string outputPath)
     {
-        var inferenceSession = GetInferenceSession(model);
+        logger.LogInformation(
+            "Upscaling image. ModelId: {ModelId}, Scale: {Scale}, InputPath: {InputPath}",
+            model.Id,
+            model.Scale,
+            inputPath);
 
-        var upscale = await Upscaler.UpscaleImageAsync(inputPath, inferenceSession, model.Scale);
+        try
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var inferenceSession = GetInferenceSession(model);
 
-        upscale.SaveImage(outputPath, ImageEncodingParam);
+            var upscale = await Upscaler.UpscaleImageAsync(inputPath, inferenceSession, model.Scale);
+
+            upscale.SaveImage(outputPath, ImageEncodingParam);
+
+            stopwatch.Stop();
+            logger.LogInformation(
+                "Image upscaling completed. ModelId: {ModelId}, OutputPath: {OutputPath}, Duration: {DurationMs}ms",
+                model.Id,
+                outputPath,
+                stopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Error upscaling image. ModelId: {ModelId}, InputPath: {InputPath}",
+                model.Id,
+                inputPath);
+            throw;
+        }
     }
 
     public async Task UpscaleVideo(VideoUpscale videoUpscale)
     {
+        var overallStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        logger.LogInformation(
+            "Starting video upscaling. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}, ModelId: {ModelId}",
+            videoUpscale.Id,
+            videoUpscale.VideoId,
+            videoUpscale.ModelId);
+
         await videoUnitOfWork.BeginTransactionAsync();
+        logger.LogDebug("Transaction started for video upscaling {VideoUpscaleId}", videoUpscale.Id);
 
         var model = videoUpscale.Model;
         var video = videoUpscale.Video;
 
         if (model == null)
+        {
+            logger.LogError(
+                "OnnxModel not found for upscaling. VideoUpscaleId: {VideoUpscaleId}, ModelId: {ModelId}",
+                videoUpscale.Id,
+                videoUpscale.ModelId);
             throw new InvalidOperationException(
                 $"OnnxModel with Id {videoUpscale.ModelId} was not found or has been deleted.");
+        }
 
         if (video == null)
+        {
+            logger.LogError(
+                "Video not found for upscaling. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}",
+                videoUpscale.Id,
+                videoUpscale.VideoId);
             throw new InvalidOperationException(
                 $"Video with Id {videoUpscale.VideoId} was not found or has been deleted.");
+        }
+
+        logger.LogInformation(
+            "Video upscaling parameters. VideoUpscaleId: {VideoUpscaleId}, Model: {ModelName}, Scale: {Scale}",
+            videoUpscale.Id,
+            model.Name,
+            model.Scale);
 
         videoUpscale.Resolution = VideoResolution.Upscaled;
 
@@ -100,6 +151,7 @@ public class UpscaleService(
 
         var tempDir = Path.Combine(TempPath, Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
+        logger.LogDebug("Created temporary directory for upscaling: {TempDir}", tempDir);
 
         var framesDir = Path.Combine(tempDir, "frames");
         Directory.CreateDirectory(framesDir);
@@ -109,6 +161,10 @@ public class UpscaleService(
 
         try
         {
+            logger.LogDebug("Analyzing input video. VideoUpscaleId: {VideoUpscaleId}, InputPath: {InputPath}",
+                videoUpscale.Id,
+                inputVideoPath);
+
             var mediaInfo = await FFProbe.AnalyseAsync(inputVideoPath);
             var mediaInfoPrimaryVideoStream = mediaInfo.PrimaryVideoStream!;
 
@@ -118,6 +174,21 @@ public class UpscaleService(
 
             var outputWidth = originalWidth * model.Scale;
             var outputHeight = originalHeight * model.Scale;
+
+            logger.LogInformation(
+                "Video analysis completed. VideoUpscaleId: {VideoUpscaleId}, Original: {OriginalWidth}x{OriginalHeight}, Output: {OutputWidth}x{OutputHeight}, FrameRate: {FrameRate}",
+                videoUpscale.Id,
+                originalWidth,
+                originalHeight,
+                outputWidth,
+                outputHeight,
+                frameRate);
+
+            logger.LogInformation(
+                "Starting frame and audio extraction. VideoUpscaleId: {VideoUpscaleId}",
+                videoUpscale.Id);
+
+            var extractionStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             var frameExtractionArguments = FFMpegArguments
                 .FromFileInput(inputVideoPath)
@@ -142,10 +213,30 @@ public class UpscaleService(
                 audioExtractionArguments.ProcessAsynchronously()
             );
 
+            extractionStopwatch.Stop();
+            logger.LogInformation(
+                "Frame and audio extraction completed. VideoUpscaleId: {VideoUpscaleId}, Duration: {DurationMs}ms",
+                videoUpscale.Id,
+                extractionStopwatch.ElapsedMilliseconds);
+
             var frameFiles = Directory.GetFiles(framesDir, FRAME_SEARCH_PATTERN).OrderBy(f => f).ToList();
 
+            logger.LogInformation(
+                "Found {FrameCount} frames to upscale. VideoUpscaleId: {VideoUpscaleId}",
+                frameFiles.Count,
+                videoUpscale.Id);
+
+            logger.LogInformation(
+                "Starting frame upscaling. VideoUpscaleId: {VideoUpscaleId}, FrameCount: {FrameCount}, ConcurrentTasks: {ConcurrentTasks}",
+                videoUpscale.Id,
+                frameFiles.Count,
+                CONCURRENT_UPSCALE_TASK);
+
+            var upscaleStopwatch = System.Diagnostics.Stopwatch.StartNew();
             var semaphore = new SemaphoreSlim(CONCURRENT_UPSCALE_TASK);
             var tasks = new List<Task>();
+            var processedFrames = 0;
+            var failedFrames = 0;
 
             foreach (var frameFile in frameFiles)
             {
@@ -160,6 +251,25 @@ public class UpscaleService(
 
                         var upscaledFrame = Upscaler.UpscaleImage(frameFile, inferenceSession, model.Scale);
                         upscaledFrame.SaveImage(upscaledFramePath, ImageEncodingParam);
+
+                        var currentProcessed = Interlocked.Increment(ref processedFrames);
+                        if (currentProcessed % 100 == 0 || currentProcessed == frameFiles.Count)
+                        {
+                            logger.LogDebug(
+                                "Frame upscaling progress. VideoUpscaleId: {VideoUpscaleId}, Processed: {Processed}/{Total} ({Percentage:F1}%)",
+                                videoUpscale.Id,
+                                currentProcessed,
+                                frameFiles.Count,
+                                (currentProcessed * 100.0 / frameFiles.Count));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Interlocked.Increment(ref failedFrames);
+                        logger.LogWarning(ex,
+                            "Error upscaling frame. VideoUpscaleId: {VideoUpscaleId}, FrameFile: {FrameFile}",
+                            videoUpscale.Id,
+                            frameFile);
                     }
                     finally
                     {
@@ -170,6 +280,21 @@ public class UpscaleService(
 
             await Task.WhenAll(tasks);
 
+            upscaleStopwatch.Stop();
+            logger.LogInformation(
+                "Frame upscaling completed. VideoUpscaleId: {VideoUpscaleId}, Processed: {Processed}, Failed: {Failed}, Total: {Total}, Duration: {DurationMs}ms",
+                videoUpscale.Id,
+                processedFrames,
+                failedFrames,
+                frameFiles.Count,
+                upscaleStopwatch.ElapsedMilliseconds);
+
+
+            logger.LogInformation(
+                "Creating upscaled video from frames. VideoUpscaleId: {VideoUpscaleId}",
+                videoUpscale.Id);
+
+            var videoCreationStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             var videoCreationArguments = FFMpegArguments
                 .FromFileInput(Path.Combine(upscaledFramesDir, FRAME_PATTERN), false, options => options
@@ -186,6 +311,18 @@ public class UpscaleService(
 
             await videoCreationArguments.ProcessAsynchronously();
 
+            videoCreationStopwatch.Stop();
+            logger.LogInformation(
+                "Video creation from frames completed. VideoUpscaleId: {VideoUpscaleId}, Duration: {DurationMs}ms",
+                videoUpscale.Id,
+                videoCreationStopwatch.ElapsedMilliseconds);
+
+            logger.LogInformation(
+                "Merging audio with upscaled video. VideoUpscaleId: {VideoUpscaleId}",
+                videoUpscale.Id);
+
+            var mergeStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             var finalVideoArguments = FFMpegArguments
                 .FromFileInput(Path.Combine(tempDir, randomVideoFileName))
                 .AddFileInput(Path.Combine(tempDir, randomAudioFileName))
@@ -196,8 +333,19 @@ public class UpscaleService(
 
             await finalVideoArguments.ProcessAsynchronously();
 
+            mergeStopwatch.Stop();
+            logger.LogInformation(
+                "Audio merge completed. VideoUpscaleId: {VideoUpscaleId}, Duration: {DurationMs}ms",
+                videoUpscale.Id,
+                mergeStopwatch.ElapsedMilliseconds);
+
             videoUpscale.OutputLocation = Path.GetRelativePath(WebRootPath, outputVideoPath);
             await UpdateVideoUpscale(videoUpscale);
+
+            logger.LogInformation(
+                "Creating HLS stream for upscaled video. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}",
+                videoUpscale.Id,
+                video.Id);
 
             var newVideoHlsStream =
                 await videoService.CreateHlsVariantStream(outputVideoPath, video, videoUpscale.Resolution,
@@ -208,13 +356,23 @@ public class UpscaleService(
             var absoluteM3U8Location = Path.Combine(WebRootPath, video.M3U8Location);
             await m3U8PlaylistService.BuildFullPlaylistAsync(video, absoluteM3U8Location);
 
+            logger.LogDebug("Updating thumbnail from upscaled video. VideoUpscaleId: {VideoUpscaleId}", videoUpscale.Id);
             //Update thumbnail from upscaled video
             video.Thumbnail = await videoService.GenerateThumbnail(video);
             await VideoRepository.UpdateVideoForUnitOfWork(video);
             await videoUnitOfWork.CommitTransactionAsync();
 
+            logger.LogDebug("Transaction committed for video upscaling {VideoUpscaleId}", videoUpscale.Id);
+
             videoUpscale.Status = VideoUpscaleStatus.Ready;
             await UpdateVideoUpscale(videoUpscale);
+
+            overallStopwatch.Stop();
+            logger.LogInformation(
+                "Video upscaling completed successfully. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}, TotalDuration: {DurationMs}ms",
+                videoUpscale.Id,
+                video.Id,
+                overallStopwatch.ElapsedMilliseconds);
 
             OnVideoUpscaleStreamAdded?.Invoke(this, new VideoStreamAddedEventArgs
             {
@@ -224,40 +382,78 @@ public class UpscaleService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error upscaling video {VideoUpscaleId} for video {VideoId}. Rolling back transaction.",
-                videoUpscale.Id, videoUpscale.VideoId);
+            overallStopwatch.Stop();
+            logger.LogError(ex,
+                "Error upscaling video {VideoUpscaleId} for video {VideoId} after {DurationMs}ms. Rolling back transaction.",
+                videoUpscale.Id,
+                videoUpscale.VideoId,
+                overallStopwatch.ElapsedMilliseconds);
             await videoUnitOfWork.RollbackTransactionAsync();
+            logger.LogDebug("Transaction rolled back for video upscaling {VideoUpscaleId}", videoUpscale.Id);
             throw;
         }
         finally
         {
-            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            if (Directory.Exists(tempDir))
+            {
+                try
+                {
+                    Directory.Delete(tempDir, true);
+                    logger.LogDebug("Cleaned up temporary directory: {TempDir}", tempDir);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Error cleaning up temporary directory: {TempDir}", tempDir);
+                }
+            }
         }
     }
 
 
-    public Task<VideoUpscale> AddNewVideoUpscale(VideoUpscale newVideoUpscale)
+    public async Task<VideoUpscale> AddNewVideoUpscale(VideoUpscale newVideoUpscale)
     {
-        return upscaleRepository.AddNewVideoUpscale(newVideoUpscale);
+        logger.LogInformation(
+            "Adding new video upscale. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}, ModelId: {ModelId}",
+            newVideoUpscale.Id,
+            newVideoUpscale.VideoId,
+            newVideoUpscale.ModelId);
+
+        var result = await upscaleRepository.AddNewVideoUpscale(newVideoUpscale);
+        logger.LogInformation("Successfully added video upscale {VideoUpscaleId}", newVideoUpscale.Id);
+        return result;
     }
 
     public Task<VideoUpscale?> GetVideoUpscaleById(Guid id)
     {
+        logger.LogDebug("Getting video upscale by ID: {VideoUpscaleId}", id);
         return upscaleRepository.GetVideoUpscaleById(id);
     }
 
-    public Task<VideoUpscale> UpdateVideoUpscale(VideoUpscale updateVideoUpscale)
+    public async Task<VideoUpscale> UpdateVideoUpscale(VideoUpscale updateVideoUpscale)
     {
-        return upscaleRepository.UpdateVideoUpscale(updateVideoUpscale);
+        logger.LogDebug(
+            "Updating video upscale. VideoUpscaleId: {VideoUpscaleId}, Status: {Status}",
+            updateVideoUpscale.Id,
+            updateVideoUpscale.Status);
+
+        var result = await upscaleRepository.UpdateVideoUpscale(updateVideoUpscale);
+        return result;
     }
 
-    public Task DeleteVideoUpscale(VideoUpscale deleteVideoUpscale)
+    public async Task DeleteVideoUpscale(VideoUpscale deleteVideoUpscale)
     {
-        return upscaleRepository.DeleteVideoUpscale(deleteVideoUpscale);
+        logger.LogInformation(
+            "Deleting video upscale. VideoUpscaleId: {VideoUpscaleId}, VideoId: {VideoId}",
+            deleteVideoUpscale.Id,
+            deleteVideoUpscale.VideoId);
+
+        await upscaleRepository.DeleteVideoUpscale(deleteVideoUpscale);
+        logger.LogInformation("Successfully deleted video upscale {VideoUpscaleId}", deleteVideoUpscale.Id);
     }
 
     public Task<VideoUpscale?> GetVideoNeedUpscale()
     {
+        logger.LogDebug("Getting video that needs upscaling");
         return upscaleRepository.GetVideoNeedUpscale();
     }
 
@@ -265,23 +461,52 @@ public class UpscaleService(
 
     private InferenceSession GetInferenceSession(OnnxModel onnxModel)
     {
-        if (CacheInferenceSessions.TryGetValue(onnxModel.Id, out var session)) return session;
+        if (CacheInferenceSessions.TryGetValue(onnxModel.Id, out var session))
+        {
+            logger.LogDebug("Using cached inference session for model ID: {ModelId}", onnxModel.Id);
+            return session;
+        }
+
+        logger.LogDebug(
+            "Inference session not found in cache. ModelId: {ModelId}, CacheSize: {CacheSize}/{MaxCacheSize}",
+            onnxModel.Id,
+            CacheInferenceSessions.Count,
+            MAX_CACHED_SESSIONS);
 
         // Check if we've reached the cache limit and remove oldest sessions if needed
-        if (CacheInferenceSessions.Count >= MAX_CACHED_SESSIONS) CleanupOldSessions();
+        if (CacheInferenceSessions.Count >= MAX_CACHED_SESSIONS)
+        {
+            logger.LogDebug("Cache limit reached, cleaning up old sessions");
+            CleanupOldSessions();
+        }
 
         var onnxModelPath = Path.Combine(WebRootPath, onnxModel.FileLocation);
 
-        if (!File.Exists(onnxModelPath)) throw new FileNotFoundException($"ONNX model file not found: {onnxModelPath}");
+        if (!File.Exists(onnxModelPath))
+        {
+            logger.LogError("ONNX model file not found. ModelId: {ModelId}, Path: {Path}", onnxModel.Id, onnxModelPath);
+            throw new FileNotFoundException($"ONNX model file not found: {onnxModelPath}");
+        }
+
+        logger.LogInformation(
+            "Loading inference session from file. ModelId: {ModelId}, Path: {Path}",
+            onnxModel.Id,
+            onnxModelPath);
 
         var newInferenceSession = new InferenceSession(onnxModelPath, SessionOptions);
         if (CacheInferenceSessions.TryAdd(onnxModel.Id, newInferenceSession))
         {
-            logger.LogInformation("Cached new inference session for model ID: {ModelId}", onnxModel.Id);
+            logger.LogInformation(
+                "Cached new inference session for model ID: {ModelId}. CacheSize: {CacheSize}",
+                onnxModel.Id,
+                CacheInferenceSessions.Count);
             return newInferenceSession;
         }
 
         // If we can't add to cache (race condition), dispose the session we created
+        logger.LogWarning(
+            "Failed to add inference session to cache (race condition). ModelId: {ModelId}",
+            onnxModel.Id);
         newInferenceSession.Dispose();
         throw new FileLoadException("Cannot add onnx model to cache");
     }
@@ -294,12 +519,24 @@ public class UpscaleService(
             var sessionsToRemove = CacheInferenceSessions.Count - MAX_CACHED_SESSIONS + 1;
             var keysToRemove = CacheInferenceSessions.Keys.Take(sessionsToRemove).ToList();
 
+            logger.LogDebug(
+                "Cleaning up {Count} old inference sessions. CurrentCacheSize: {CacheSize}",
+                sessionsToRemove,
+                CacheInferenceSessions.Count);
+
+            var removedCount = 0;
             foreach (var key in keysToRemove)
                 if (CacheInferenceSessions.TryRemove(key, out var oldSession))
                 {
                     oldSession.Dispose();
-                    logger.LogInformation("Removed old inference session for model ID: {ModelId}", key);
+                    removedCount++;
+                    logger.LogDebug("Removed old inference session for model ID: {ModelId}", key);
                 }
+
+            logger.LogInformation(
+                "Inference session cleanup completed. Removed: {RemovedCount}, RemainingCacheSize: {CacheSize}",
+                removedCount,
+                CacheInferenceSessions.Count);
         }
         catch (Exception ex)
         {
